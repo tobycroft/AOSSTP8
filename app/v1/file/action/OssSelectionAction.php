@@ -12,9 +12,6 @@ class OssSelectionAction
             case 'aliyun':
                 $oss = OssAliyunModel::where("tag", $proc["oss_tag"])->find();
                 if ($oss) {
-                    echo json_encode($proc, 320);
-                    echo json_encode($oss, 320);
-                    exit();
                     return array_merge($proc, $oss);
                 }
                 break;
