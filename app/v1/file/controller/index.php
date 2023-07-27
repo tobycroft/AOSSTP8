@@ -30,7 +30,7 @@ class index extends search
 
     public function up(Request $request)
     {
-        try {
+//        try {
             $file = $request->file('file');
             if ($file) {
                 try {
@@ -42,9 +42,9 @@ class index extends search
                 Ret::Fail(400, null, '请上传binary文件');
 //            $this->upload_base64($request);
             }
-        } catch (Throwable $e) {
-            Ret::Fail(400, $e->getTraceAsString(), $e->getMessage());
-        }
+//        } catch (Throwable $e) {
+//            Ret::Fail(400, $e->getTraceAsString(), $e->getMessage());
+//        }
 
     }
 
