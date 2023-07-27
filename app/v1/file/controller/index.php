@@ -78,7 +78,7 @@ class index extends search
 
 //        $fileName = $proc['name'] . '/' . $info->get();
 //        $fileName = str_replace("\\", "/", $fileName);
-        echo $info->getFilename();
+        echo $info->getBasename();
 
         exit();
         $duration = 0;
