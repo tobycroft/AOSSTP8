@@ -18,7 +18,7 @@ class ProjectModel extends Model
 
     public static function api_find_token($token): ?array
     {
-        return self::where('token', $token)->where('status', 1)->findOrEmpty();
+        return self::where('token', $token)->where('status', 1)->findOrEmpty()->toArray();
     }
 
 
