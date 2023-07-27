@@ -63,7 +63,7 @@ class index extends search
         $mime = $file->getOriginalMime();
         // 判断附件格式是否符合
 
-        $file_exists = AttachmentModel::find(['token' => $token, 'md5' => $md5, 'sha1' => $sha1]);
+        $file_exists = AttachmentModel::where(['token' => $token, 'md5' => $md5, 'sha1' => $sha1])->findOrEmpty();
 
         if ($file_exists) {
             if ($proc['type'] != 'all' || file_exists('./upload/' . $file_exists['path'])) {
