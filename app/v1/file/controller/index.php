@@ -76,13 +76,11 @@ class index extends search
             Ret::Fail(300, null, "文件错误");
             return;
         }
-//        $fileName = $proc['name'] . '/' . $info->get();
-//        $fileName = str_replace("\\", "/", $fileName);
-        echo $info->getBasename();
-        echo $info->getPathname();
-        echo $info->getRealPath();
-        echo $info->getFilename();
+        $fileName = $proc['name'] . '/' . $info->getFilename();
+        $fileName = str_replace("\\", "/", $fileName);
+        echo $fileName;
         exit();
+
         $duration = 0;
         $duration_str = "00:00";
         $bitrate = 0;
