@@ -17,7 +17,7 @@ class push
         if ($data) {
             $rets = [];
             $status = [];
-            foreach ($data as $datum) {
+            foreach ($data->toArray() as $datum) {
                 switch ($datum['mode']) {
                     case 'aapanel':
                         $path = $datum['method'] . '://' . $datum['domain'] . '/hook';
