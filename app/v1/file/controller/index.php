@@ -238,7 +238,7 @@ class index extends search
 
     public function up_ue(Request $request)
     {
-        try {
+//        try {
             $file = $request->file('file');
             if ($file) {
                 $this->upload_file($request, 1, 'ue');
@@ -246,9 +246,9 @@ class index extends search
                 Ret::Fail(400, null, "请上传binary文件");
 //            $this->upload_base64($request, 1, 1);
             }
-        } catch (Throwable $e) {
-            Ret::Fail(400, $e->getTraceAsString(), $e->getMessage());
-        }
+//        } catch (Throwable $e) {
+//            Ret::Fail(400, $e->getTraceAsString(), $e->getMessage());
+//        }
     }
 
 
