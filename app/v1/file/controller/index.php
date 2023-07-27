@@ -57,7 +57,7 @@ class index extends search
         if (!$file) {
             Ret::Fail(400, null, 'file字段没有用文件提交');
         }
-        $file_name = $file->getFilename();
+        $file_name = $file->getOriginalName();
         $md5 = $file->hash('md5');
         $sha1 = $file->hash("sha1");
         $mime = $file->getType();
