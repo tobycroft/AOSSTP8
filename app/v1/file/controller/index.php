@@ -70,7 +70,7 @@ class index extends search
                 $sav = $this->getStr($full, $proc['url'], $file_exists, $type);
             }
         }
-        $info = $file->move('./upload/' . $this->token, $file->md5() . $file->getOriginalExtension());
+        $info = $file->move('./upload/' . $this->token, $file->md5() . "." . $file->getOriginalExtension());
 //        $info = Filesystem::disk('public')->putFile('./upload/' . $this->token, $file);
         if (!$info) {
             Ret::Fail(300, null, "文件错误");
