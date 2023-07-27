@@ -76,7 +76,7 @@ class index extends search
             return;
         }
 
-        $fileName = $proc['name'] . '/' . $info->getBasename();
+        $fileName = $proc['name'] . '/' . $info->getPath();
         $fileName = str_replace("\\", "/", $fileName);
 
         echo $fileName;
