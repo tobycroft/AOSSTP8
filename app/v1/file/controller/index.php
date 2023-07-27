@@ -76,10 +76,10 @@ class index extends search
             return;
         }
 
-        $fileName = $proc['name'] . '/' . $info->getPath();
-        $fileName = str_replace("\\", "/", $fileName);
+//        $fileName = $proc['name'] . '/' . $info->get();
+//        $fileName = str_replace("\\", "/", $fileName);
+        echo $info->getRealPath();
 
-        echo $fileName;
         exit();
         $duration = 0;
         $duration_str = "00:00";
