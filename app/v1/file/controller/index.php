@@ -31,17 +31,17 @@ class index extends search
     public function up(Request $request)
     {
 //        try {
-            $file = $request->file('file');
-            if ($file) {
-                try {
-                    $this->upload_file($request);
-                } catch (Exception $e) {
-                    Ret::Fail(400, $e->getTraceAsString(), $e->getMessage());
-                }
-            } else {
-                Ret::Fail(400, null, '请上传binary文件');
-//            $this->upload_base64($request);
+        $file = $request->file('file');
+        if ($file) {
+            try {
+                $this->upload_file($request);
+            } catch (Exception $e) {
+                Ret::Fail(400, $e->getTraceAsString(), $e->getMessage());
             }
+        } else {
+            Ret::Fail(400, null, '请上传binary文件');
+//            $this->upload_base64($request);
+        }
 //        } catch (Throwable $e) {
 //            Ret::Fail(400, $e->getTraceAsString(), $e->getMessage());
 //        }
@@ -63,7 +63,7 @@ class index extends search
         $mime = $file->getOriginalMime();
         // 判断附件格式是否符合
 
-        $file_exists = AttachmentModel::get(['token' => $token, 'md5' => $md5, 'sha1' => $sha1]);
+        $file_exists = AttachmentModel::find(['token' => $token, 'md5' => $md5, 'sha1' => $sha1]);
 
         if ($file_exists) {
             if ($proc['type'] != 'all' || file_exists('./upload/' . $file_exists['path'])) {
@@ -239,13 +239,13 @@ class index extends search
     public function up_ue(Request $request)
     {
 //        try {
-            $file = $request->file('file');
-            if ($file) {
-                $this->upload_file($request, 1, 'ue');
-            } else {
-                Ret::Fail(400, null, "请上传binary文件");
+        $file = $request->file('file');
+        if ($file) {
+            $this->upload_file($request, 1, 'ue');
+        } else {
+            Ret::Fail(400, null, "请上传binary文件");
 //            $this->upload_base64($request, 1, 1);
-            }
+        }
 //        } catch (Throwable $e) {
 //            Ret::Fail(400, $e->getTraceAsString(), $e->getMessage());
 //        }
@@ -255,14 +255,14 @@ class index extends search
     public function up_complete(Request $request)
     {
 //        try {
-            $file = $request->file('file');
-            if ($file) {
-                $this->upload_file($request, 1, 'complete');
+        $file = $request->file('file');
+        if ($file) {
+            $this->upload_file($request, 1, 'complete');
 
-            } else {
-                Ret::Fail(400, null, "请上传binary文件");
+        } else {
+            Ret::Fail(400, null, "请上传binary文件");
 //            $this->upload_base64($request, 1, 1);
-            }
+        }
 //        } catch (Exception $e) {
 //            Ret::Fail(400, $e->getTraceAsString(), $e->getMessage());
 //        }
