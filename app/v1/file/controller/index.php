@@ -254,7 +254,7 @@ class index extends search
 
     public function up_complete(Request $request)
     {
-        try {
+//        try {
             $file = $request->file('file');
             if ($file) {
                 $this->upload_file($request, 1, 'complete');
@@ -263,9 +263,9 @@ class index extends search
                 Ret::Fail(400, null, "请上传binary文件");
 //            $this->upload_base64($request, 1, 1);
             }
-        } catch (Exception $e) {
-            Ret::Fail(400, $e->getTraceAsString(), $e->getMessage());
-        }
+//        } catch (Exception $e) {
+//            Ret::Fail(400, $e->getTraceAsString(), $e->getMessage());
+//        }
     }
 
 
