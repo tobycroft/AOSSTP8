@@ -91,7 +91,7 @@ class index extends CommonController
             return;
         }
 
-        $info = $file->move('./upload/excel/' . $this->token);
+        $info = $file->move('./upload/excel/' . $this->token, $file->md5() . '.' . $file->getOriginalExtension());
         $reader = IOFactory::load($info->getPathname());
         unlink($info->getPathname());
         $datas = $reader->getActiveSheet()->toArray();
@@ -145,7 +145,7 @@ class index extends CommonController
             return;
         }
 
-        $info = $file->move('./upload/excel/' . $this->token);
+        $info = $file->move('./upload/excel/' . $this->token, $file->md5() . '.' . $file->getOriginalExtension());
         $reader = IOFactory::load($info->getPathname());
         unlink($info->getPathname());
         $this->extracted($reader);
@@ -239,7 +239,7 @@ class index extends CommonController
             \Ret::Fail(406, null, "size too big");
             return;
         }
-        $info = $file->move('./upload/excel/' . $this->token);
+        $info = $file->move('./upload/excel/' . $this->token, $file->md5() . '.' . $file->getOriginalExtension());
         $reader = IOFactory::load($info->getPathname());
         unlink($info->getPathname());
         $datas = $reader->getActiveSheet()->toArray();

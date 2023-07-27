@@ -71,15 +71,13 @@ class index extends search
             }
         }
         $info = $file->move('./upload/' . $this->token, $file->md5() . "." . $file->getOriginalExtension());
-//        $info = Filesystem::disk('public')->putFile('./upload/' . $this->token, $file);
         if (!$info) {
             Ret::Fail(300, null, "文件错误");
             return;
         }
         $fileName = $proc['name'] . '/' . $info->getFilename();
         $fileName = str_replace("\\", "/", $fileName);
-        echo $fileName;
-        exit();
+
 
         $duration = 0;
         $duration_str = "00:00";
