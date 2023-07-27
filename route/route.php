@@ -55,6 +55,6 @@
     if (\think\facade\Request::isOptions()) {
         return false;
     }
-    return 'AOSS is a private host oss platform! To use this platform plz contact oss@tuuz.cc!';
+    return 'AOSS is a private platform! To use this platform plz contact oss@tuuz.cc!';
 });
 
