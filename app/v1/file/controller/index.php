@@ -57,10 +57,10 @@ class index extends search
         if (!$file) {
             Ret::Fail(400, null, 'file字段没有用文件提交');
         }
-        $file_name = $file->getInfo('name');
+        $file_name = $file->getFileInfo('name');
         $md5 = $file->hash('md5');
         $sha1 = $file->hash("sha1");
-        $mime = $file->getInfo('type');
+        $mime = $file->getFileInfo('type');
         // 判断附件格式是否符合
 
         $file_exists = AttachmentModel::get(['token' => $token, 'md5' => $md5, 'sha1' => $sha1]);
@@ -141,7 +141,7 @@ class index extends search
         }
         if ($proc["type"] == "dp") {
             $sf = new SendFile();
-            $ret = $sf->send('http://' . $proc["endpoint"] . '/up?token=' . $proc["bucket"], realpath('./upload/' . $fileName), $file->getInfo('type'), $file->getInfo('name'));
+            $ret = $sf->send('http://' . $proc["endpoint"] . '/up?token=' . $proc["bucket"], realpath('./upload/' . $fileName), $file->getFileInfo('type'), $file->getFileInfo('name'));
             $json = json_decode($ret, 1);
             $sav = ($full ? $proc['url'] . '/' : '') . $json["data"];
         }
