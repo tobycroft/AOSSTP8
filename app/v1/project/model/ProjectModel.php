@@ -16,12 +16,11 @@ class ProjectModel extends Model
 
     protected $table = 'ao_project';
 
-    public function api_find_token($token)
+    public static function api_find_token($token)
     {
-        $this->where('token', $token);
-        $this->where('status', 1);
-        return $this->find();
-
+        return self::where('token', $token)
+            ->where('status', 1)
+            ->find();
     }
 
 
