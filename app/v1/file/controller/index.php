@@ -60,7 +60,7 @@ class index extends search
         $file_name = $file->getFilename();
         $md5 = $file->hash('md5');
         $sha1 = $file->hash("sha1");
-        $mime = $file->getFileInfo('type');
+        $mime = $file->getType();
         echo $file_name;
         exit();
         // 判断附件格式是否符合
