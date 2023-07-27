@@ -12,6 +12,8 @@ class OssSelectionAction
             case 'aliyun':
                 $oss = OssAliyunModel::where("tag", $proc["oss_tag"])->find();
                 if ($oss) {
+                    var_dump($oss);
+                    exit();
                     return array_merge($proc, $oss);
                 }
                 break;
