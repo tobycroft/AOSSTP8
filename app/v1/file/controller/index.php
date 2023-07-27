@@ -57,10 +57,12 @@ class index extends search
         if (!$file) {
             Ret::Fail(400, null, 'file字段没有用文件提交');
         }
-        $file_name = $file->getFileInfo('name');
+        $file_name = $file->getFilename('name');
         $md5 = $file->hash('md5');
         $sha1 = $file->hash("sha1");
         $mime = $file->getFileInfo('type');
+        echo $file_name;
+        exit();
         // 判断附件格式是否符合
 
         $file_exists = AttachmentModel::get(['token' => $token, 'md5' => $md5, 'sha1' => $sha1]);
