@@ -156,10 +156,10 @@ class dp extends CommonController
         $mime = $file->getFileInfo('type');
         // 判断附件格式是否符合
 
-        if ($file_info = AttachmentModel::find(['token' => $token, 'md5' => $md5, 'sha1' => $sha1])) {
+        if ($file_info = AttachmentModel::where(['token' => $token, 'md5' => $md5, 'sha1' => $sha1])->find()) {
             $sav = $proc['url'] . '/' . $file_info['path'];
             return $this->uploadSuccess($from, $sav, $file_info['name'], $sav, $callback, $file_info);
-        } elseif ($file_info = AttachmentModel::find(['token' => $token, 'md5' => $md5])) {
+        } elseif ($file_info = AttachmentModel::where(['token' => $token, 'md5' => $md5])->find()) {
             if (!AttachmentModel::update(["sha1" => $sha1], ['token' => $token, 'md5' => $md5])) {
                 $this->uploadError($from, "sha更新失败", $callback);
             }
