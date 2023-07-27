@@ -11,6 +11,7 @@ use OSS\AliyunOSS;
 use OSS\Core\OssException;
 use Ret;
 use SendFile\SendFile;
+use think\facade\Filesystem;
 use think\Request;
 use Throwable;
 
@@ -70,7 +71,8 @@ class index extends search
                 $sav = $this->getStr($full, $proc['url'], $file_exists, $type);
             }
         }
-        $info = $file->move('./upload/' . $this->token);
+//        $info = $file->move('./upload/' . $this->token);
+        $info = Filesystem::disk('public')->putFile('./upload/' . $this->token, $file);
         if (!$info) {
             Ret::Fail(300, null, "文件错误");
             return;
@@ -78,10 +80,7 @@ class index extends search
 
 //        $fileName = $proc['name'] . '/' . $info->get();
 //        $fileName = str_replace("\\", "/", $fileName);
-        echo $info->getBasename();
-        echo $info->getPathname();
-        echo $info->getRealPath();
-        echo $info->getFilename();
+        echo $info;
         exit();
         $duration = 0;
         $duration_str = "00:00";
