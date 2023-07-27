@@ -10,9 +10,9 @@ class OssSelectionAction
     {
         switch ($proc["oss_type"]) {
             case 'aliyun':
-                $oss = OssAliyunModel::where("tag", $proc["oss_tag"])->find();
+                $oss = OssAliyunModel::where("tag", $proc["oss_tag"])->findOrEmpty();
                 if ($oss) {
-                    return array_merge($proc, $oss);
+                    return array_merge($proc, $oss->toArray());
                 }
                 break;
 
