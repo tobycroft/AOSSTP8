@@ -70,11 +70,9 @@ class index extends search
                 $sav = $this->getStr($full, $proc['url'], $file_exists, $type);
             }
         }
-        print_r($file_exists);
-        exit();
         $info = $file->move('./upload/' . $this->token);
         if (!$info) {
-            Ret::Fail(300, null, $file->getError());
+            Ret::Fail(300, null, "文件错误");
             return;
         }
 
