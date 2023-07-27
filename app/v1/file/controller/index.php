@@ -76,9 +76,11 @@ class index extends search
             return;
         }
 
-        $fileName = $proc['name'] . '/' . $info->getSaveName();
+        $fileName = $proc['name'] . '/' . $info->getFilename();
         $fileName = str_replace("\\", "/", $fileName);
 
+        echo $fileName;
+        exit();
         $duration = 0;
         $duration_str = "00:00";
         $bitrate = 0;
