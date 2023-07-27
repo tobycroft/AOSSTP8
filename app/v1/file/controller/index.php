@@ -182,7 +182,7 @@ class index extends search
                     break;
             }
         } else {
-            Ret::Fail(300, null, $file->getError());
+            Ret::Fail(300, null, null);
         }
     }
 
