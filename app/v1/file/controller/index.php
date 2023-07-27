@@ -62,6 +62,7 @@ class index extends search
         $sha1 = $file->hash("sha1");
         $mime = $file->getType();
         echo $file_name;
+        echo $mime;
         exit();
         // 判断附件格式是否符合
 
