@@ -55,6 +55,6 @@
     if (\think\facade\Request::isOptions()) {
         return false;
     }
-    return 'AOSS is a private platform! </br> To use this platform plz contact oss@tuuz.cc!';
+    return 'AOSS is a private platform! </br> Contact oss@tuuz.cc with your reason to join us! </br> Aoss is now support GPT-APIs';
 });
 
