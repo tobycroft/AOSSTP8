@@ -72,7 +72,7 @@ class index extends search
             }
         }
 //        $info = $file->move('./upload/' . $this->token);
-        $info = Filesystem::disk('public')->putFile('./upload/' . $this->token, $file);
+        $info = Filesystem::disk('public')->putFileAs('./upload/' . $this->token, $file, $file_name);
         if (!$info) {
             Ret::Fail(300, null, "文件错误");
             return;
@@ -81,6 +81,7 @@ class index extends search
 //        $fileName = $proc['name'] . '/' . $info->get();
 //        $fileName = str_replace("\\", "/", $fileName);
         echo $info;
+        echo $file_name;
         exit();
         $duration = 0;
         $duration_str = "00:00";
