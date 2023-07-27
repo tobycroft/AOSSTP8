@@ -16,7 +16,7 @@ class ProjectModel extends Model
 
     protected $table = 'ao_project';
 
-    public static function api_find_token($token)
+    public static function api_find_token($token): array
     {
         return self::where('token', $token)
             ->where('status', 1)
