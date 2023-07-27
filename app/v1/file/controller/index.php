@@ -75,8 +75,6 @@ class index extends search
             Ret::Fail(300, null, "文件错误");
             return;
         }
-        var_dump($info);
-        exit();
         $fileName = $proc['name'] . '/' . $info->getFilename();
         $fileName = str_replace("\\", "/", $fileName);
 
