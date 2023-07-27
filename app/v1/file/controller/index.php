@@ -70,7 +70,7 @@ class index extends search
                 $sav = $this->getStr($full, $proc['url'], $file_exists, $type);
             }
         }
-        print_r($file_name);
+        print_r($file_exists);
         exit();
         $info = $file->move('./upload/' . $this->token);
         if (!$info) {
