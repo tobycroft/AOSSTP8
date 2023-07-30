@@ -18,14 +18,8 @@ class bing
 
 // $text - Text-only version of Bing's answer
 // $cards - Message objects array
-
-        $subject = 'Internet memes';
-        $tone = 'funny';
-        $type = 'blog post';
-        $length = 'short';
-
-        $prompt = new Prompt("Please write a *$length* *$type* in a *$tone* style about `$subject`. Please wrap the $type in a markdown codeblock.");
-
-        var_dump($conversation->ask($prompt->withoutCache()));
+        list($text, $cards) = $conversation->ask(new Prompt('Hello World'));
+        print_r($text);
+        print_r($cards);
     }
 }
