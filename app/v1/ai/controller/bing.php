@@ -19,45 +19,33 @@ class bing
 // $text - Text-only version of Bing's answer
 // $cards - Message objects array
         $prompt = new Prompt('Hello World');
+        $padding = 0;
+
         list($text, $cards) = $conversation->ask($prompt, function ($text, $cards) use (&$padding) {
             // Erase last line
             echo str_repeat(chr(8), $padding);
-
-            $text = trim($text);
 
             // Print partial answer
             echo "- $text";
             $padding = mb_strlen($text) + 2;
         });
 
+        // Erase last line
+        echo str_repeat(chr(8), $padding);
 
-        // Generative cards
-        foreach ($cards as $card) {
-            if ($card->type == \MaximeRenou\BingAI\Chat\MessageType::GenerateQuery && $card->data['contentType'] == 'IMAGE') {
-                $loader = "Generating: {$card->text}...";
-                echo $loader;
+        // Print final answer
+        echo "- $text" . PHP_EOL;
 
-                // Create the image
-                $creator = $ai->createImages($card->text);
-                $creator->wait();
-
-                echo str_repeat(chr(8), strlen($loader));
-
-                if ($creator->hasFailed()) {
-                    echo '[Image generation failed]' . PHP_EOL;
-                } else {
-                    foreach ($creator->getImages() as $image) {
-                        echo "* $image" . PHP_EOL;
-                    }
-
-                    $remaining = $creator->getRemainingBoosts();
-                    echo "[$remaining remaining boosts]" . PHP_EOL;
-                }
-            }
+        if ($conversation->kicked()) {
+            echo '[Conversation ended]' . PHP_EOL;
         }
 
-        if ($conversation->ended()) {
-            echo '[Conversation ended]' . PHP_EOL;
+        $remaining = $conversation->getRemainingMessages();
+
+        if ($remaining != 0) {
+            echo "[$remaining remaining messages]" . PHP_EOL;
+        } else {
+            echo '[Limit reached]' . PHP_EOL;
         }
     }
 }
