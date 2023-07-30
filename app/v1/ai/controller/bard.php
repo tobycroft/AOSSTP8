@@ -11,7 +11,7 @@ class bard extends CommonController
     {
 
 //two keys are required which are two cookies values
-        $_ENV['BARD_API_KEY_X'] = " value of cookie 'YwjH_fEZPXkh2MoiMdvibKlbXKHFnEqJUyzkxO6DKrRSR2ew2pu8jtZqbA6WQLJ6DKHamg..' ";
+        $_ENV['BARD_API_KEY_X'] = " value of cookie 'YwjH_fEZPXkh2MoiMdvibKlbXKHFnEqJUyzkxO6DKrRSR2ew2pu8jtZqbA6WQLJ6DKHamg.' ";
         $_ENV['BARD_API_KEY_Y'] = " value of cookie 'sidts-CjEBPu3jIbp2Hdlv-nIcfwp17Xx0KrH6QboKTHUqUCyFVlOhZxTWfbvSxF5ONToTXp8hEAA' ";
         $bard = new \Pj8912\PhpBardApi\Bard();
         $input_text = 'Hello, Bard!';  // Input text for the conversation
