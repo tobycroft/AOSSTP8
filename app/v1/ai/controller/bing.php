@@ -29,5 +29,11 @@ class bing
             echo "- $text";
             $padding = mb_strlen($text) + 2;
         });
+
+        // Erase last line
+        echo str_repeat(chr(8), $padding);
+
+        // Print final answer
+        echo "- $text" . PHP_EOL;
     }
 }
