@@ -19,8 +19,7 @@ class bing
 // $text - Text-only version of Bing's answer
 // $cards - Message objects array
         list($text, $cards) = $conversation->ask(new Prompt('Hello World'));
-        list($final_text, $final_cards) = $conversation->ask($prompt, function ($text, $cards) {
-            echo $text;
-        });
+        print_r($text);
+        print_r($cards);
     }
 }
