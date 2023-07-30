@@ -31,7 +31,6 @@ class bing
         });
 
         // Erase last line
-        echo str_repeat(chr(8), $padding);
 
         // Print final answer
         echo "- $text" . PHP_EOL;
