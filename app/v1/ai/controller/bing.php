@@ -19,6 +19,8 @@ class bing
 // $text - Text-only version of Bing's answer
 // $cards - Message objects array
         list($text, $cards) = $conversation->ask(new Prompt('Hello World'));
+        $valid = $ai->checkCookie();
+        var_dump($valid);
         print_r($text);
         print_r($cards);
     }
