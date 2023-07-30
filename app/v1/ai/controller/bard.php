@@ -16,7 +16,6 @@ class bard extends CommonController
         $bard = new \Pj8912\PhpBardApi\Bard();
         $input_text = 'Hello, Bard!';  // Input text for the conversation
         $result = $bard->get_answer($input_text);  // Get the response from Bard
-
 // bard reply
         print($result['choices'][0]['content'][0]);
     }
