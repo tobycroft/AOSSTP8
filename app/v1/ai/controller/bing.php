@@ -18,8 +18,6 @@ class bing
 
 // $text - Text-only version of Bing's answer
 // $cards - Message objects array
-        $valid = $ai->checkCookie();
-        var_dump($valid);
 
         $subject = 'Internet memes';
         $tone = 'funny';
