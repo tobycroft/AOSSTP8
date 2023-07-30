@@ -30,10 +30,6 @@ class bing
             $padding = mb_strlen($text) + 2;
         });
 
-        // Erase last line
-
-        // Print final answer
-        echo "- $text" . PHP_EOL;
 
         // Generative cards
         foreach ($cards as $card) {
