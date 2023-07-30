@@ -18,6 +18,16 @@ class bing
 
 // $text - Text-only version of Bing's answer
 // $cards - Message objects array
-        var_dump($conversation->ask(new Prompt('Hello World')));
+        $prompt = new Prompt('Hello World');
+        list($text, $cards) = $conversation->ask($prompt, function ($text, $cards) use (&$padding) {
+            // Erase last line
+            echo str_repeat(chr(8), $padding);
+
+            $text = trim($text);
+
+            // Print partial answer
+            echo "- $text";
+            $padding = mb_strlen($text) + 2;
+        });
     }
 }
