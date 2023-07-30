@@ -37,7 +37,8 @@
         "qcloudsms/qcloudsms_php": "^0.1.4",
         "ext-libxml": "*",
         "guzzlehttp/guzzle": "^7.7",
-        "tencentcloud/tencentcloud-sdk-php": "^3.0"
+      "tencentcloud/tencentcloud-sdk-php": "^3.0",
+      "pj8912/php-bard-api": "^1.0"
     },
     "require-dev": {
         "symfony/var-dumper": ">=4.2",
