@@ -2,6 +2,7 @@
 
 namespace app\v1\ai\controller;
 
+use app\v1\system\model\SystemParamModel;
 use BaseController\CommonController;
 
 class bard extends CommonController
@@ -11,6 +12,7 @@ class bard extends CommonController
     {
 
 //two keys are required which are two cookies values
+        SystemParamModel::where("key")
         $_ENV['BARD_API_KEY_X'] = " value of cookie '' ";
         $_ENV['BARD_API_KEY_Y'] = " value of cookie '' ";
         $bard = new \Pj8912\PhpBardApi\Bard();
