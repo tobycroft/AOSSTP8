@@ -34,17 +34,17 @@
 \think\facade\Route::any('hook', '\app\v1\hook\controller\push@single');
 
 
-\think\facade\Route::any(':any', function () {
-    header("Access-Control-Allow-Origin: *", true);
-    header("Access-Control-Max-Age: 86400", true);
-    header("Access-Control-Allow-Credentials: true", true);
-    header("Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS", true);
-    header("Access-Control-Allow-Headers: *", true);
-    if (\think\facade\Request::isOptions()) {
-        return false;
-    }
-    return \think\facade\Request::url();
-});
+//\think\facade\Route::any(':any', function () {
+//    header("Access-Control-Allow-Origin: *", true);
+//    header("Access-Control-Max-Age: 86400", true);
+//    header("Access-Control-Allow-Credentials: true", true);
+//    header("Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS", true);
+//    header("Access-Control-Allow-Headers: *", true);
+//    if (\think\facade\Request::isOptions()) {
+//        return false;
+//    }
+//    return \think\facade\Request::url();
+//});
 
 \think\facade\Route::any('', function () {
     header("Access-Control-Allow-Origin: *", true);
