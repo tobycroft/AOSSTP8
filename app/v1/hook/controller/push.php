@@ -55,14 +55,15 @@ class push
     public function github()
     {
         $in = Input::Post('payload');
-        echo $in;
-        exit();
         $payload = json_decode($in, 1);
         if (!isset($payload['repository']['name'])) {
             Ret::Fail(400, null, "未找到repository-name字段");
         }
-        $ref = explode('/', $payload['ref']);
-        $branch = end($ref);
+        $branch = "master";
+        if (!empty($payload['ref'])) {
+            $ref = explode('/', $payload['ref']);
+            $branch = end($ref);
+        }
         $data = HookModel::where('tag', $payload["repository"]["name"])->where("status", 1)->where("branch", $branch)->select();
         if ($data) {
             $rets = [];
