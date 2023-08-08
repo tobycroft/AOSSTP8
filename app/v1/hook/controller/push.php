@@ -55,6 +55,8 @@ class push
     public function github()
     {
         $in = Input::Post('payload');
+        echo $in;
+        exit();
         $payload = json_decode($in, 1);
         if (!isset($payload['repository']['name'])) {
             Ret::Fail(400, null, "未找到repository-name字段");
