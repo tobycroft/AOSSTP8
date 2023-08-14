@@ -13,12 +13,12 @@ class range extends CommonController
     {
         $ip = Input::Post("ip");
         $country = Input::Post("country");
-        $province = Input::Post("province");
+        $province = Input::PostJson("province");
 
         $data = IpModel::where("start_ip", "<=", $ip)
             ->where("end_ip", ">=", $ip)
             ->where("country", $country)
-            ->where("province", $province)
+            ->whereIn("province", $province)
             ->find();
         if ($data) {
             \Ret::Success(0, true, "合法");
