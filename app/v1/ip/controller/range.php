@@ -19,7 +19,7 @@ class range extends CommonController
             ->where("end_ip", ">=", $ip)
             ->where("country", $country)
             ->where("province", $province)
-            ->findOrEmpty();
+            ->find();
         if ($data) {
             \Ret::Success(0, true, "合法");
         } else {
