@@ -21,9 +21,9 @@ class range extends CommonController
             ->where("province", $province)
             ->findOrEmpty();
         if ($data) {
-            \Ret::Success(0, $data->toArray(), "合法");
+            \Ret::Success(0, true, "合法");
         } else {
-            \Ret::Success(0, null, '不合法');
+            \Ret::Success(0, false, '不合法');
         }
     }
 
