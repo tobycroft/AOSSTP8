@@ -4,11 +4,12 @@ namespace app\v1\hook\controller;
 
 use app\v1\hook\model\HookLogModel;
 use app\v1\hook\model\HookModel;
+use BaseController\CommonController;
 use Input;
 use Net;
 use Ret;
 
-class push
+class push extends CommonController
 {
     public function single()
     {
