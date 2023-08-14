@@ -101,7 +101,7 @@ class Input
     public static function Get(string $name, bool $must_have = true, bool $xss = false): string
     {
         if (!Request::has($name, "get") && $must_have) {
-            Ret::Fail(400, null, 'Input-Post:[' . $name . ']');
+            Ret::Fail(400, null, 'Input-Get:[' . $name . ']');
             return "";
         }
         if ($xss) {
