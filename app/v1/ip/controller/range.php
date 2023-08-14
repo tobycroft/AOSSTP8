@@ -21,9 +21,9 @@ class range extends CommonController
             ->whereIn("province", $province)
             ->find();
         if ($data) {
-            \Ret::Success(0, true, "合法");
+            \Ret::Success(0, true, "在IP列表中");
         } else {
-            \Ret::Success(0, false, '不合法');
+            \Ret::Success(0, false, '不在IP列表中');
         }
     }
 
