@@ -32,7 +32,7 @@ class create extends CommonController
         set_time_limit(0);
         parent::initialize();
         if (!$this->token) {
-            $this->token = Input::Get('token');
+            $this->token = Input::Combi('token');
         }
         $this->proc = ProjectModel::api_find_token($this->token);
         if (!$this->proc) {
