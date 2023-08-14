@@ -4,7 +4,6 @@ namespace app\v1\ip\controller;
 
 use app\v1\image\controller\create;
 use app\v1\ip\model\IpModel;
-use BaseController\CommonController;
 use Input;
 
 class range extends create
@@ -24,7 +23,7 @@ class range extends create
         if ($data) {
             \Ret::Success(0, true, "在IP列表中");
         } else {
-            \Ret::Success(0, false, '不在IP列表中');
+            \Ret::Success(404, false, '不在IP列表中');
         }
     }
 
