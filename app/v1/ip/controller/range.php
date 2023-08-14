@@ -2,11 +2,12 @@
 
 namespace app\v1\ip\controller;
 
+use app\v1\image\controller\create;
 use app\v1\ip\model\IpModel;
 use BaseController\CommonController;
 use Input;
 
-class range extends CommonController
+class range extends create
 {
 
     public function check()
