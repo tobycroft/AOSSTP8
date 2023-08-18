@@ -32,6 +32,7 @@
 \think\facade\Route::any('upfull', '\app\v1\file\controller\index@upfull');
 
 \think\facade\Route::any('hook', '\app\v1\hook\controller\push@single');
+\think\facade\Route::any('github', '\app\v1\hook\controller\push@github');
 
 
 \think\facade\Route::any(':any', function () {
