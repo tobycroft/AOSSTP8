@@ -2,9 +2,7 @@
 
 ## 项目&个人看法
 
-AOSSTP（前作）是一个基于ThinkPHP8.x的综合能力平台
-
-如下能力中有部分使用Go替换，目前全部换回PHP，原因请拉到最下面
+AOSSTP8是AOSSTP的前作，新版升级到ThinkPHP8.x框架+功能提升
 
 综合平台主实现其次性能，重IO项目PHP刚好吃的住，强迫症可开Swoole
 
