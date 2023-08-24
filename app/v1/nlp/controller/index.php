@@ -51,6 +51,7 @@ class index extends create
             $ret = $response->body->toMap();
             $data = json_decode($ret['Data'], true);
             echo json_encode($data, 320);
+            \Ret::Success(0, $data);
         } catch (TeaUnableRetryError $e) {
             \Ret::Fail(500, $e->getTraceAsString(), $e->getMessage());
         }
