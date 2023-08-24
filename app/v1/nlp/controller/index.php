@@ -34,6 +34,7 @@ class index extends create
 
     public function aliyun()
     {
+        $text = \Input::Post("text");
         $ali = NlpAliyunModel::where('tag', $this->nlp_proc['tag'])->find();
 
         $config = new Config();
@@ -44,7 +45,7 @@ class index extends create
         $client = new Alinlp($config);
         $request = new GetSaChGeneralRequest();
         $request->serviceCode = 'alinlp';
-        $request->text = '服务很好';
+        $request->text = $text;
 
         try {
             $response = $client->getSaChGeneral($request);
