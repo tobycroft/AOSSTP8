@@ -51,7 +51,7 @@ class index extends create
             $response = $client->getSaChGeneral($request);
             $ret = $response->body->toMap();
             $data = json_decode($ret['Data'], true);
-            \Ret::Success(0, $data);
+            \Ret::Success(0, $data, $ret["RequestId"]);
         } catch (TeaUnableRetryError $e) {
             \Ret::Fail(500, $e->getTraceAsString(), $e->getMessage());
         }
