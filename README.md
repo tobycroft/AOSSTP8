@@ -2,9 +2,24 @@
 
 ## 项目&个人看法
 
-AOSSTP8是AOSSTP的前作，新版升级到ThinkPHP8.x框架+功能提升
+AOSSTP8是AOSSTP的前作
 
-综合平台主实现其次性能，重IO项目PHP刚好吃的住，强迫症可开Swoole
+解决
+
+- 插件在PHP版本升级后可能出现需要重接的风险
+- 跨语言中转站
+- 降低很不经常使用的功能重复看文档导致心态爆炸的风险
+- 短时间内拥有常用能力
+- 更方便的切换业务底层
+- 作为新功能的测试平台
+- 使用composer和gopkg互补
+
+### SDK
+
+- AossSdk PHP版本 (https://github.com/tobycroft/AossSdk)
+    - composer require tobycroft/aoss-sdk
+- AossGoSdk Golang版本 (https://github.com/tobycroft/AossGoSdk)
+    - go get github.com/tobycroft/AossGoSdk
 
 ### AOSS8功能表
 
