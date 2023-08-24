@@ -5,6 +5,7 @@ namespace app\v1\nlp\controller;
 
 use AlibabaCloud\SDK\Alinlp\V20200629\Alinlp;
 use AlibabaCloud\SDK\Alinlp\V20200629\Models\GetNerChEcomRequest;
+use AlibabaCloud\SDK\Alinlp\V20200629\Models\GetSaChGeneralRequest;
 use AlibabaCloud\Tea\Exception\TeaUnableRetryError;
 use app\v1\image\controller\create;
 use app\v1\nlp\model\NlpAliyunModel;
@@ -42,12 +43,12 @@ class index extends create
         $config->regionId = $ali["regionId"];
         $config->endpoint = $ali["endpoint"];
         $client = new Alinlp($config);
-        $request = new GetNerChEcomRequest();
+        $request = new GetSaChGeneralRequest();
         $request->serviceCode = 'alinlp';
         $request->text = '服务很好';
 
         try {
-            $response = $client->getNerChEcom($request);
+            $response = $client->getSaChGeneral($request);
             $json_string = json_encode($response->body, JSON_UNESCAPED_UNICODE);
             echo $json_string;
         } catch (TeaUnableRetryError $e) {
