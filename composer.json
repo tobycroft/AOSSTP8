@@ -42,7 +42,7 @@
         "maximerenou/bing-ai": "^1.1",
         "tobycroft/zbuilder": "^1.0",
       "topthink/think-helper": "^3.1",
-      "alibabacloud/alinlp": "^1.8"
+        "alibabacloud/alinlp-20200629": "^2.0"
     },
     "require-dev": {
         "symfony/var-dumper": ">=4.2",
