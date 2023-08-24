@@ -51,10 +51,7 @@ class index extends create
             $json_string = json_encode($response->body, JSON_UNESCAPED_UNICODE);
             echo $json_string;
         } catch (TeaUnableRetryError $e) {
-            var_dump($e->getMessage());
-            var_dump($e->getErrorInfo());
-            var_dump($e->getLastException());
-            var_dump($e->getLastRequest());
+            \Ret::Fail($e->getMessage());
         }
     }
 }
