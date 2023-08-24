@@ -6,7 +6,7 @@ use think\Model;
 
 class NlpModel extends Model
 {
-    protected $table = "ao_nlp_aliyun";
+    protected $table = "ao_nlp";
 
     public static function Api_find_project($project)
     {
