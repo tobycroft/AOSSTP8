@@ -4,7 +4,6 @@ namespace app\v1\nlp\controller;
 
 
 use AlibabaCloud\SDK\Alinlp\V20200629\Alinlp;
-use AlibabaCloud\SDK\Alinlp\V20200629\Models\GetNerChEcomRequest;
 use AlibabaCloud\SDK\Alinlp\V20200629\Models\GetSaChGeneralRequest;
 use AlibabaCloud\Tea\Exception\TeaUnableRetryError;
 use app\v1\image\controller\create;
@@ -49,8 +48,8 @@ class index extends create
 
         try {
             $response = $client->getSaChGeneral($request);
-            $json_string = json_encode($response->body, JSON_UNESCAPED_UNICODE);
-            echo $json_string;
+            $ret = $response->body->toMap();
+            echo $ret["Data"];
         } catch (TeaUnableRetryError $e) {
             \Ret::Fail(500, $e->getTraceAsString(), $e->getMessage());
         }
