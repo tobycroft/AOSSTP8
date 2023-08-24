@@ -49,7 +49,8 @@ class index extends create
         try {
             $response = $client->getSaChGeneral($request);
             $ret = $response->body->toMap();
-            echo $ret["Data"];
+            $data = json_decode($ret['Data'], true);
+            echo json_encode($data, 320);
         } catch (TeaUnableRetryError $e) {
             \Ret::Fail(500, $e->getTraceAsString(), $e->getMessage());
         }
