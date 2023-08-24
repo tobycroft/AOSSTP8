@@ -84,7 +84,7 @@ AOSSTP8是AOSSTP的前作
         - IP防火墙
         - 业务联动防火墙（防刷）
         - 图形验证码/语音验证码
-- Hook（web Hook）
+- Hook（WebHook分发平台）
     - 普通激活模式
     - Github模式
         - 单推
