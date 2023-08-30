@@ -61,24 +61,20 @@ class index extends search
         $sha1 = $file->sha1();
         $mime = $file->getOriginalMime();
         // 判断附件格式是否符合
-        echo 111;
 
         $file_exists = AttachmentModel::where(['token' => $token, 'md5' => $md5, 'sha1' => $sha1])->find();
-        echo 000;
 
         if ($file_exists) {
             if ($proc['type'] != 'all' || file_exists('./upload/' . $file_exists['path'])) {
                 $sav = $this->getStr($full, $proc['url'], $file_exists, $type);
             }
         }
-        echo 123;
         if ($file->getOriginalMime() == 'text/x-php' || $file->getOriginalMime() == 'text/html') {
             Ret::Fail(403, null, '禁止上传非法文件');
         }
         if ($file->getSize() >= $proc['size'] * 1024) {
             Ret::Fail(400, null, '大小不符合规范');
         }
-        echo 456;
         if (!in_array($file->getOriginalExtension(), explode(',', $proc['ext']))) {
             Ret::Fail(403, null, '后缀不符合规范');
         }
@@ -86,7 +82,6 @@ class index extends search
         if (!$info) {
             Ret::Fail(300, null, '文件错误');
         }
-        echo 789;
 
         $fileName = $proc['name'] . '/' . $info->getFilename();
         $fileName = str_replace("\\", "/", $fileName);
