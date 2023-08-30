@@ -150,10 +150,10 @@ class dp extends CommonController
         if (!$file) {
             return $this->uploadError($from, "请先上传文件", $callback);
         }
-        $file_name = $file->getFileInfo('name');
-        $md5 = $file->hash('md5');
-        $sha1 = $file->hash("sha1");
-        $mime = $file->getFileInfo('type');
+        $file_name = $file->getOriginalName();
+        $md5 = $file->md5();
+        $sha1 = $file->sha1();
+        $mime = $file->getOriginalMime();
         // 判断附件格式是否符合
 
         if ($file_info = AttachmentModel::where(['token' => $token, 'md5' => $md5, 'sha1' => $sha1])->find()) {
