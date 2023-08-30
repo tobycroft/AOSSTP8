@@ -229,6 +229,7 @@ class dp extends CommonController
                 $duration_str = $ana["video"]["compression_ratio"];
                 break;
         }
+        echo 5;
 
         $file_info = [
             'token' => $token,
@@ -274,6 +275,7 @@ class dp extends CommonController
                 unlink($info->getPathname());
             }
         }
+        echo 6;
 
         // 写入数据库
         if ($file_add = AttachmentModel::create($file_info)) {
