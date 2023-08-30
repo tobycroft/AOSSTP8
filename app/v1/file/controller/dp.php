@@ -195,7 +195,7 @@ class dp extends CommonController
         $height = 0;
 
         $ext = $info->getExtension();
-
+        echo 4.6;
         switch ($ext) {
             case "mp3":
             case "wav":
