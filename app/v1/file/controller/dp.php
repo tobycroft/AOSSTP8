@@ -167,14 +167,25 @@ class dp extends CommonController
             return $this->uploadSuccess($from, $sav, $file_info['name'], $sav, $callback, $file_info);
         }
 
-        if ($file->getMime() == 'text/x-php' || $file->getMime() == 'text/html') {
+        if ($file->getOriginalMime() == 'text/x-php' || $file->getOriginalMime() == 'text/html') {
             return $this->uploadError($from, "禁止上传非法文件", $callback);
         }
-        $info = $file->validate(['size' => (float)$proc['size'] * 1024, 'ext' => $proc['ext']])->move('./upload/' . $this->token);
+
+        $info = $file->move('./upload/' . $this->token, $file->md5() . '.' . $file->getOriginalExtension());
         if (!$info) {
-            return $this->uploadError($from, "上传不符合规范", $callback);
+            return $this->uploadError($from, '上传不符合规范', $callback);
+        }
+        if ($file->getSize() >= $proc['size'] * 1024) {
+            return $this->uploadError($from, '大小不符合规范', $callback);
         }
 
+        if (!in_array($file->getOriginalExtension(), explode(',', $proc['ext']))) {
+            return $this->uploadError($from, '后缀不符合规范', $callback);
+        }
+        $info = $file->move('./upload/' . $this->token, $file->md5() . '.' . $file->getOriginalExtension());
+        if (!$info) {
+            return $this->uploadError($from, '文件移动失败', $callback);
+        }
         $fileName = $proc['name'] . '/' . $info->getSaveName();
         $fileName = str_replace("\\", "/", $fileName);
 
