@@ -268,7 +268,6 @@ class dp extends CommonController
                 unlink($info->getPathname());
             }
         }
-        echo 6;
 
         // 写入数据库
         if ($file_add = AttachmentModel::create($file_info)) {
