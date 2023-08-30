@@ -155,7 +155,6 @@ class dp extends CommonController
         $sha1 = $file->sha1();
         $mime = $file->getOriginalMime();
         // 判断附件格式是否符合
-        echo 1;
         if ($file_info = AttachmentModel::where(['token' => $token, 'md5' => $md5, 'sha1' => $sha1])->find()) {
             $sav = $proc['url'] . '/' . $file_info['path'];
             return $this->uploadSuccess($from, $sav, $file_info['name'], $sav, $callback, $file_info);
@@ -166,7 +165,6 @@ class dp extends CommonController
             $sav = $proc['url'] . '/' . $file_info['path'];
             return $this->uploadSuccess($from, $sav, $file_info['name'], $sav, $callback, $file_info);
         }
-        echo 2;
 
         if ($file->getOriginalMime() == 'text/x-php' || $file->getOriginalMime() == 'text/html') {
             return $this->uploadError($from, "禁止上传非法文件", $callback);
@@ -177,25 +175,21 @@ class dp extends CommonController
         if (!in_array($file->getOriginalExtension(), explode(',', $proc['ext']))) {
             return $this->uploadError($from, '后缀不符合规范', $callback);
         }
-        echo 3;
 
         $info = $file->move('./upload/' . $this->token, $file->md5() . '.' . $file->getOriginalExtension());
         if (!$info) {
             return $this->uploadError($from, '文件移动失败', $callback);
         }
-        echo 4;
-        $fileName = $proc['name'] . '/' . $info->getSaveName();
-        $fileName = str_replace("\\", "/", $fileName);
-
+        $fileName = $proc['name'] . '/' . $info->getFilename();
+        $fileName = str_replace("\\", '/', $fileName);
 
         $duration = 0;
-        $duration_str = "00:00";
+        $duration_str = '00:00';
         $bitrate = 0;
         $width = 0;
         $height = 0;
 
         $ext = $info->getExtension();
-        echo 4.6;
         switch ($ext) {
             case "mp3":
             case "wav":
@@ -229,7 +223,6 @@ class dp extends CommonController
                 $duration_str = $ana["video"]["compression_ratio"];
                 break;
         }
-        echo 5;
 
         $file_info = [
             'token' => $token,
