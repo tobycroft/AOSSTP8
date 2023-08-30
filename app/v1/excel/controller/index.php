@@ -79,16 +79,13 @@ class index extends CommonController
         $file = $request->file("file");
         if (!$file) {
             \Ret::Fail(400, null, 'file字段没有用文件提交');
-            return;
         }
         $hash = $file->hash('md5');
         if (!Validate::fileExt($file, ["xls", "xlsx"])) {
             \Ret::Fail(406, null, "ext not allow");
-            return;
         }
         if (!Validate::fileSize($file, (float)8192 * 1024)) {
             \Ret::Fail(406, null, "size too big");
-            return;
         }
 
         $info = $file->move('./upload/excel/' . $this->token, $file->md5() . '.' . $file->getOriginalExtension());
@@ -97,7 +94,6 @@ class index extends CommonController
         $datas = $reader->getActiveSheet()->toArray();
         if (count($datas) < 2) {
             \Ret::Fail(400, null, "表格长度不足");
-            return;
         }
         $value = [];
         $i = 0;
@@ -110,7 +106,6 @@ class index extends CommonController
         foreach ($keys as $key) {
             if (empty($key)) {
                 \Ret::Fail(400, null, "表格长度不一");
-                return;
             }
         }
         $count_column = count($keys);
