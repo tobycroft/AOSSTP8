@@ -265,7 +265,7 @@ class index extends CommonController
             }
             $colums[] = $arr;
         }
-        echo json_encode($colums);
+        return json($colums);
     }
 
 
