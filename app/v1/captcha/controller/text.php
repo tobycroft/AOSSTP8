@@ -50,7 +50,6 @@ class text extends create
         $sess = new Session($this->app);
         $capt = new Captcha($con, $sess);
         $create = $capt->create();
-        echo $create->();
         echo $create->getContent();
     }
 }
