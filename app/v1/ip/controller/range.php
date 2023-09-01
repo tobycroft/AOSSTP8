@@ -48,7 +48,6 @@ class range extends create
             } else {
                 \Ret::Fail(103, false, "不在IP列表中，请先完成验证码");
             }
-            \Ret::Fail(404, false, '不在IP列表中');
         }
     }
 
