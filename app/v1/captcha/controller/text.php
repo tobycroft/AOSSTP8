@@ -2,6 +2,7 @@
 
 namespace app\v1\captcha\controller;
 
+use app\v1\captcha\model\CaptchaModel;
 use app\v1\captcha\utils\Captcha;
 use app\v1\image\controller\create;
 use think\Session;
@@ -10,6 +11,8 @@ class text extends create
 {
     public function create()
     {
+
+        $ident = \Input::Post("ident");
         $config = [
             //验证码位数
             'length' => 4,
@@ -50,5 +53,11 @@ class text extends create
         $sess = new Session($this->app);
         $capt = new Captcha($con, $sess);
         $capt->create();
+        CaptchaModel::create([
+            "ident" => $ident,
+            "code" => $capt->question,
+            "hash" => $capt->hash,
+            "type" => "math",
+        ]);
     }
 }
