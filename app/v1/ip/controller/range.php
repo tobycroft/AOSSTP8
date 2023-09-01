@@ -46,7 +46,7 @@ class range extends create
             if ($captcha) {
                 \Ret::Success(0, true, '已通过验证码');
             } else {
-                \Ret::Fail(103, false, "请先完成验证码检测");
+                \Ret::Fail(103, false, "不在IP列表中，请先完成验证码");
             }
             \Ret::Fail(404, false, '不在IP列表中');
         }
