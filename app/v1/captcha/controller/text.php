@@ -108,7 +108,8 @@ class text extends create
         $create = $capt->create();
         CaptchaModel::create([
             "ident" => $ident,
-            "code" => $capt->question,
+            "question" => $capt->question,
+            "code" => $capt->key,
             "hash" => $capt->hash,
             "type" => "math",
         ]);
