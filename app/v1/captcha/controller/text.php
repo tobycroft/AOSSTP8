@@ -14,7 +14,7 @@ class text extends create
             //验证码位数
             'length' => 4,
             // 验证码字符集合
-            'codeSet' => '2345678abcdefhijkmnpqrstuvwxyzABCDEFGHJKLMNPQRTUVWXY',
+            'codeSet' => '0123456789',
             // 验证码过期时间
             'expire' => 1800,
             // 是否使用中文验证码
@@ -50,7 +50,7 @@ class text extends create
         $sess = new Session($this->app);
         $capt = new Captcha($con, $sess);
         $create = $capt->create();
-        echo $create->getData();
+        echo $create->();
         echo $create->getContent();
     }
 }
