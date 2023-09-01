@@ -5,6 +5,7 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/app" isTestSource="false" packagePrefix="app\" />
       <sourceFolder url="file://$MODULE_DIR$/extend" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/vendor/topthink" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/aliyuncs/oss-sdk-php" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/chillerlan/php-qrcode" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/chillerlan/php-settings-container" />
@@ -46,11 +47,6 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/polyfill-mbstring" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/var-dumper" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/tencentcloud/tencentcloud-sdk-php" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/framework" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-filesystem" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-helper" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-image" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-orm" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-trace" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/adbario/php-dot-notation" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/alibabacloud/alinlp-20200629" />
@@ -66,7 +62,6 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/tobycroft/zbuilder" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-template" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-view" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-captcha" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
