@@ -7,6 +7,10 @@ class Captcha extends \think\captcha\Captcha
 
     private $session = null;
 
+    public $key;
+    public $hash;
+    public $question;
+
     protected function generate(): array
     {
         $bag = '';
@@ -36,7 +40,9 @@ class Captcha extends \think\captcha\Captcha
 
         $hash = password_hash($key, PASSWORD_BCRYPT, ['cost' => 10]);
 
-        echo $key . "-" . $bag;
+        $this->key = $key;
+        $this->hash = $hash;
+        $this->question = $bag;
 
         return [
             'value' => $bag,
