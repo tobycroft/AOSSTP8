@@ -121,7 +121,7 @@ class text extends create
         return $create;
     }
 
-    public function number()
+    public function text()
     {
         $config = [
             //验证码位数
