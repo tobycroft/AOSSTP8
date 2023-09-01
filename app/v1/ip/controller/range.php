@@ -42,11 +42,11 @@ class range extends create
         if ($data) {
             \Ret::Success(0, true, '在IP列表中');
         } else {
-            $captcha = CaptchaIpModel::where('ident', $ip)->find();
+            $captcha = CaptchaIpModel::where('ident', $ip)->where("date", ">")->find();
             if ($captcha) {
-                \Ret::Success(0, true, '在IP列表中');
+                \Ret::Success(0, true, '已通过验证码');
             } else {
-                \Ret::Fail(404, false, '不在IP列表中');
+                \Ret::Fail(-103, false, "请先完成验证码检测");
             }
             \Ret::Fail(404, false, '不在IP列表中');
         }
