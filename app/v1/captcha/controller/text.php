@@ -10,6 +10,7 @@ class text extends create
     public function create()
     {
         $capt = \think\captcha\facade\Captcha::create();
+        $capt->code("123");
         return $capt;
     }
 }
