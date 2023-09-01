@@ -52,12 +52,13 @@ class text extends create
 
         $sess = new Session($this->app);
         $capt = new Captcha($con, $sess);
-        $capt->create();
+        $create = $capt->create();
         CaptchaModel::create([
             "ident" => $ident,
             "code" => $capt->question,
             "hash" => $capt->hash,
             "type" => "math",
         ]);
+        return $create;
     }
 }
