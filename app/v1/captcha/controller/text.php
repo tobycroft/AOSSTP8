@@ -4,6 +4,7 @@ namespace app\v1\captcha\controller;
 
 use app\v1\image\controller\create;
 use think\captcha\Captcha;
+use think\facade\Config;
 use think\Session;
 
 class text extends create
@@ -44,8 +45,10 @@ class text extends create
             //    ...
             //],
         ];
+        $con = Config::set($config);
+
         $sess = new Session($this->app);
-        $capt = new Captcha($config, $sess);
+        $capt = new Captcha($con, $sess);
         return $capt->create();
     }
 }
