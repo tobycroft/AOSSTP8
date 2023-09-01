@@ -10,7 +10,7 @@ use think\Session;
 class text extends create
 {
 
-    private $ident = "";
+    protected string $ident;
 
     public function initialize()
     {
