@@ -9,7 +9,7 @@ use think\Session;
 
 class text extends create
 {
-    public function create()
+    public function code()
     {
 
         $ident = \Input::Post("ident");
@@ -23,7 +23,7 @@ class text extends create
             // 是否使用中文验证码
             'useZh' => false,
             // 是否使用算术验证码
-            'math' => true,
+            'math' => false,
             // 是否使用背景图
             'useImgBg' => false,
             //验证码字符大小
