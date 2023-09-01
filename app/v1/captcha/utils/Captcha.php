@@ -36,7 +36,7 @@ class Captcha extends \think\captcha\Captcha
 
         $hash = password_hash($key, PASSWORD_BCRYPT, ['cost' => 10]);
 
-        echo $hash . "-" . $bag;
+        echo $key . "-" . $bag;
 
         return [
             'value' => $bag,
