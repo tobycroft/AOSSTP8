@@ -49,6 +49,6 @@ class text extends create
 
         $sess = new Session($this->app);
         $capt = new Captcha($con, false);
-        $create = $capt->create();
+        return $capt->create();
     }
 }
