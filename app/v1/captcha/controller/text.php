@@ -23,7 +23,7 @@ class text extends create
 
         $config = [
             //验证码位数
-            'length' => 1,
+            'length' => 2,
             // 验证码字符集合
             'codeSet' => '0123456789',
             // 验证码过期时间
