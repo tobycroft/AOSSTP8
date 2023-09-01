@@ -47,9 +47,8 @@ class text extends create
         $con = new \think\Config();
         $con->set($config, "captcha");
 
-        $sess = new Session();
+        $sess = new Session($this->app);
         $capt = new Captcha($con, $sess);
-        var_dump($sess);
         $capt->create();
     }
 }
