@@ -48,8 +48,7 @@ class text extends create
         $con->set($config, "captcha");
 
         $sess = new Session($this->app);
-        $capt = new Captcha($con, $sess);
+        $capt = new Captcha($con, false);
         $create = $capt->create();
-        return $create->getData();
     }
 }
