@@ -62,7 +62,7 @@ class text extends create
         $capt = new Captcha($con, $sess);
         $create = $capt->create();
         CaptchaModel::create([
-            "ident" => $ident,
+            "ident" => $this->ident,
             "code" => $capt->question,
             "hash" => $capt->hash,
             "type" => "math",
@@ -73,7 +73,6 @@ class text extends create
     public function math()
     {
 
-        $ident = \Input::Post("ident");
         $config = [
             //验证码位数
             'length' => 4,
@@ -115,7 +114,7 @@ class text extends create
         $capt = new Captcha($con, $sess);
         $create = $capt->create();
         CaptchaModel::create([
-            "ident" => $ident,
+            'ident' => $this->ident,
             "code" => $capt->key,
             "hash" => $capt->hash,
             "type" => "math",
