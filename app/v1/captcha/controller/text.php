@@ -18,6 +18,7 @@ class text extends create
         $this->ident = \Input::Post('ident');
     }
 
+
     public function chinese()
     {
 
