@@ -42,7 +42,9 @@ class range extends create
         if ($data) {
             \Ret::Success(0, true, '在IP列表中');
         } else {
-            $captcha = CaptchaIpModel::where('ident', $ip)->where("date", ">")->find();
+            $captcha = CaptchaIpModel::where('ident', $ip)
+                ->where("date > DATE_SUB(NOW(), INTERVAL 1 HOUR)")
+                ->find();
             if ($captcha) {
                 \Ret::Success(0, true, '已通过验证码');
             } else {
