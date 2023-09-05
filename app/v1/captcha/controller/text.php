@@ -7,6 +7,7 @@ use app\v1\captcha\utils\Captcha;
 use app\v1\image\controller\create;
 use Input;
 use think\Config;
+use think\Response;
 use think\Session;
 
 class text extends create
@@ -70,19 +71,7 @@ class text extends create
             'imageH' => 0,
             'imageW' => 0,
         ];
-        $con = new Config();
-        $con->set($config, "captcha");
-
-        $sess = new Session($this->app);
-        $capt = new Captcha($con, $sess);
-        $create = $capt->create();
-        CaptchaModel::create([
-            "ident" => $this->ident,
-            "code" => $capt->question,
-            "hash" => $capt->hash,
-            "type" => "math",
-        ]);
-        return $create;
+        return $this->Generated($config);
     }
 
     public function text()
@@ -102,19 +91,7 @@ class text extends create
             'imageH' => 0,
             'imageW' => 0,
         ];
-        $con = new Config();
-        $con->set($config, "captcha");
-
-        $sess = new Session($this->app);
-        $capt = new Captcha($con, $sess);
-        $create = $capt->create();
-        CaptchaModel::create([
-            "ident" => $this->ident,
-            "code" => $capt->question,
-            "hash" => $capt->hash,
-            "type" => "math",
-        ]);
-        return $create;
+        return $this->Generated($config);
     }
 
     public function math()
@@ -143,6 +120,27 @@ class text extends create
         CaptchaModel::create([
             'ident' => $this->ident,
             "code" => $capt->key,
+            "hash" => $capt->hash,
+            "type" => "math",
+        ]);
+        return $create;
+    }
+
+    /**
+     * @param array $config
+     * @return Response
+     */
+    private function Generated(array $config): Response
+    {
+        $con = new Config();
+        $con->set($config, "captcha");
+
+        $sess = new Session($this->app);
+        $capt = new Captcha($con, $sess);
+        $create = $capt->create();
+        CaptchaModel::create([
+            "ident" => $this->ident,
+            "code" => $capt->question,
             "hash" => $capt->hash,
             "type" => "math",
         ]);
