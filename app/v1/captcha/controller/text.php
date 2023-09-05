@@ -21,7 +21,6 @@ class text extends create
 
     public function chinese()
     {
-
         $config = [
             'length' => 2,
             'codeSet' => '0123456789',
@@ -118,7 +117,6 @@ class text extends create
 
     public function math()
     {
-
         $config = [
             'length' => 4,
             'codeSet' => '0123456789',
