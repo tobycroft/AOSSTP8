@@ -78,14 +78,14 @@ class index extends search
         if (!in_array($file->getOriginalExtension(), explode(',', $proc['ext']))) {
             Ret::Fail(403, null, '后缀不符合规范');
         }
-        $sav_path = './upload' . DIRECTORY_SEPARATOR . $this->token . DIRECTORY_SEPARATOR . date("Ymd");
+        $sav_path = $proc['name'] . DIRECTORY_SEPARATOR . date("Ymd");
 
-        $info = $file->move($sav_path, $file->md5() . '.' . $file->getOriginalExtension());
+        $info = $file->move('./upload' . DIRECTORY_SEPARATOR . $sav_path, $file->md5() . '.' . $file->getOriginalExtension());
         if (!$info) {
             Ret::Fail(300, null, '文件错误');
         }
 
-        $fileName = $proc['name'] . '/' . $info->getFilename();
+        $fileName = $sav_path . '/' . $info->getFilename();
         $fileName = str_replace("\\", "/", $fileName);
 
         $duration = 0;
