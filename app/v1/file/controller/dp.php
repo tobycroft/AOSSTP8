@@ -176,11 +176,13 @@ class dp extends CommonController
             return $this->uploadError($from, '后缀不符合规范', $callback);
         }
 
-        $info = $file->move('./upload/' . $this->token, $file->md5() . '.' . $file->getOriginalExtension());
+        $sav_path = $proc['name'] . DIRECTORY_SEPARATOR . date('Ymd');
+        $info = $file->move('./upload' . DIRECTORY_SEPARATOR . $sav_path, $file->md5() . '.' . $file->getOriginalExtension());
         if (!$info) {
             return $this->uploadError($from, '文件移动失败', $callback);
         }
-        $fileName = $proc['name'] . '/' . $info->getFilename();
+
+        $fileName = $sav_path . '/' . $info->getFilename();
         $fileName = str_replace("\\", '/', $fileName);
 
         $duration = 0;
