@@ -78,7 +78,7 @@ class index extends search
         if (!in_array($file->getOriginalExtension(), explode(',', $proc['ext']))) {
             Ret::Fail(403, null, '后缀不符合规范');
         }
-        $sav_path = './upload/' . $this->token . date("ymd");
+        $sav_path = './upload' . DIRECTORY_SEPARATOR . $this->token . DIRECTORY_SEPARATOR . date("ymd");
 
         $info = $file->move($sav_path, $file->md5() . '.' . $file->getOriginalExtension());
         if (!$info) {
