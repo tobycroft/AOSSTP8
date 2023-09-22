@@ -210,7 +210,7 @@ class index extends CommonController
                         $keys[] = $val;
                     }
                 }
-                $key_count = count($keys) - 1;
+                $key_count = count($keys);
             } else {
                 if (is_null($data[0])) {
                     break;
