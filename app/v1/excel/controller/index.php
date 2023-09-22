@@ -242,7 +242,7 @@ class index extends CommonController
         $colums = [];
         for ($i = 1; $i < count($datas); $i++) {
             $line = $datas[$i];
-            if (empty($line[0])) {
+            if ($line[0] != null) {
                 continue;
             }
             for ($s = 0; $s < $count_column; $s++) {
