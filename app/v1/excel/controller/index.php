@@ -252,7 +252,7 @@ class index extends CommonController
                 $key_count = count($keys) - 1;
             } else {
                 if (empty($data[0])) {
-                    break;
+                    return $colums;
                 }
                 $arr = [];
                 for ($s = 0; $s < $key_count; $s++) {
