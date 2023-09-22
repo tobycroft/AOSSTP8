@@ -110,8 +110,7 @@ class index extends CommonController
             }
         }
         $count_column = count($keys);
-        return \json($count_column);
-
+        return count($datas);
         $colums = [];
         for ($i = 1; $i < count($datas); $i++) {
             $line = $datas[$i];
