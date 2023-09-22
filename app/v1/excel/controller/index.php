@@ -239,6 +239,7 @@ class index extends CommonController
     private function getArr(array $keys, array $datas): array
     {
         $count_column = count($keys) - 1;
+        $count_datas = count($datas) - 1;
         $colums = [];
         for ($i = 1; $i < count($datas); $i++) {
             $line = $datas[$i];
