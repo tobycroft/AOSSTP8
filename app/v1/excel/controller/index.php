@@ -259,7 +259,6 @@ class index extends CommonController
                     $arr[$keys[$s]] = strval($data[$s]);
                 }
                 $colums[] = $arr;
-                break;
             }
             $i++;
         }
