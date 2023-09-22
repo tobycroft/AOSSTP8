@@ -197,7 +197,7 @@ class index extends CommonController
      * @param array $datas
      * @return array
      */
-    private function getArr(array $datas): array
+    protected function getArr(array $datas): array
     {
         $keys = [];
         $colums = [];
@@ -223,7 +223,6 @@ class index extends CommonController
             }
             $i++;
         }
-        exit();
         return $colums;
     }
 

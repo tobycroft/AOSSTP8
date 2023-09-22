@@ -50,32 +50,7 @@ class search extends index
             \Ret::Fail(400, null, '表格长度不足');
             return;
         }
-        $value = [];
-        $i = 0;
-        $keys = [];
-        foreach ($datas[0] as $data) {
-            if (!empty($data)) {
-                $keys[] = $data;
-            }
-        }
-        foreach ($keys as $key) {
-            if (empty($key)) {
-                \Ret::Fail(400, null, '表格长度不一');
-                return;
-            }
-        }
-        $count_column = count($keys);
-        $colums = [];
-        for ($i = 1; $i < count($datas); $i++) {
-            $line = $datas[$i];
-            if (empty($line[0])) {
-                continue;
-            }
-            for ($s = 0; $s < $count_column; $s++) {
-                $arr[$keys[$s]] = $line[$s] ?: '';
-            }
-            $colums[] = $arr;
-        }
+        $colums = $this->getArr($datas);
         ExcelModel::create([
             'project' => $this->token,
             'md5' => $md5,
