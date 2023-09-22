@@ -95,20 +95,6 @@ class index extends CommonController
         if (count($datas) < 2) {
             \Ret::Fail(400, null, "表格长度不足");
         }
-//
-//        $value = [];
-//        $i = 0;
-//        $keys = [];
-//        foreach ($datas[0] as $data) {
-//            if (!empty($data)) {
-//                $keys[] = $data;
-//            }
-//        }
-//        foreach ($keys as $key) {
-//            if (empty($key)) {
-//                \Ret::Fail(400, null, "表格长度不一");
-//            }
-//        }
         $colums = $this->getArr($datas);
         return json($colums);
     }
@@ -145,21 +131,6 @@ class index extends CommonController
         $datas = $reader->getActiveSheet()->toArray();
         if (count($datas) < 2) {
             \Ret::Fail(400, null, '表格长度不足');
-            return;
-        }
-        $value = [];
-        $i = 0;
-        $keys = [];
-        foreach ($datas[0] as $data) {
-            if (!empty($data)) {
-                $keys[] = $data;
-            }
-        }
-        foreach ($keys as $key) {
-            if (empty($key)) {
-                \Ret::Fail(400, null, '表格长度不一');
-                return;
-            }
         }
         $colums = $this->getArr($datas);
         \Ret::Success(0, $colums);
@@ -202,16 +173,13 @@ class index extends CommonController
         $file = $request->file("file");
         if (!$file) {
             \Ret::Fail(400, null, 'file字段没有用文件提交');
-            return;
         }
         $hash = $file->hash('md5');
         if (!Validate::fileExt($file, ["xls", "xlsx"])) {
             \Ret::Fail(406, null, "ext not allow");
-            return;
         }
         if (!Validate::fileSize($file, (float)8192 * 1024)) {
             \Ret::Fail(406, null, "size too big");
-            return;
         }
         $info = $file->move('./upload/excel/' . $this->token, $file->md5() . '.' . $file->getOriginalExtension());
         $reader = IOFactory::load($info->getPathname());
@@ -219,13 +187,6 @@ class index extends CommonController
         $datas = $reader->getActiveSheet()->toArray();
         if (count($datas) < 2) {
             \Ret::Fail(400, null, "表格长度不足");
-            return;
-        }
-        $keys = [];
-        foreach ($datas[0] as $data) {
-            if (!empty($data)) {
-                $keys[] = $data;
-            }
         }
         $colums = $this->getArr($datas);
         return json($colums);
