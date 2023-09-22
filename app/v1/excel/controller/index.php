@@ -246,11 +246,11 @@ class index extends CommonController
                 continue;
             }
             for ($s = 0; $s < $count_column; $s++) {
-                $arr[$keys[$s]] = strlen($line[$s]) > 0 ? $line[$s] : "";
+                $arr[$keys[$s]] = $line[$s] ? $line[$s] : "";
             }
+            var_dump($colums);
             $colums[] = $arr;
         }
-        var_dump($colums);
         return $colums;
     }
 
