@@ -242,7 +242,7 @@ class index extends CommonController
         $count_datas = count($datas) - 1;
         echo $count_datas;
 
-        echo $datas;
+        echo json_encode($datas, 320);
         exit();
 //        $colums = [];
 //        for ($i = 1; $i < count($datas); $i++) {
