@@ -13,6 +13,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Ret;
 use think\facade\Validate;
 use think\Request;
+use think\response\Json;
 
 class index extends CommonController
 {
@@ -95,6 +96,8 @@ class index extends CommonController
         if (count($datas) < 2) {
             \Ret::Fail(400, null, "表格长度不足");
         }
+        return \json($datas);
+
         $value = [];
         $i = 0;
         $keys = [];
