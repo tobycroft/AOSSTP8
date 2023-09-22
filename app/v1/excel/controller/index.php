@@ -223,6 +223,7 @@ class index extends CommonController
             }
             $i++;
         }
+        exit();
         return $colums;
     }
 
