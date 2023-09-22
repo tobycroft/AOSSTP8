@@ -214,8 +214,6 @@ class index extends CommonController
             } else {
                 if (is_null($data[0])) {
                     break;
-                } elseif (strlen(strval($data[0])) < 1) {
-                    break;
                 }
                 $arr = [];
                 for ($s = 0; $s < $key_count; $s++) {
