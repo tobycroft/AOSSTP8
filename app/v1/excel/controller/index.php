@@ -114,10 +114,12 @@ class index extends CommonController
         for ($i = 1; $i < count($datas); $i++) {
             $line = $datas[$i];
             if (empty($line[0]) && strlen($line[0]) < 1) {
+                var_dump($line);
+                exit();
                 continue;
             }
             for ($s = 0; $s < $count_column; $s++) {
-                $arr[$keys[$s]] = $line[$s];
+                $arr[$keys[$s]] = strlen($line[$s]) > 0 ? $line[$s] : "";
             }
             $colums[] = $arr;
         }
