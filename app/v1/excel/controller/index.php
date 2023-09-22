@@ -250,6 +250,7 @@ class index extends CommonController
             }
             $colums[] = $arr;
         }
+        var_dump($colums);
         return $colums;
     }
 
