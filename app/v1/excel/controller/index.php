@@ -113,6 +113,8 @@ class index extends CommonController
         $colums = [];
         for ($i = 1; $i < count($datas); $i++) {
             $line = $datas[$i];
+            var_dump($line);
+            exit();
             if (empty($line[0]) && empty($line[1]) && empty($line[2])) {
                 continue;
             }
