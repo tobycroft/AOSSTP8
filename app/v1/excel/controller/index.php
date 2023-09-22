@@ -161,7 +161,7 @@ class index extends CommonController
                 return;
             }
         }
-        $colums = $this->getArr($keys, $datas);
+        $colums = $this->getArr($datas);
         \Ret::Success(0, $colums);
     }
 
@@ -227,7 +227,7 @@ class index extends CommonController
                 $keys[] = $data;
             }
         }
-        $colums = $this->getArr($keys, $datas);
+        $colums = $this->getArr($datas);
         return json($colums);
     }
 
