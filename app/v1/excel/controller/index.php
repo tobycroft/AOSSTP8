@@ -243,6 +243,7 @@ class index extends CommonController
         $i = 0;
         $key_count = 0;
         foreach ($datas as $data) {
+            var_dump($data);
             if ($i == 0) {
                 foreach ($data as $val) {
                     if (!empty($val)) {
