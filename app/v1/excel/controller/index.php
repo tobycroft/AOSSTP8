@@ -113,11 +113,11 @@ class index extends CommonController
         $colums = [];
         for ($i = 1; $i < count($datas); $i++) {
             $line = $datas[$i];
-            if (empty($line[0]) && empty($line[1]) && empty($line[2])) {
+            if (empty($line[0]) && strlen($line[0]) < 1) {
                 continue;
             }
             for ($s = 0; $s < $count_column; $s++) {
-                $arr[$keys[$s]] = $line[$s] ?: "";
+                $arr[$keys[$s]] = strlen($line[$s]) > 0 ? $line[$s] : "";
             }
             $colums[] = $arr;
         }
@@ -176,11 +176,11 @@ class index extends CommonController
         $colums = [];
         for ($i = 1; $i < count($datas); $i++) {
             $line = $datas[$i];
-            if (empty($line[0]) && empty($line[1]) && empty($line[2])) {
+            if (empty($line[0]) && strlen($line[0]) < 1) {
                 continue;
             }
             for ($s = 0; $s < $count_column; $s++) {
-                $arr[$keys[$s]] = $line[$s] ?: '';
+                $arr[$keys[$s]] = strlen($line[$s]) > 0 ? $line[$s] : "";
             }
             $colums[] = $arr;
         }
@@ -253,11 +253,11 @@ class index extends CommonController
         $colums = [];
         for ($i = 1; $i < count($datas); $i++) {
             $line = $datas[$i];
-            if (empty($line[0]) && empty($line[1]) && empty($line[2])) {
+            if (empty($line[0]) && strlen($line[0]) < 1) {
                 continue;
             }
             for ($s = 0; $s < $count_column; $s++) {
-                $arr[$keys[$s]] = $line[$s] ?: "";
+                $arr[$keys[$s]] = strlen($line[$s]) > 0 ? $line[$s] : "";
             }
             $colums[] = $arr;
         }
