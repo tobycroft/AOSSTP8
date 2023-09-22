@@ -251,7 +251,7 @@ class index extends CommonController
                 }
                 $key_count = count($keys) - 1;
             } else {
-                if (empty($data[0])) {
+                if (empty($data[0]) && strlen($data[0]) === 0) {
                     break;
                 }
                 $arr = [];
