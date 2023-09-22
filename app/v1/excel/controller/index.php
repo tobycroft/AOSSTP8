@@ -246,7 +246,7 @@ class index extends CommonController
                 var_dump($line);
                 continue;
             }
-            for ($s = 0; $s < $count_column; $s++) {
+            for ($s = 0; $s < $count_column - 1; $s++) {
                 $arr[$keys[$s]] = $line[$s] ? $line[$s] : "";
             }
             $colums[] = $arr;
