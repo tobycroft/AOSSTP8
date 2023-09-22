@@ -236,36 +236,33 @@ class index extends CommonController
      * @param array $datas
      * @return array
      */
-    private function getArr(array $keys, array $datas): array
+    private function getArr(array $datas): array
     {
-        $count_column = count($keys) - 1;
-        $count_datas = count($datas) - 1;
-        echo $count_datas;
+        $keys = [];
+        $colums = [];
+        $i = 0;
+        $key_count = 0;
+        foreach ($datas as $data) {
+            switch ($i) {
+                case 0:
+                    foreach ($data as $val) {
+                        if (!empty($val)) {
+                            $keys[] = $val;
+                        }
+                    }
+                    $key_count = count($keys) - 1;
+                    break;
 
-        echo json_encode($datas, 320);
-        exit();
-//        $colums = [];
-//        for ($i = 1; $i < count($datas); $i++) {
-//            $line = $datas[$i];
-////            if (empty($line[0]) && empty($line[$line[1]])) {
-//////                var_dump($line);
-////                continue;
-////            }
-//            $pass = 0;
-//            for ($j = 0; $j < $count_column; $j++) {
-//                if (empty($line[$j])) {
-//                    $pass++;
-//                }
-//            }
-//            if ($pass < 1) {
-//                continue;
-//            }
-//            for ($s = 0; $s < $count_column; $s++) {
-//                $arr[$keys[$s]] = strval($line[$s]);
-//            }
-//            $colums[] = $arr;
-//        }
-//        return $colums;
+                default:
+                    $arr = [];
+                    for ($s = 0; $s < $key_count; $s++) {
+                        $arr[$keys[$s]] = strval($data[$s]);
+                    }
+                    $colums[] = $arr;
+                    break;
+            }
+        }
+        return $colums;
     }
 
 
