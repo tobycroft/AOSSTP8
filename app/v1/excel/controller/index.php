@@ -240,7 +240,7 @@ class index extends CommonController
     {
         $count_column = count($keys) - 1;
         $count_datas = count($datas) - 1;
-        echo json($count_datas);
+        echo $count_datas;
         exit();
 //        $colums = [];
 //        for ($i = 1; $i < count($datas); $i++) {
