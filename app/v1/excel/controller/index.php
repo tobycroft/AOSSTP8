@@ -238,15 +238,15 @@ class index extends CommonController
      */
     private function getArr(array $keys, array $datas): array
     {
-        $count_column = count($keys);
+        $count_column = count($keys) - 1;
         $colums = [];
         for ($i = 1; $i < count($datas); $i++) {
             $line = $datas[$i];
-            if (empty($line[0])) {
-                var_dump($line);
+            if (empty($line[1])) {
+//                var_dump($line);
                 continue;
             }
-            for ($s = 0; $s < $count_column - 1; $s++) {
+            for ($s = 0; $s < $count_column; $s++) {
                 $arr[$keys[$s]] = $line[$s] ? $line[$s] : "";
             }
             $colums[] = $arr;
