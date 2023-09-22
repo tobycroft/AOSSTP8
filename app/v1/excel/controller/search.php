@@ -12,11 +12,7 @@ class search extends index
 
     public function md5(Request $request)
     {
-        $md5 = input('md5');
-        if (!$md5) {
-            \Ret::Fail(400, null, 'md5');
-            return;
-        }
+        $md5 = \Input::Post("md5");
         $file_info = AttachmentModel::where('md5', $md5)->find();
         if (!$file_info) {
             \Ret::Fail('404', null, '文件未被上传或不属于本系统');
