@@ -95,21 +95,21 @@ class index extends CommonController
         if (count($datas) < 2) {
             \Ret::Fail(400, null, "表格长度不足");
         }
-
-        $value = [];
-        $i = 0;
-        $keys = [];
-        foreach ($datas[0] as $data) {
-            if (!empty($data)) {
-                $keys[] = $data;
-            }
-        }
-        foreach ($keys as $key) {
-            if (empty($key)) {
-                \Ret::Fail(400, null, "表格长度不一");
-            }
-        }
-        $colums = $this->getArr($keys, $datas);
+//
+//        $value = [];
+//        $i = 0;
+//        $keys = [];
+//        foreach ($datas[0] as $data) {
+//            if (!empty($data)) {
+//                $keys[] = $data;
+//            }
+//        }
+//        foreach ($keys as $key) {
+//            if (empty($key)) {
+//                \Ret::Fail(400, null, "表格长度不一");
+//            }
+//        }
+        $colums = $this->getArr($datas);
         return json($colums);
     }
 
