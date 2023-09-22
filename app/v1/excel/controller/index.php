@@ -241,6 +241,8 @@ class index extends CommonController
         $count_column = count($keys) - 1;
         $count_datas = count($datas) - 1;
         echo $count_datas;
+
+        echo $datas;
         exit();
 //        $colums = [];
 //        for ($i = 1; $i < count($datas); $i++) {
