@@ -109,18 +109,7 @@ class index extends CommonController
                 \Ret::Fail(400, null, "表格长度不一");
             }
         }
-        $count_column = count($keys);
-        $colums = [];
-        for ($i = 1; $i < count($datas); $i++) {
-            $line = $datas[$i];
-            if (empty($line[0])) {
-                continue;
-            }
-            for ($s = 0; $s < $count_column; $s++) {
-                $arr[$keys[$s]] = strlen($line[$s]) > 0 ? $line[$s] : "";
-            }
-            $colums[] = $arr;
-        }
+        $colums = $this->getArr($keys, $datas);
         return json($colums);
     }
 
@@ -172,18 +161,7 @@ class index extends CommonController
                 return;
             }
         }
-        $count_column = count($keys);
-        $colums = [];
-        for ($i = 1; $i < count($datas); $i++) {
-            $line = $datas[$i];
-            if (empty($line[0]) && strlen($line[0]) < 1) {
-                continue;
-            }
-            for ($s = 0; $s < $count_column; $s++) {
-                $arr[$keys[$s]] = strlen($line[$s]) > 0 ? $line[$s] : "";
-            }
-            $colums[] = $arr;
-        }
+        $colums = $this->getArr($keys, $datas);
         \Ret::Success(0, $colums);
     }
 
@@ -249,6 +227,17 @@ class index extends CommonController
                 $keys[] = $data;
             }
         }
+        $colums = $this->getArr($keys, $datas);
+        return json($colums);
+    }
+
+    /**
+     * @param array $keys
+     * @param array $datas
+     * @return array
+     */
+    private function getArr(array $keys, array $datas): array
+    {
         $count_column = count($keys);
         $colums = [];
         for ($i = 1; $i < count($datas); $i++) {
@@ -261,7 +250,7 @@ class index extends CommonController
             }
             $colums[] = $arr;
         }
-        return json($colums);
+        return $colums;
     }
 
 
