@@ -256,7 +256,7 @@ class index extends CommonController
                 continue;
             }
             for ($s = 0; $s < $count_column; $s++) {
-                $arr[$keys[$s]] = strlen($line[$s]) > 0 ? strval($line[$s]) : "";
+                $arr[$keys[$s]] = strval($line[$s])
             }
             $colums[] = $arr;
         }
