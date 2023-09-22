@@ -240,28 +240,29 @@ class index extends CommonController
     {
         $count_column = count($keys) - 1;
         $count_datas = count($datas) - 1;
-        $colums = [];
-        for ($i = 1; $i < count($datas); $i++) {
-            $line = $datas[$i];
-//            if (empty($line[0]) && empty($line[$line[1]])) {
-////                var_dump($line);
+        return json($count_datas);
+//        $colums = [];
+//        for ($i = 1; $i < count($datas); $i++) {
+//            $line = $datas[$i];
+////            if (empty($line[0]) && empty($line[$line[1]])) {
+//////                var_dump($line);
+////                continue;
+////            }
+//            $pass = 0;
+//            for ($j = 0; $j < $count_column; $j++) {
+//                if (empty($line[$j])) {
+//                    $pass++;
+//                }
+//            }
+//            if ($pass < 1) {
 //                continue;
 //            }
-            $pass = 0;
-            for ($j = 0; $j < $count_column; $j++) {
-                if (empty($line[$j])) {
-                    $pass++;
-                }
-            }
-            if ($pass < 1) {
-                continue;
-            }
-            for ($s = 0; $s < $count_column; $s++) {
-                $arr[$keys[$s]] = strval($line[$s]);
-            }
-            $colums[] = $arr;
-        }
-        return $colums;
+//            for ($s = 0; $s < $count_column; $s++) {
+//                $arr[$keys[$s]] = strval($line[$s]);
+//            }
+//            $colums[] = $arr;
+//        }
+//        return $colums;
     }
 
 
