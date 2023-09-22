@@ -243,23 +243,22 @@ class index extends CommonController
         $i = 0;
         $key_count = 0;
         foreach ($datas as $data) {
-            switch ($i) {
-                case 0:
-                    foreach ($data as $val) {
-                        if (!empty($val)) {
-                            $keys[] = $val;
-                        }
+            if ($i == 0) {
+                foreach ($data as $val) {
+                    if (!empty($val)) {
+                        $keys[] = $val;
                     }
-                    $key_count = count($keys) - 1;
+                }
+                $key_count = count($keys) - 1;
+            } else {
+                if (empty($data[0])) {
                     break;
-
-                default:
-                    $arr = [];
-                    for ($s = 0; $s < $key_count; $s++) {
-                        $arr[$keys[$s]] = strval($data[$s]);
-                    }
-                    $colums[] = $arr;
-                    break;
+                }
+                $arr = [];
+                for ($s = 0; $s < $key_count; $s++) {
+                    $arr[$keys[$s]] = strval($data[$s]);
+                }
+                $colums[] = $arr;
             }
         }
         return $colums;
