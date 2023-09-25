@@ -21,7 +21,7 @@ class LcAction
                 $success = true;
             }
             $phones = explode(',', $phone);
-            $datas = [];
+//            $datas = [];
             foreach ($phones as $p) {
                 if (empty($p)) {
                     continue;
@@ -38,7 +38,7 @@ class LcAction
 //                    'success' => $success,
 //                    'error' => false,
 //                ];
-                LogSmsModel::create([
+                $data = [
                     'name' => $name,
                     'oss_type' => $type,
                     'oss_tag' => $tag,
@@ -49,13 +49,16 @@ class LcAction
                     'log' => $ret['msg'],
                     'success' => $success,
                     'error' => false,
-                ]);
+                ];
+                if (!LogSmsModel::create($data)) {
+                    return new SendStdErr(0, $data, "数据库错误");
+                }
             }
-            $log = new LogSmsModel();
-            $ia = $log->insertAll($datas);
-            if (!$ia) {
-                return new SendStdErr(0, $datas, "数据库错误");
-            }
+//            $log = new LogSmsModel();
+//            $ia = $log->insertAll($datas);
+//            if (!$ia) {
+//                return new SendStdErr(0, $datas, "数据库错误");
+//            }
             if ($success) {
                 return new SendStdErr(0, null, $ret['msg']);
             } else {
