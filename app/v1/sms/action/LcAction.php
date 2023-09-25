@@ -41,7 +41,7 @@ class LcAction
                     'error' => false,
                 ];
             }
-            $ia = LogSmsModel::data($datas)->insertAll();
+            $ia = LogSmsModel::create($datas);
             if ($ia < 1) {
                 return new SendStdErr(0, $ia, "数据库错误");
             }
