@@ -51,7 +51,7 @@ class LcAction
                     'error' => false,
                 ];
                 if (!LogSmsModel::create($data)) {
-                    return new SendStdErr(0, $data, "数据库错误");
+                    return new SendStdErr(200, $data, "数据库错误");
                 }
             }
 //            $log = new LogSmsModel();
