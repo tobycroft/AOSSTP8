@@ -17,6 +17,7 @@ class LcAction
             $name = $proc['name'];
             $ret = Send::full_text($reverse_addr, $mch_id, $key, $phone, $text, $sign);
             $success = false;
+            var_dump($ret);
             if (strtolower($ret["code"]) == '00000') {
                 $success = true;
             }
