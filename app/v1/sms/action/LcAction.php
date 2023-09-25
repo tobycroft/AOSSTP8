@@ -43,7 +43,7 @@ class LcAction
             }
             $log = new LogSmsModel();
             $ia = $log->data($datas)->insertAll();
-            if ($ia < 1) {
+            if (!$ia) {
                 return new SendStdErr(0, $datas, "数据库错误");
             }
             if ($success) {
