@@ -54,11 +54,6 @@ class LcAction
                     return new SendStdErr(200, $data, "数据库错误");
                 }
             }
-//            $log = new LogSmsModel();
-//            $ia = $log->insertAll($datas);
-//            if (!$ia) {
-//                return new SendStdErr(0, $datas, "数据库错误");
-//            }
             if ($success) {
                 return new SendStdErr(0, null, $ret['msg']);
             } else {
