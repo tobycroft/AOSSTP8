@@ -5,7 +5,6 @@ namespace app\v1\sms\action;
 use app\v1\log\model\LogSmsModel;
 use app\v1\sms\struct\SendStdErr;
 use LCSms\Send;
-use think\Exception;
 use Throwable;
 
 //jj-proj
@@ -41,7 +40,7 @@ class LcAction
                 ];
             }
             $log = new LogSmsModel();
-            $ia = $log->data($datas)->insertAll();
+            $ia = $log->insertAll($datas);
             if (!$ia) {
                 return new SendStdErr(0, $datas, "数据库错误");
             }
