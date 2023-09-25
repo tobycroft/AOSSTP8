@@ -15,12 +15,13 @@ class LcAction
 
         try {
             $name = $proc['name'];
-            $ret = Send::full_text($reverse_addr, $mch_id, $key, $phone, $text, $sign);
-            $success = false;
-            var_dump($ret);
-            if (strtolower($ret["code"]) == '00000') {
+//            $ret = Send::full_text($reverse_addr, $mch_id, $key, $phone, $text, $sign);
+//            $success = false;
+//            var_dump($ret);
+//            if (strtolower($ret["code"]) == '00000') {
                 $success = true;
-            }
+//            }
+            $ret = "test";
             $phones = explode(',', $phone);
             $datas = [];
             foreach ($phones as $p) {
