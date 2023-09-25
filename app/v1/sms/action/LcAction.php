@@ -5,6 +5,7 @@ namespace app\v1\sms\action;
 use app\v1\log\model\LogSmsModel;
 use app\v1\sms\struct\SendStdErr;
 use LCSms\Send;
+use think\Exception;
 use Throwable;
 
 //jj-proj
