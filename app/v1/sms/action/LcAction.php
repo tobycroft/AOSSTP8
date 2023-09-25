@@ -19,7 +19,7 @@ class LcAction
 //            $success = false;
 //            var_dump($ret);
 //            if (strtolower($ret["code"]) == '00000') {
-                $success = true;
+            $success = true;
 //            }
             $ret = ["msg" => "test"];
             $phones = explode(',', $phone);
