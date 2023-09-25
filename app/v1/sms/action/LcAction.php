@@ -40,7 +40,10 @@ class LcAction
                 ];
             }
             $log = new LogSmsModel();
-            $log->data($datas)->insertAll();
+            $ia = $log->data($datas)->insertAll();
+            if ($ia < 1) {
+                return new SendStdErr(0, null, "数据库错误");
+            }
             if ($success) {
                 return new SendStdErr(0, null, $ret['msg']);
             } else {
@@ -48,7 +51,8 @@ class LcAction
 
             }
         } catch (Throwable $e) {
-            LogSmsModel::create(["oss_type" => $type,
+            LogSmsModel::create([
+                "oss_type" => $type,
                 'name' => $name,
                 "oss_tag" => $tag,
                 "phone" => $phone,
