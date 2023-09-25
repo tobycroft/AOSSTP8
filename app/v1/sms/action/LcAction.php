@@ -39,18 +39,16 @@ class LcAction
 //                    'error' => false,
 //                ];
                 LogSmsModel::create([
-                    [
-                        'name' => $name,
-                        'oss_type' => $type,
-                        'oss_tag' => $tag,
-                        'phone' => $p,
-                        'text' => $text,
-                        'raw' => json_encode($ret, 320),
-                        'ip' => $ip,
-                        'log' => $ret['msg'],
-                        'success' => $success,
-                        'error' => false,
-                    ]
+                    'name' => $name,
+                    'oss_type' => $type,
+                    'oss_tag' => $tag,
+                    'phone' => $p,
+                    'text' => $text,
+                    'raw' => json_encode($ret, 320),
+                    'ip' => $ip,
+                    'log' => $ret['msg'],
+                    'success' => $success,
+                    'error' => false,
                 ]);
             }
             $log = new LogSmsModel();
