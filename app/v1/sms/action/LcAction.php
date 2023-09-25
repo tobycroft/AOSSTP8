@@ -20,7 +20,6 @@ class LcAction
             if (strtolower($ret["code"]) == '00000') {
                 $success = true;
             }
-            $ret = ["msg" => "test"];
             $phones = explode(',', $phone);
             $datas = [];
             foreach ($phones as $p) {
