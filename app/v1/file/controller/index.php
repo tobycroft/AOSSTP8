@@ -120,10 +120,13 @@ class index extends search
             case "tiff":
                 $getId3 = new getID3();
                 $ana = $getId3->analyze($info->getPathname());
-                $width = $ana["video"]["resolution_x"];
-                $height = $ana["video"]["resolution_y"];
-                $bitrate = $ana["video"]["bits_per_sample"];
-                $duration_str = $ana["video"]["compression_ratio"];
+            $video = $ana["video"];
+            if (!empty($video)) {
+                $width = empty($video['resolution_x']) ?: $video['resolution_x'];
+                $height = empty($video['resolution_y']) ?: $video['resolution_y'];
+                $bitrate = empty($video['bits_per_sample']) ?: $video['bits_per_sample'];
+                $duration_str = empty($video['compression_ratio']) ?: $video['compression_ratio'];
+            }
                 break;
         }
 
