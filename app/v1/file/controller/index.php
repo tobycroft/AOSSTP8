@@ -128,6 +128,9 @@ class index extends search
                 $duration_str = empty($video['compression_ratio']) ?: $video['compression_ratio'];
             }
                 break;
+
+            default:
+                break;
         }
 
         $file_info = [
