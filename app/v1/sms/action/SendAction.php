@@ -17,16 +17,16 @@ class SendAction
     //AutoSend:返回错误
     public static function AutoSend($proc, $quhao, $phone, string $text, $ip): SendStdErr|null
     {
-        $black = SmsBlackListModel::where("phone", $phone)->find();
-        if ($black) {
-            $intercept = SmsInterceptModel::where("phone", $phone)->find();
-            if ($intercept) {
-                SmsInterceptModel::where('phone', $phone)->setInc('num', 1);
-            } else {
-                SmsInterceptModel::create(['phone' => $phone, 'num' => 1]);
-            }
-            Ret::Fail(403, null, "号码暂时进入黑名单");
-        }
+//        $black = SmsBlackListModel::where("phone", $phone)->find();
+//        if ($black) {
+//            $intercept = SmsInterceptModel::where("phone", $phone)->find();
+//            if ($intercept) {
+//                SmsInterceptModel::where('phone', $phone)->setInc('num', 1);
+//            } else {
+//                SmsInterceptModel::create(['phone' => $phone, 'num' => 1]);
+//            }
+//            Ret::Fail(403, null, "号码暂时进入黑名单");
+//        }
         //'none','aliyun','tencent','ihuyi','zz253','lc','wlwx'
         switch ($proc["sms_type"]) {
             case "aliyun":
