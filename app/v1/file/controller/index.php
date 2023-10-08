@@ -16,8 +16,6 @@ use Throwable;
 
 class index extends search
 {
-
-
     public function initialize()
     {
 
