@@ -43,14 +43,14 @@ class index extends create
 
     public function ping()
     {
-        $ping = trim($this->conn->Rcon('Ping'));
+        $ping = trim($this->conn->sendCommand('Ping'));
         Ret::Success(0, $ping);
     }
 
     public function manual()
     {
         $query = \Input::Post("query");
-        $ret = ($this->conn->Rcon($query));
+        $ret = ($this->conn->sendCommand($query));
         Ret::Success(0, $ret);
     }
 }
