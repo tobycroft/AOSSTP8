@@ -353,9 +353,9 @@ class SourceQuery
             throw new SocketException('Not connected.', SocketException::NOT_CONNECTED);
         }
 
-        $this->GetChallenge(self::A2S_PLAYER, self::S2A_PLAYER);
+//        $this->GetChallenge(self::A2S_PLAYER, self::S2A_PLAYER);
 
-        $this->Socket->Write(self::A2S_PLAYER, $this->Challenge);
+        $this->Socket->Write(SourceQuery::SERVERDATA_EXECCOMMAND, "ShowPlayers");
         $Buffer = $this->Socket->Read(14000); // Moronic Arma 3 developers do not split their packets, so we have to read more data
         // This violates the protocol spec, and they probably should fix it: https://developer.valvesoftware.com/wiki/Server_queries#Protocol
 
