@@ -36,9 +36,9 @@ class palworld extends index
 
     public function broadcast()
     {
-        $query = "ShowPlayers";
+        $message = \Input::Post('message');
+        $query = "Broadcast " . $message;
         $ret = ($this->conn->command($query));
-        $players = ShowPlayerAction::input($ret);
-        Ret::Success(0, $players, $ret);
+        Ret::Success(0, $ret,);
     }
 }
