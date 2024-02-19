@@ -14,7 +14,7 @@ class ShowPlayerAction
         foreach ($lines as $index => $value) {
             if ($index > 0) {
                 $temp = explode(',', $value);
-                if (count($temp) < 1) {
+                if (count($temp) < 3) {
                     break;
                 }
                 $arr[] = [
