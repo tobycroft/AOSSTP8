@@ -37,7 +37,7 @@ class palworld extends index
     public function broadcast()
     {
         $message = \Input::Post('message');
-        $query = "Broadcast \"" . utf8_encode($message) . "\"";
+        $query = "Broadcast \"" . urlencode($message) . "\"";
         $ret = ($this->conn->command($query));
         Ret::Success(0, $ret,);
     }
