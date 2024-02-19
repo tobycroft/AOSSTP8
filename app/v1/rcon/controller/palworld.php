@@ -49,4 +49,12 @@ class palworld extends index
         $ret = ($this->conn->command($query));
         Ret::Success(0, $ret,);
     }
+
+    public function ban()
+    {
+        $id = \Input::Post('id');
+        $query = "BanPlayer " . ($id) . "";
+        $ret = ($this->conn->command($query));
+        Ret::Success(0, $ret,);
+    }
 }
