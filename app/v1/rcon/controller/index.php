@@ -51,6 +51,6 @@ class index extends create
     {
         $query = \Input::Post("query");
         $ret = ($this->conn->sendCommand($query));
-        Ret::Success(0, $ret);
+        Ret::Success(0, $ret, $this->conn->getResponse());
     }
 }
