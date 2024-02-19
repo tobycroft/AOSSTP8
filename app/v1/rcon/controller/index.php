@@ -5,9 +5,8 @@ namespace app\v1\rcon\controller;
 use app\v1\image\controller\create;
 use app\v1\rcon\model\RconInfoModel;
 use app\v1\rcon\model\RconModel;
+use Kekalainen\GameRQ\Rcon\SourceRcon;
 use Ret;
-use SourceQuery\SourceQuery;
-use Thedudeguy\Rcon;
 
 class index extends create
 {
@@ -16,7 +15,7 @@ class index extends create
 
     public mixed $rcon_info;
 
-    public Rcon $conn;
+    public SourceRcon $conn;
 
     public function initialize()
     {
@@ -34,26 +33,28 @@ class index extends create
 
     private function connect()
     {
-        $this->conn = new Rcon($this->rcon_info['ip'], $this->rcon_info['port'], $this->rcon_info['password'], 3);
+        $this->conn = new SourceRcon;
+        $this->conn->connect($this->rcon_info['ip'], $this->rcon_info['port'], $this->rcon_info['password'], 3);
 //        $this->conn->SetRconPassword($this->rcon_info["password"]);
-        if (!$this->conn->connect()) {
-            Ret::Fail(500, null, '远程服务器连接失败');
-        }
-        if (!$this->conn->isConnected()) {
-            Ret::Fail(500, null, '远程服务器连接失败2');
-        }
+//        $this->conn->
+//        if (!$this->conn->connect()) {
+//            Ret::Fail(500, null, '远程服务器连接失败');
+//        }
+//        if (!$this->conn->isConnected()) {
+//            Ret::Fail(500, null, '远程服务器连接失败2');
+//        }
     }
 
-    public function ping()
-    {
-        $ping = trim($this->conn->sendCommand('Ping'));
-        Ret::Success(0, $ping);
-    }
+//    public function ping()
+//    {
+//        $ping = trim($this->conn->sendCommand('Ping'));
+//        Ret::Success(0, $ping);
+//    }
 
     public function manual()
     {
         $query = \Input::Post("query");
-        $ret = ($this->conn->sendCommand($query));
-        Ret::Success(0, $ret, $this->conn->getResponse());
+        $ret = ($this->conn->command($query));
+        Ret::Success(0, $ret,);
     }
 }
