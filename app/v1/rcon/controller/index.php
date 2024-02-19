@@ -15,7 +15,6 @@ class index extends create
 
     public mixed $rcon_info;
 
-    public SourceRcon $conn;
 
     public function initialize()
     {
