@@ -13,6 +13,7 @@ class palworld extends rcon
 
     public function ping()
     {
-        Ret::Success(0, trim($this->conn->Rcon('Ping')));
+        $ping = trim($this->conn->Rcon('Ping'));
+        Ret::Success(0, $ping);
     }
 }
