@@ -28,36 +28,6 @@ class index extends create
         if (!$this->rcon_info) {
             Ret::Fail(404, null, '未找到项目详情');
         }
-        $this->connect();
     }
 
-    private function connect()
-    {
-        $this->conn = new SourceRcon;
-        $this->conn->connect($this->rcon_info['ip'], $this->rcon_info['port'], $this->rcon_info['password'], 3);
-        if (trim($this->conn->command('Ping')) != 'Pong') {
-            Ret::Fail(500, null, '连接服务器失败');
-        }
-//        $this->conn->SetRconPassword($this->rcon_info["password"]);
-//        $this->conn->
-//        if (!$this->conn->connect()) {
-//            Ret::Fail(500, null, '远程服务器连接失败');
-//        }
-//        if (!$this->conn->isConnected()) {
-//            Ret::Fail(500, null, '远程服务器连接失败2');
-//        }
-    }
-
-    public function ping()
-    {
-        $ping = trim($this->conn->command('Ping'));
-        Ret::Success(0, $ping);
-    }
-
-    public function manual()
-    {
-        $query = \Input::Post("query");
-        $ret = ($this->conn->command($query));
-        Ret::Success(0, $ret,);
-    }
 }
