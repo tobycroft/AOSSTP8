@@ -38,7 +38,7 @@ class palworld extends index
     {
         $message = \Input::Post('message');
         $query = "Broadcast " . ($message) . "";
-        $ret = ($this->conn->command($query));
+        $ret = trim($this->conn->command($query));
         Ret::Success(0, $ret,);
     }
 
@@ -46,7 +46,7 @@ class palworld extends index
     {
         $id = \Input::Post('id');
         $query = "KickPlayer " . ($id) . "";
-        $ret = ($this->conn->command($query));
+        $ret = trim($this->conn->command($query));
         Ret::Success(0, $ret,);
     }
 
@@ -54,7 +54,7 @@ class palworld extends index
     {
         $id = \Input::Post('id');
         $query = "BanPlayer " . ($id) . "";
-        $ret = ($this->conn->command($query));
+        $ret = trim($this->conn->command($query));
         Ret::Success(0, $ret,);
     }
 }
