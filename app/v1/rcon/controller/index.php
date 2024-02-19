@@ -29,6 +29,6 @@ class index extends create
 
     public function test()
     {
-
+        echo "test";
     }
 }
