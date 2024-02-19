@@ -35,6 +35,9 @@ class index extends create
     {
         $this->conn = new SourceRcon;
         $this->conn->connect($this->rcon_info['ip'], $this->rcon_info['port'], $this->rcon_info['password'], 3);
+        if (trim($this->conn->command('Ping')) != 'Pong') {
+            Ret::Fail(500, null, '连接服务器失败');
+        }
 //        $this->conn->SetRconPassword($this->rcon_info["password"]);
 //        $this->conn->
 //        if (!$this->conn->connect()) {
@@ -45,11 +48,11 @@ class index extends create
 //        }
     }
 
-//    public function ping()
-//    {
-//        $ping = trim($this->conn->sendCommand('Ping'));
-//        Ret::Success(0, $ping);
-//    }
+    public function ping()
+    {
+        $ping = trim($this->conn->command('Ping'));
+        Ret::Success(0, $ping);
+    }
 
     public function manual()
     {
