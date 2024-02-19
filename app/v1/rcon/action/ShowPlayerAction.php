@@ -5,17 +5,19 @@ namespace app\v1\rcon\action;
 class ShowPlayerAction
 {
 
-
-    public static function input($rcon_output)
+    public static function decode($rcon_output)
     {
         $arr = [];
         $lines = explode("\n", $rcon_output);
+        if (count($lines) < 1) {
+            return false;
+        }
         $key = explode(',', $lines[0]);
         foreach ($lines as $index => $value) {
             if ($index > 0) {
                 $temp = explode(',', $value);
                 if (count($temp) < 3) {
-                    break;
+                    return false;
                 }
                 $arr[] = [
                     $key[0] => $temp[0],

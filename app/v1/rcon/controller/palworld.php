@@ -56,8 +56,12 @@ class palworld extends index
     {
         $query = "ShowPlayers";
         $ret = ($this->conn->command($query));
-        $players = ShowPlayerAction::input($ret);
-        Ret::Success(0, $players, $ret);
+        $players = ShowPlayerAction::decode($ret);
+        if ($players) {
+            Ret::Success(0, $players, $ret);
+        } else {
+            Ret::Fail(404,);
+        }
     }
 
     public function broadcast(): void
