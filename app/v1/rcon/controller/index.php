@@ -6,7 +6,7 @@ use app\v1\image\controller\create;
 use app\v1\rcon\model\RconInfoModel;
 use app\v1\rcon\model\RconModel;
 use Ret;
-use xPaw\SourceQuery\SourceQuery;
+use SourceQuery\SourceQuery;
 
 class index extends create
 {
