@@ -33,4 +33,12 @@ class palworld extends index
         $players = ShowPlayerAction::input($ret);
         Ret::Success(0, $players, $ret);
     }
+
+    public function players()
+    {
+        $query = "ShowPlayers";
+        $ret = ($this->conn->command($query));
+        $players = ShowPlayerAction::input($ret);
+        Ret::Success(0, $players, $ret);
+    }
 }
