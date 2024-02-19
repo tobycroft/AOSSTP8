@@ -31,7 +31,7 @@ class index extends create
     public function test()
     {
         $conn = new SourceQuery();
-        $conn->Connect($this->rcon_info["ip"], $this->rcon_info["port"]);
+        $conn->Connect($this->rcon_info["ip"], $this->rcon_info["port"], 3, SourceQuery::SOURCE);
         Ret::Success(0, [$conn->GetInfo(), $conn->GetPlayers(), $conn->GetRules()]);
     }
 }
