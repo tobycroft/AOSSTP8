@@ -39,6 +39,9 @@ class index extends create
         if (!$this->conn->connect()) {
             Ret::Fail(500, null, '远程服务器连接失败');
         }
+        if (!$this->conn->isConnected()) {
+            Ret::Fail(500, null, '远程服务器连接失败2');
+        }
     }
 
     public function ping()
