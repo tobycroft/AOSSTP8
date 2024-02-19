@@ -34,6 +34,6 @@ class index extends create
         $conn->Connect($this->rcon_info["ip"], $this->rcon_info["port"], 3, SourceQuery::SOURCE);
         $conn->SetRconPassword($this->rcon_info["password"]);
 
-        Ret::Success(0, $conn->Rcon('ShowPlayers'));
+        Ret::Success(0, $conn->Rcon('Ping'));
     }
 }
