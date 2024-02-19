@@ -33,10 +33,10 @@ class index extends create
 
     private function connect()
     {
-        $conn = new SourceQuery();
-        $conn->Connect($this->rcon_info["ip"], $this->rcon_info["port"], 3, SourceQuery::SOURCE);
-        $conn->SetRconPassword($this->rcon_info["password"]);
-        if (trim($conn->Rcon('Ping')) != "Pong") {
+//        $conn = new SourceQuery();
+        $this->conn->Connect($this->rcon_info["ip"], $this->rcon_info["port"], 3, SourceQuery::SOURCE);
+        $this->conn->SetRconPassword($this->rcon_info["password"]);
+        if (trim($this->conn->Rcon('Ping')) != "Pong") {
             Ret::Fail(500, null, '连接服务器失败');
         }
     }
