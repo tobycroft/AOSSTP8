@@ -8,7 +8,7 @@ use app\v1\rcon\model\RconModel;
 use Ret;
 use xPaw\SourceQuery\SourceQuery;
 
-class index extends create
+class rcon extends create
 {
 
     public mixed $rcon;
