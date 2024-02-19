@@ -7,6 +7,7 @@ use app\v1\rcon\model\RconInfoModel;
 use app\v1\rcon\model\RconModel;
 use Ret;
 use SourceQuery\SourceQuery;
+use Thedudeguy\Rcon;
 
 class index extends create
 {
@@ -15,7 +16,7 @@ class index extends create
 
     public mixed $rcon_info;
 
-    public SourceQuery $conn;
+    public Rcon $conn;
 
     public function initialize()
     {
@@ -33,11 +34,13 @@ class index extends create
 
     private function connect()
     {
-        $this->conn = new SourceQuery();
-        $this->conn->Connect($this->rcon_info["ip"], $this->rcon_info["port"], 2, SourceQuery::SOURCE);
-        $this->conn->SetRconPassword($this->rcon_info["password"]);
-        if (trim($this->conn->Rcon('Ping')) != "Pong") {
-            Ret::Fail(500, null, '连接服务器失败');
+        $this->conn = new Rcon($this->rcon_info['ip'], $this->rcon_info['port'], $this->rcon_info['password'], 3);
+//        $this->conn->SetRconPassword($this->rcon_info["password"]);
+        if ($this->conn->connect()) {
+            Ret::Fail(500, null, '远程服务器无法连接');
+        }
+        if (!$this->conn->isConnected()) {
+            Ret::Fail(500, null, '服务器不在连接状态');
         }
     }
 

@@ -44,7 +44,7 @@
       "topthink/think-helper": "^3.1",
       "alibabacloud/alinlp-20200629": "^2.0",
         "topthink/think-captcha": "^3.0",
-        "xpaw/php-source-query-class": "^2.1"
+        "thedudeguy/rcon": "^1.0"
     },
     "require-dev": {
         "symfony/var-dumper": ">=4.2",
