@@ -24,4 +24,10 @@ class palworld extends index
         $ret = ($this->conn->Rcon($query));
         Ret::Success(0, $ret);
     }
+
+    public function players()
+    {
+        $ret = ($this->conn->GetPlayers());
+        Ret::Success(0, $ret);
+    }
 }
