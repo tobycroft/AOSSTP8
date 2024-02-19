@@ -34,7 +34,7 @@ class palworld extends index
         Ret::Success(0, $players, $ret);
     }
 
-    public function players()
+    public function broadcast()
     {
         $query = "ShowPlayers";
         $ret = ($this->conn->command($query));
