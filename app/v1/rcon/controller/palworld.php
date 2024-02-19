@@ -2,8 +2,6 @@
 
 namespace app\v1\rcon\controller;
 
-use Ret;
-
 class palworld extends rcon
 {
     public function initialize()
@@ -13,7 +11,6 @@ class palworld extends rcon
 
     public function ping()
     {
-        $ping = trim($this->conn->Rcon('Ping'));
-        Ret::Success(0, $ping);
+        $this->ping();
     }
 }

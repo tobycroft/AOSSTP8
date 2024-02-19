@@ -40,4 +40,10 @@ class rcon extends create
             Ret::Fail(500, null, '连接服务器失败');
         }
     }
+
+    public function ping()
+    {
+        $ping = trim($this->conn->Rcon('Ping'));
+        Ret::Success(0, $ping);
+    }
 }
