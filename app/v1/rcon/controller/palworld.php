@@ -30,7 +30,7 @@ class palworld extends index
     {
         $query = "ShowPlayers";
         $ret = ($this->conn->command($query));
-        $players = new ShowPlayerAction($ret);
+        $players = ShowPlayerAction::input($ret);
         Ret::Success(0, $players, $ret);
     }
 }
