@@ -46,4 +46,11 @@ class index extends create
         $ping = trim($this->conn->Rcon('Ping'));
         Ret::Success(0, $ping);
     }
+
+    public function manual()
+    {
+        $query = \Input::Post("query");
+        $ret = ($this->conn->Rcon($query));
+        Ret::Success(0, $ret);
+    }
 }
