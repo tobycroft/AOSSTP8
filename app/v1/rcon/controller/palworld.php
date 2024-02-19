@@ -17,4 +17,11 @@ class palworld extends index
         $ret = ($this->conn->Rcon($query));
         Ret::Success(0, $ret);
     }
+
+    public function save()
+    {
+        $query = "Save";
+        $ret = ($this->conn->Rcon($query));
+        Ret::Success(0, $ret);
+    }
 }
