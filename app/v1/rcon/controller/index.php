@@ -36,7 +36,7 @@ class index extends create
     {
         $this->conn = new Rcon($this->rcon_info['ip'], $this->rcon_info['port'], $this->rcon_info['password'], 3);
 //        $this->conn->SetRconPassword($this->rcon_info["password"]);
-        if ($this->conn->connect()) {
+        if (!$this->conn->connect()) {
             Ret::Fail(500, null, '远程服务器连接失败');
         }
     }
