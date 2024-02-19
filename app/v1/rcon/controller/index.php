@@ -6,6 +6,7 @@ use app\v1\image\controller\create;
 use app\v1\rcon\model\RconInfoModel;
 use app\v1\rcon\model\RconModel;
 use Ret;
+use xPaw\SourceQuery\SourceQuery;
 
 class index extends create
 {
@@ -29,6 +30,8 @@ class index extends create
 
     public function test()
     {
-        return "test";
+        $conn = new SourceQuery();
+        $conn->Connect($this->rcon_info["ip"], $this->rcon_info["port"]);
+        Ret::Success(0, [$conn->GetInfo(), $conn->GetPlayers(), $conn->GetRules()]);
     }
 }
