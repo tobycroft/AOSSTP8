@@ -22,7 +22,7 @@ class palworld extends index
     public function save()
     {
         $query = "Save";
-        $ret = ($this->conn->command($query));
+        $ret = trim($this->conn->command($query));
         Ret::Success(0, $ret);
     }
 
