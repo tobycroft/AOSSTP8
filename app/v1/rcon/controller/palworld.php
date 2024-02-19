@@ -2,7 +2,7 @@
 
 namespace app\v1\rcon\controller;
 
-class palworld extends rcon
+class palworld extends index
 {
     public function initialize()
     {
