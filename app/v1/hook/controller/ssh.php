@@ -6,5 +6,8 @@ use BaseController\CommonController;
 
 class ssh extends CommonController
 {
+    public function test()
+    {
 
+    }
 }
