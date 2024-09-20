@@ -3,7 +3,7 @@
 namespace app\v1\hook\controller;
 
 use app\v1\hook\model\HookLogModel;
-use app\v1\hook\model\HookModel;
+use app\v1\hook\model\CertModel;
 use BaseController\CommonController;
 use Input;
 use Net;
@@ -14,7 +14,7 @@ class push extends CommonController
     public function single()
     {
         $tag = Input::Get("tag");
-        $data = HookModel::where("tag", $tag)->select();
+        $data = CertModel::where("tag", $tag)->select();
         if ($data) {
             $rets = [];
             $status = [];
@@ -65,7 +65,7 @@ class push extends CommonController
             $ref = explode('/', $payload['ref']);
             $branch = end($ref);
         }
-        $data = HookModel::where('tag', $payload["repository"]["name"])->where("status", 1)->where("branch", $branch)->select();
+        $data = CertModel::where('tag', $payload["repository"]["name"])->where("status", 1)->where("branch", $branch)->select();
         if ($data) {
             $rets = [];
             $status = [];
