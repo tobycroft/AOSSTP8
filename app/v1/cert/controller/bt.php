@@ -20,10 +20,11 @@ class bt extends CommonController
             \Ret::Fail("404", null, "未找到证书项目");
         }
         $this->bt_base = new Base($certs["url"], $certs["key"], './');
+        $this->bt_base->getSystemTotal();
     }
 
     public function test()
     {
-        $this->bt_base->getSystemTotal();
+
     }
 }
