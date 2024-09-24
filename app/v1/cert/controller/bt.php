@@ -6,6 +6,7 @@ use app\v1\cert\model\CertModel;
 use BaseController\CommonController;
 use Input;
 use yixinba\Bt\Base;
+use yixinba\Bt\Site;
 
 class bt extends CommonController
 {
@@ -19,8 +20,8 @@ class bt extends CommonController
         if (!$certs) {
             \Ret::Fail("404", null, "未找到证书项目");
         }
-        $this->bt_base = new Base($certs["url"], $certs["key"], './');
-        $this->bt_base->getSystemTotal();
+        $bt_base = new Base($certs["url"], $certs["key"], './');
+        \Ret::Fail(400, $bt_base->getError());
     }
 
     public function test()
