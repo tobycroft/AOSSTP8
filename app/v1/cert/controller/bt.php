@@ -7,7 +7,7 @@ use BaseController\CommonController;
 use Input;
 use Ret;
 
-class index extends CommonController
+class bt extends CommonController
 {
 
     public function initialize()
