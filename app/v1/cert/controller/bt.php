@@ -37,6 +37,11 @@ class bt extends CommonController
         $this->site->pullSSL();
     }
 
+    public function autossl()
+    {
+
+    }
+
     public function setssl()
     {
 //        $this->site->setSSL(1, $siteName, $key, $csr);
