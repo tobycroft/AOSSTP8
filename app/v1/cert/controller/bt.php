@@ -15,7 +15,7 @@ class bt extends CommonController
     {
         parent::initialize();
         $tag = Input::Get('tag');
-        $certs = CertModel::where('tag', $tag)->select();
+        $certs = CertModel::where('tag', $tag)->find();
         if (!$certs) {
             \Ret::Fail("404", null, "未找到证书项目");
         }
