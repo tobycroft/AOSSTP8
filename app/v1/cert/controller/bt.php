@@ -24,6 +24,6 @@ class bt extends CommonController
 
     public function test()
     {
-        \Ret::Success(0, $this->site->getSSL('www.tuuz.cn'));
+        return $this->site->getSSL('www.tuuz.cn');
     }
 }
