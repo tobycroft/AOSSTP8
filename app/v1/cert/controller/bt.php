@@ -29,7 +29,7 @@ class bt extends CommonController
 
     public function getlist()
     {
-        return json_encode($this->site->getList()["data"], 320);
+        \Ret::Success(0, $this->site->getList()['data']);
     }
 
     public function setssl()
