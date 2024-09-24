@@ -24,6 +24,11 @@ class bt extends CommonController
 
     public function test()
     {
-        echo json_encode($this->site->getSSL('www.tuuz.cn'), 320);
+        echo json_encode($this->site->getList(), 320);
+    }
+
+    public function setssl()
+    {
+        $this->site->setSSL(1, $siteName, $key, $csr);
     }
 }
