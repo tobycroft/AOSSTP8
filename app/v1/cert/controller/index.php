@@ -14,13 +14,6 @@ class index extends CommonController
     {
         set_time_limit(0);
         parent::initialize();
-        if (!$this->token) {
-            $this->token = Input::Combi('token');
-        }
-        $this->proc = ProjectModel::api_find_token($this->token);
-        if (!$this->proc) {
-            Ret::Fail(401, null, '项目不可用');
-        }
     }
 
     public function test()
