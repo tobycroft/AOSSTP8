@@ -27,6 +27,11 @@ class bt extends CommonController
         echo json_encode($this->site->getList(), 320);
     }
 
+    public function getlist()
+    {
+        echo json_encode($this->site->getList()["data"], 320);
+    }
+
     public function setssl()
     {
 //        $this->site->setSSL(1, $siteName, $key, $csr);
