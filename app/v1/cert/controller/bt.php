@@ -21,7 +21,7 @@ class bt extends CommonController
             \Ret::Fail("404", null, "未找到证书项目");
         }
         $bt_base = new Site($certs["url"], $certs["key"], './');
-        \Ret::Success(0, $bt_base->getList(''));
+        \Ret::Success(0, $bt_base->getList());
     }
 
     public function test()
