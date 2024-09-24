@@ -19,7 +19,7 @@ class bt extends CommonController
         if (!$certs) {
             \Ret::Fail("404", null, "未找到证书项目");
         }
-        $this->site = new Site($certs["url"], $certs["key"], './');
+        $this->site = new Site($certs["api"], $certs["key"], './');
     }
 
     public function test()
@@ -34,7 +34,7 @@ class bt extends CommonController
 
     public function pullssl()
     {
-        
+        $this->site->pullSSL();
     }
 
     public function setssl()
