@@ -4,6 +4,7 @@ namespace app\v1\cert\controller;
 
 use app\v1\cert\model\CertModel;
 use BaseController\CommonController;
+use Input;
 
 class bt extends CommonController
 {
