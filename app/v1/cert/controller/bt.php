@@ -32,6 +32,11 @@ class bt extends CommonController
         \Ret::Success(0, $this->site->getList()['data']);
     }
 
+    public function pullssl()
+    {
+        
+    }
+
     public function setssl()
     {
 //        $this->site->setSSL(1, $siteName, $key, $csr);
