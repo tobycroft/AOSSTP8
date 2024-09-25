@@ -41,6 +41,7 @@ class bt extends CommonController
             $data[] = [
                 'name' => $site['name'],
                 'ssl' => $site['ssl'],
+                'type' => var_export($site['ssl']),
                 'site_ssl' => $site['site_ssl']
             ];
         }
