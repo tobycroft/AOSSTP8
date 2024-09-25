@@ -47,6 +47,14 @@ class bt extends CommonController
                                 'ssl' => $site['ssl']['subject'],
                                 'site_ssl' => $site['site_ssl']
                             ];
+                        } else {
+                            CertWebsiteModel::create([
+                                'website' => $site['name'],
+                                'api' => $this->cert['bt_api'],
+                                'key' => $this->cert['bt_key'],
+                                'cert_name' => $site['ssl']['subject'],
+                                'status' => 1,
+                            ]);
                         }
                     }
                 }
