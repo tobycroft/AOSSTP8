@@ -14,7 +14,6 @@ use yixinba\Bt\Site;
 class bt extends CommonController
 {
     public $cert;
-    public Site $site;
 
     public function initialize()
     {
@@ -29,7 +28,7 @@ class bt extends CommonController
 
     public function test()
     {
-        return json_encode($this->site->getList(), 320);
+
     }
 
     public function getlist()
@@ -62,8 +61,8 @@ class bt extends CommonController
         if (!$site) {
             \Ret::Fail(404, null, "项目中没有该站点，请先在自动更新库中添加本站点");
         }
-        $this->site = new Site($site['api'], $site['key'], './');
-        $ret = $this->site->setSSL(1, $website, $ssl['key'], $ssl['crt']);
+        $bt_site = new Site($site['api'], $site['key'], './');
+        $ret = $bt_site->setSSL(1, $website, $ssl['key'], $ssl['crt']);
         if ($ret) {
             \Ret::Success(0, $ret);
         } else {
