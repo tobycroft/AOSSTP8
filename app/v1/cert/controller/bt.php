@@ -37,7 +37,6 @@ class bt extends CommonController
 
     }
 
-
     public function pullssl()
     {
         $name = Input::Get('cert');
