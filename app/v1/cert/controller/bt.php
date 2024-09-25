@@ -46,7 +46,7 @@ class bt extends CommonController
                     'site_ssl' => $site['site_ssl']
                 ];
         }
-        \Ret::Success(0, $ret);
+        \Ret::Success(0, $data);
     }
 
     public function autofill()
