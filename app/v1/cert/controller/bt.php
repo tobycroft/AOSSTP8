@@ -48,7 +48,7 @@ class bt extends CommonController
             \Ret::Fail('402', null, '证书获取失败');
         }
         try {
-            CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key])
+            CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key]);
         } catch (Exception $exception) {
             \Ret::Fail('500', null, '证书获取失败');
         }
