@@ -75,12 +75,18 @@ class bt extends CommonController
     public function autossl()
     {
         $name = Input::Get('cert');
-        $cert_url = CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->find();
-        if (!$cert_url) {
-            \Ret::Fail("404", null, "未找到证书项目");
+        try {
+            $ssl = SslAction::updatessl($this->cert['tag'], $name);
+        } catch (Exception $e) {
+            \Ret::Fail('500', null, $e->getMessage());
         }
-        $url_cert = file_get_contents($cert_url['url_crt']);
-        $url_key = file_get_contents($cert_url['url_key']);
-        CertWebsiteModel::where('cert_url_tag', $name);
+        $cert = CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->find();
+        if (!$cert) {
+            \Ret::Fail(404, null, "未找到证书项目");
+        }
+        if ($cert['status'] != 1) {
+            \Ret::Fail(401, null, "本证书自动下发功能不可用");
+        }
+
     }
 }
