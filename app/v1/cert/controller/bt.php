@@ -101,7 +101,7 @@ class bt extends CommonController
                     'appname' => $this->cert['appname'],
                     'success' => 1,
                     'website' => $site['website'],
-//                    'recv' => strval($ret),
+                    'recv' => json_encode($ret),
                 ]);
                 $rets['success']++;
             } else {
@@ -109,11 +109,11 @@ class bt extends CommonController
                     'appname' => $this->cert['appname'],
                     'success' => 0,
                     'website' => $site['website'],
-//                    'recv' => '失败',
+                    'recv' => json_encode($ret),
                 ]);
                 $rets['fail']++;
             }
         }
-        \Ret::Success(0, $ret);
+        \Ret::Success(0, $rets);
     }
 }
