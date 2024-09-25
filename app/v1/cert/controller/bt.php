@@ -109,7 +109,7 @@ class bt extends CommonController
                     'appname' => $this->cert['appname'],
                     'success' => 0,
                     'website' => $site['website'],
-                    'recv' => $ret,
+                    'recv' => '失败',
                 ]);
                 $rets['fail']++;
             }
