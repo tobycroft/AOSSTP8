@@ -6,8 +6,8 @@ use app\v1\cert\model\CertModel;
 use app\v1\cert\model\CertUrlModel;
 use app\v1\cert\model\CertWebsiteModel;
 use BaseController\CommonController;
+use Exception;
 use Input;
-use think\Exception;
 use yixinba\Bt\Site;
 
 class bt extends CommonController
@@ -47,18 +47,19 @@ class bt extends CommonController
         if (empty($url_key) || empty($url_cert)) {
             \Ret::Fail('402', null, '证书获取失败');
         }
-        try {
-            CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key]);
-        } catch (Exception $exception) {
-            \Ret::Fail('500', null, '证书获取失败');
-        }
+        return CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key]);
     }
 
     public function pullssl()
     {
         $name = Input::Get('cert');
-        $this->updatessl($name);
-        \Ret::Success(0, null, '证书获取成功');
+        try {
+            $this->updatessl($name);
+            \Ret::Success(0, null, '证书获取成功');
+        } catch (Exception $e) {
+            \Ret::Fail('500', null, '证书获取失败');
+        }
+
     }
 
     public function autossl()
