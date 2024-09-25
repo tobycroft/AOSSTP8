@@ -97,10 +97,10 @@ class bt extends CommonController
             $bt_site = new Site($site['api'], $site['key'], './');
             $ret = $bt_site->setSSL(1, $site['website'], $ssl['key'], $ssl['crt']);
             if ($ret) {
-                CertLogModel::data(['appname' => $this->cert['appname'], 'success' => 1, 'website' => $site['website'], 'recv' => $ret])->insert();
+                (new \app\v1\cert\model\CertLogModel)->data(['appname' => $this->cert['appname'], 'success' => 1, 'website' => $site['website'], 'recv' => $ret])->insert();
                 $rets['success']++;
             } else {
-                CertLogModel::data(['appname' => $this->cert['appname'], 'success' => 0, 'website' => $site['website'], 'recv' => $ret])->insert();
+                (new \app\v1\cert\model\CertLogModel)->data(['appname' => $this->cert['appname'], 'success' => 0, 'website' => $site['website'], 'recv' => $ret])->insert();
                 $rets['fail']++;
             }
         }
