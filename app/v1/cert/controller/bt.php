@@ -46,7 +46,11 @@ class bt extends CommonController
         if (empty($url_key) || empty($url_cert)) {
             \Ret::Fail('402', null, '证书获取失败');
         }
-        \Ret::Fail(500, CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key]));
+        try {
+            CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key])
+        } catch (Exception $exception) {
+            \Ret::Fail('500', null, '证书获取失败');
+        }
     }
 
     public function pullssl()
