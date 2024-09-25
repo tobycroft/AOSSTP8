@@ -9,7 +9,7 @@ class SslAction
 {
 
 
-    public static function updatessl($tag, $name)
+    public static function updatessl($tag, $name): array
     {
         $cert_url = CertUrlModel::where('tag', $tag)->where('cert', $name)->find();
         if (!$cert_url) {
@@ -20,7 +20,11 @@ class SslAction
         if (empty($url_key) || empty($url_cert)) {
             throw new Exception("证书获取失败");
         }
-        return CertUrlModel::where('tag', $tag)->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key]);
+        CertUrlModel::where('tag', $tag)->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key])
+        return [
+            'publickey' => $url_cert,
+            'privatekey' => $url_key
+        ];
     }
 
 }
