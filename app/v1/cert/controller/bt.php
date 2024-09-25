@@ -36,7 +36,15 @@ class bt extends CommonController
     {
         $bt_site = new Site($this->cert['bt_api'], $this->cert['bt_key'], './');
         $ret = $bt_site->getList();
-        \Ret::Success(0, $ret['data']);
+        $data = [];
+        foreach ($ret['data'] as $site) {
+            $data[] = [
+                'name' => $site['name'],
+                'ssl' => $site['ssl'],
+                'site_ssl' => $site['site_ssl']
+            ];
+        }
+        \Ret::Success(0, $data);
     }
 
     public function pullssl()
