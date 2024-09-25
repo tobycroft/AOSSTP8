@@ -74,18 +74,19 @@ class bt extends CommonController
     public function autossl()
     {
         $name = Input::Get('cert');
+        $cert = CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->find();
+        if (!$cert) {
+            \Ret::Fail(404, null, '未找到证书项目');
+        }
+        if ($cert['auto'] != 1) {
+            \Ret::Fail(401, null, '本证书自动下发功能不可用');
+        }
         try {
             $ssl = SslAction::updatessl($name);
         } catch (Exception $e) {
             \Ret::Fail('500', null, $e->getMessage());
         }
-        $cert = CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->find();
-        if (!$cert) {
-            \Ret::Fail(404, null, "未找到证书项目");
-        }
-        if ($cert['auto'] != 1) {
-            \Ret::Fail(401, null, "本证书自动下发功能不可用");
-        }
+
         $sites = CertWebsiteModel::where('cert_url_tag', $name)->where('status', 1)->select();
         foreach ($sites as $site) {
             $bt_site = new Site($site['api'], $site['key'], './');
