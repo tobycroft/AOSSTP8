@@ -41,11 +41,13 @@ class bt extends CommonController
             if ($site['ssl'] !== -1) {
                 if (isset($site['ssl']['subject'])) {
                     if (CertUrlModel::where('cert', $site['ssl']['subject'])->find()) {
-                        $data[] = [
-                            'name' => $site['name'],
-                            'ssl' => $site['ssl']['subject'],
-                            'site_ssl' => $site['site_ssl']
-                        ];
+                        if (CertWebsiteModel::where('website', $site['name'])->find()) {
+                            $data[] = [
+                                'name' => $site['name'],
+                                'ssl' => $site['ssl']['subject'],
+                                'site_ssl' => $site['site_ssl']
+                            ];
+                        }
                     }
                 }
             }
