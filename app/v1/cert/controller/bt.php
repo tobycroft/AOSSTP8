@@ -2,7 +2,7 @@
 
 namespace app\v1\cert\controller;
 
-use app\v1\cert\action\SslAction;
+use app\v1\cert\action\SiteAction;
 use app\v1\cert\model\CertLogModel;
 use app\v1\cert\model\CertModel;
 use app\v1\cert\model\CertUrlModel;
@@ -34,32 +34,7 @@ class bt extends CommonController
 
     public function getlist()
     {
-        $bt_site = new Site($this->cert['bt_api'], $this->cert['bt_key'], './');
-        $ret = $bt_site->getList();
-        $data = [];
-        foreach ($ret['data'] as $site) {
-            if ($site['ssl'] !== -1) {
-                if (isset($site['ssl']['subject'])) {
-                    if (CertUrlModel::where('cert', $site['ssl']['subject'])->find()) {
-                        if (CertWebsiteModel::where('website', $site['name'])->find()) {
-                            $data[] = [
-                                'name' => $site['name'],
-                                'ssl' => $site['ssl']['subject'],
-                                'site_ssl' => $site['site_ssl']
-                            ];
-                        } else {
-                            CertWebsiteModel::create([
-                                'website' => $site['name'],
-                                'api' => $this->cert['bt_api'],
-                                'key' => $this->cert['bt_key'],
-                                'cert_name' => $site['ssl']['subject'],
-                                'status' => 1,
-                            ]);
-                        }
-                    }
-                }
-            }
-        }
+        $data = SiteAction::updateSiteListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
         \Ret::Success(0, $data);
     }
 
@@ -84,7 +59,7 @@ class bt extends CommonController
     {
         $name = Input::Get('cert');
         try {
-            $ssl = SslAction::updatessl($name);
+            $ssl = SiteAction::updatessl($name);
             \Ret::Success(0, $ssl, '证书获取成功');
         } catch (Exception $e) {
             \Ret::Fail('500', null, $e->getMessage());
@@ -100,7 +75,7 @@ class bt extends CommonController
             \Ret::Fail(404, null, "项目中没有该站点，请先在自动更新库中添加本站点");
         }
         try {
-            $ssl = SslAction::updatessl($name);
+            $ssl = SiteAction::updatessl($name);
         } catch (Exception $e) {
             \Ret::Fail('500', null, $e->getMessage());
         }
@@ -116,6 +91,7 @@ class bt extends CommonController
 
     public function autossl()
     {
+        SiteAction::updateSiteListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
         $name = Input::Get('cert');
         $cert = CertUrlModel::where('cert', $name)->find();
         if (!$cert) {
@@ -125,7 +101,7 @@ class bt extends CommonController
             \Ret::Fail(401, null, '本证书自动下发功能不可用');
         }
         try {
-            $ssl = SslAction::updatessl($name);
+            $ssl = SiteAction::updatessl($name);
         } catch (Exception $e) {
             \Ret::Fail('500', null, $e->getMessage());
         }
