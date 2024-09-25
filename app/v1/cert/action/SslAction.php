@@ -9,7 +9,7 @@ class SslAction
 {
 
 
-    public static function updatessl($tag, $name): array
+    public static function updatessl($tag, $name): array|null
     {
         $cert_url = CertUrlModel::where('tag', $tag)->where('cert', $name)->find();
         if (!$cert_url) {
@@ -22,8 +22,8 @@ class SslAction
         }
         CertUrlModel::where('tag', $tag)->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key]);
         return [
-            'publickey' => $url_cert,
-            'privatekey' => $url_key
+            'public' => $url_cert,
+            'private' => $url_key
         ];
     }
 
