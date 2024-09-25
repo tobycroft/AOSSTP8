@@ -36,8 +36,8 @@ class bt extends CommonController
 
     public function pullssl()
     {
-        $cert = Input::Get('cert');
-        $cert_url = CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $cert)->find();
+        $name = Input::Get('cert');
+        $cert_url = CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->find();
         if (!$cert_url) {
             \Ret::Fail("404", null, "未找到证书项目");
         }
@@ -48,6 +48,12 @@ class bt extends CommonController
 
     public function autossl()
     {
+        $name = Input::Get('cert');
+        $cert_url = CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->find();
+        if (!$cert_url) {
+            \Ret::Fail("404", null, "未找到证书项目");
+        }
+
 
     }
 
