@@ -54,6 +54,7 @@ class bt extends CommonController
             \Ret::Fail("404", null, "未找到证书项目");
         }
 
+        $this->site = new Site($this->cert['api'], $this->cert['key'], './');
 
     }
 
