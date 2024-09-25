@@ -30,10 +30,12 @@ class bt extends CommonController
 
     public function getlist()
     {
+
     }
 
     public function pullssl()
     {
+
     }
 
     public function autossl()
