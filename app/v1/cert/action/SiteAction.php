@@ -61,7 +61,7 @@ class SiteAction
                 }
             }
         }
-        \Ret::Success(0, [$certNames, $insertData]);
+        \Ret::Success(0, [$certNames, $siteNames, $insertData, $data]);
         if (!empty($insertData)) {
             CertWebsiteModel::insertAll($insertData);
         }
