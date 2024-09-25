@@ -34,6 +34,9 @@ class SiteAction
         $bt_site = new Site($bt_api, $bt_key, './');
         $ret = $bt_site->getList();
         $data = [];
+        $insertData = [];
+        $siteNames = CertUrlModel::column('name');
+
         foreach ($ret['data'] as $site) {
             if ($site['ssl'] !== -1) {
                 if (isset($site['ssl']['subject'])) {
@@ -45,17 +48,20 @@ class SiteAction
                                 'site_ssl' => $site['site_ssl']
                             ];
                         } else {
-                            CertWebsiteModel::insert([
+                            $insertData[] = [
                                 'website' => $site['name'],
                                 'api' => $bt_api,
                                 'key' => $bt_key,
                                 'cert_name' => $site['ssl']['subject'],
                                 'status' => 1,
-                            ]);
+                            ];
                         }
                     }
                 }
             }
+        }
+        if (!empty($insertData)) {
+//            CertWebsiteModel::insertAll($insertData);
         }
         return $data;
     }
