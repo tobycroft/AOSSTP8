@@ -34,7 +34,9 @@ class bt extends CommonController
 
     public function getlist()
     {
-
+        $bt_site = new Site($this->cert['bt_api'], $this->cert['bt_key'], './');
+        $ret = $bt_site->getList();
+        \Ret::Success(0, $ret);
     }
 
     public function pullssl()
