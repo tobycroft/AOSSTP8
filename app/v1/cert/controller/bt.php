@@ -38,17 +38,18 @@ class bt extends CommonController
         $ret = $bt_site->getList();
         $data = [];
         foreach ($ret['data'] as $site) {
-            $data[] = [
-                'name' => $site['name'],
-                'ssl' => $site['ssl'],
-                'type' => gettype($site['ssl']),
-                'site_ssl' => $site['site_ssl']
-            ];
+            if ($site['ssl'] === -1)
+                $data[] = [
+                    'name' => $site['name'],
+                    'ssl' => $site['ssl'],
+                    'type' => gettype($site['ssl']),
+                    'site_ssl' => $site['site_ssl']
+                ];
         }
         \Ret::Success(0, $data);
     }
 
-    public function autolist()
+    public function autofill()
     {
 
     }
