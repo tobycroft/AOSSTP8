@@ -2,6 +2,7 @@
 
 namespace app\v1\cert\controller;
 
+use app\v1\cert\action\SslAction;
 use app\v1\cert\model\CertModel;
 use app\v1\cert\model\CertUrlModel;
 use app\v1\cert\model\CertWebsiteModel;
@@ -41,7 +42,7 @@ class bt extends CommonController
     {
         $name = Input::Get('cert');
         try {
-            $this->updatessl($name);
+            SslAction::updatessl($this->cert['tag'], $name);
             \Ret::Success(0, null, '证书获取成功');
         } catch (Exception $e) {
             \Ret::Fail('500', null, '证书获取失败');

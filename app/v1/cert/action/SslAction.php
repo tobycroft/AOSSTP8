@@ -9,7 +9,7 @@ class SslAction
 {
 
 
-    private static function updatessl($tag, $name)
+    public static function updatessl($tag, $name)
     {
         $cert_url = CertUrlModel::where('tag', $tag)->where('cert', $name)->find();
         if (!$cert_url) {
