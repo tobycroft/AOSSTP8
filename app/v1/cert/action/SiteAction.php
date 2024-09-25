@@ -37,7 +37,7 @@ class SiteAction
         $insertData = [];
         $certNames = CertUrlModel::column('cert');
         $siteNames = CertWebsiteModel::whereIn('cert_name', $certNames)->column('website');
-        \Ret::Success(0, [$certNames, $siteNames]);
+
         foreach ($ret['data'] as $site) {
             if ($site['ssl'] !== -1) {
                 if (isset($site['ssl']['subject'])) {
@@ -61,6 +61,7 @@ class SiteAction
                 }
             }
         }
+        \Ret::Success(0, [$certNames, $insertData]);
         if (!empty($insertData)) {
             CertWebsiteModel::insertAll($insertData);
         }
