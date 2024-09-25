@@ -36,19 +36,6 @@ class bt extends CommonController
 
     }
 
-    private function updatessl($name)
-    {
-        $cert_url = CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->find();
-        if (!$cert_url) {
-            \Ret::Fail('404', null, '未找到证书项目');
-        }
-        $url_cert = file_get_contents($cert_url['url_crt']);
-        $url_key = file_get_contents($cert_url['url_key']);
-        if (empty($url_key) || empty($url_cert)) {
-            \Ret::Fail('402', null, '证书获取失败');
-        }
-        return CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key]);
-    }
 
     public function pullssl()
     {
@@ -76,6 +63,7 @@ class bt extends CommonController
 
     public function setssl()
     {
+
 //        $this->site->setSSL(1, $siteName, $key, $csr);
     }
 }
