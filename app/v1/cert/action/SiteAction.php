@@ -35,7 +35,7 @@ class SiteAction
         $ret = $bt_site->getList();
         $data = [];
         $insertData = [];
-        $siteNames = CertUrlModel::column('name');
+        $siteNames = CertUrlModel::column('cert');
 
         foreach ($ret['data'] as $site) {
             if ($site['ssl'] !== -1) {
