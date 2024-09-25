@@ -3,6 +3,7 @@
 namespace app\v1\cert\controller;
 
 use app\v1\cert\action\SslAction;
+use app\v1\cert\model\CertLogModel;
 use app\v1\cert\model\CertModel;
 use app\v1\cert\model\CertUrlModel;
 use app\v1\cert\model\CertWebsiteModel;
@@ -96,8 +97,20 @@ class bt extends CommonController
             $bt_site = new Site($site['api'], $site['key'], './');
             $ret = $bt_site->setSSL(1, $site['website'], $ssl['key'], $ssl['crt']);
             if ($ret) {
+                CertLogModel::insert([
+                    'appname' => $this->cert['appname'],
+                    'success' => 1,
+                    'website' => $site['website'],
+                    'recv' => $ret,
+                ]);
                 $rets['success']++;
             } else {
+                CertLogModel::insert([
+                    'appname' => $this->cert['appname'],
+                    'success' => 1,
+                    'website' => $site['website'],
+                    'recv' => $ret,
+                ]);
                 $rets['fail']++;
             }
         }
