@@ -99,17 +99,17 @@ class bt extends CommonController
             if ($ret) {
                 CertLogModel::create([
                     'appname' => $this->cert['appname'],
-                    'success' => 1,
-                    'website' => $site['website'],
-                    'recv' => strval($ret),
+//                    'success' => 1,
+//                    'website' => $site['website'],
+//                    'recv' => strval($ret),
                 ]);
                 $rets['success']++;
             } else {
                 CertLogModel::create([
                     'appname' => $this->cert['appname'],
-                    'success' => 0,
-                    'website' => $site['website'],
-                    'recv' => '失败',
+//                    'success' => 0,
+//                    'website' => $site['website'],
+//                    'recv' => '失败',
                 ]);
                 $rets['fail']++;
             }
