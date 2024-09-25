@@ -55,6 +55,7 @@ class bt extends CommonController
     {
         $name = Input::Get('cert');
         $this->updatessl($name);
+        \Ret::Success(0, null, '证书获取成功');
     }
 
     public function autossl()
