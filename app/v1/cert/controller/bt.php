@@ -91,7 +91,6 @@ class bt extends CommonController
 
     public function autossl()
     {
-        SiteAction::updateSiteListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
         $name = Input::Get('cert');
         $cert = CertUrlModel::where('cert', $name)->find();
         if (!$cert) {
@@ -101,6 +100,7 @@ class bt extends CommonController
             \Ret::Fail(401, null, '本证书自动下发功能不可用');
         }
         try {
+            SiteAction::updateSiteListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
             $ssl = SiteAction::updatessl($name);
         } catch (Exception $e) {
             \Ret::Fail('500', null, $e->getMessage());
