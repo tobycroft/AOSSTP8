@@ -7,6 +7,7 @@ use app\v1\cert\model\CertUrlModel;
 use app\v1\cert\model\CertWebsiteModel;
 use BaseController\CommonController;
 use Input;
+use think\Exception;
 use yixinba\Bt\Site;
 
 class bt extends CommonController
