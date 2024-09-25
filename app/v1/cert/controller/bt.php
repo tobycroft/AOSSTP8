@@ -45,7 +45,7 @@ class bt extends CommonController
             $ssl = SslAction::updatessl($this->cert['tag'], $name);
             \Ret::Success(0, $ssl, '证书获取成功');
         } catch (Exception $e) {
-            \Ret::Fail('500', null, '证书获取失败');
+            \Ret::Fail('500', null, $e->getMessage());
         }
 
     }
