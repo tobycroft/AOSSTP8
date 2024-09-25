@@ -35,7 +35,7 @@ class bt extends CommonController
     public function getlist()
     {
 //        $data = SiteAction::updateSiteListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
-        \Ret::Success(0, CertUrlModel::column('name');
+        \Ret::Success(0, CertUrlModel::column('name'));
     }
 
     public function autofill()
