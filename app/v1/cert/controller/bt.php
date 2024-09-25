@@ -41,7 +41,7 @@ class bt extends CommonController
     {
         $name = Input::Get('cert');
         try {
-            $ssl = SslAction::updatessl($this->cert['tag'], $name);
+            $ssl = SslAction::updatessl($name);
             \Ret::Success(0, $ssl, '证书获取成功');
         } catch (Exception $e) {
             \Ret::Fail('500', null, $e->getMessage());
@@ -53,7 +53,7 @@ class bt extends CommonController
         $name = Input::Get('cert');
         $website = Input::Get('website');
         try {
-            $ssl = SslAction::updatessl($this->cert['tag'], $name);
+            $ssl = SslAction::updatessl($name);
         } catch (Exception $e) {
             \Ret::Fail('500', null, $e->getMessage());
         }
