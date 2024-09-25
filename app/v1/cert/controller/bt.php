@@ -46,12 +46,24 @@ class bt extends CommonController
                     'site_ssl' => $site['site_ssl']
                 ];
         }
-        \Ret::Success(0, $data);
+        \Ret::Success(0, $ret);
     }
 
     public function autofill()
     {
-
+        $bt_site = new Site($this->cert['bt_api'], $this->cert['bt_key'], './');
+        $ret = $bt_site->getList();
+        $data = [];
+        foreach ($ret['data'] as $site) {
+            if ($site['ssl'] === -1)
+                $data[] = [
+                    'name' => $site['name'],
+                    'ssl' => $site['ssl'],
+                    'type' => gettype($site['ssl']),
+                    'site_ssl' => $site['site_ssl']
+                ];
+        }
+        \Ret::Success(0, $data);
     }
 
     public function pullssl()
