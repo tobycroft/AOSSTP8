@@ -44,7 +44,7 @@ class bt extends CommonController
         }
         $url_cert = file_get_contents($cert_url['url_crt']);
         $url_key = file_get_contents($cert_url['url_key']);
-        if (CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->update(['url_crt' => $url_cert, 'url_key' => $url_key])) {
+        if (CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key])) {
             \Ret::Success(0, ['publickey' => $url_cert, 'privatekey' => $url_key]);
         } else {
             \Ret::Fail(500);
