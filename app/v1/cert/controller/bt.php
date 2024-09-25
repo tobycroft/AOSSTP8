@@ -88,13 +88,19 @@ class bt extends CommonController
         }
 
         $sites = CertWebsiteModel::where('cert_url_tag', $name)->where('status', 1)->select();
+        $rets = [
+            'success' => 0,
+            'fail' => 0
+        ];
         foreach ($sites as $site) {
             $bt_site = new Site($site['api'], $site['key'], './');
             $ret = $bt_site->setSSL(1, $site['website'], $ssl['key'], $ssl['crt']);
-            if (!$ret) {
-                \Ret::Fail(500, $ret);
+            if ($ret) {
+                $rets['success']++;
+            } else {
+                $rets['fail']++;
             }
         }
-        \Ret::Success();
+        \Ret::Success(0, $rets);
     }
 }
