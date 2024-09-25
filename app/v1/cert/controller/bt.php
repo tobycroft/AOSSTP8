@@ -63,7 +63,7 @@ class bt extends CommonController
             \Ret::Fail(404, null, "项目中没有该站点，请先在自动更新库中添加本站点");
         }
         $this->site = new Site($this->cert['api'], $this->cert['key'], './');
-        $this->site->setSSL(1, $website, $key, $csr);
+        $this->site->setSSL(1, $website, $ssl['crt'], $ssl['key']);
 
     }
 

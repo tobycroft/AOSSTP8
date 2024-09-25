@@ -21,8 +21,8 @@ class SslAction
         }
         CertUrlModel::where('tag', $tag)->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key]);
         return [
-            'public' => $url_cert,
-            'private' => $url_key
+            'crt' => $url_cert,
+            'key' => $url_key
         ];
     }
 
