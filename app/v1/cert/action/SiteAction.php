@@ -45,7 +45,7 @@ class SiteAction
                                 'site_ssl' => $site['site_ssl']
                             ];
                         } else {
-                            CertWebsiteModel::create([
+                            CertWebsiteModel::insert([
                                 'website' => $site['name'],
                                 'api' => $bt_api,
                                 'key' => $bt_key,
