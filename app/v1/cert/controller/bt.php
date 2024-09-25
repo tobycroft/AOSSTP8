@@ -3,6 +3,7 @@
 namespace app\v1\cert\controller;
 
 use app\v1\cert\model\CertModel;
+use app\v1\cert\model\CertUrlModel;
 use BaseController\CommonController;
 use Input;
 use yixinba\Bt\Site;
@@ -35,7 +36,14 @@ class bt extends CommonController
 
     public function pullssl()
     {
-
+        $cert = Input::Get('cert');
+        $cert_url = CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $cert)->find();
+        if (!$cert_url) {
+            \Ret::Fail("404", null, "未找到证书项目");
+        }
+        $url_cert = file_get_contents($cert_url['url_crt']);
+        $url_key = file_get_contents($cert_url['url_key']);
+        \Ret::Success(0, ['crt' => $url_cert, 'key' => $url_key]);
     }
 
     public function autossl()
