@@ -35,19 +35,13 @@ class SiteAction
         $ret = $bt_site->getList();
         $data = [];
         $insertData = [];
-        $siteNames = CertUrlModel::column('cert');
-
+        $certNames = CertUrlModel::column('cert');
+        $siteNames = CertWebsiteModel::whereIn('cert_name', $certNames)->column('website');
         foreach ($ret['data'] as $site) {
             if ($site['ssl'] !== -1) {
                 if (isset($site['ssl']['subject'])) {
-                    if (CertUrlModel::where('cert', $site['ssl']['subject'])->find()) {
-                        if (CertWebsiteModel::where('website', $site['name'])->find()) {
-                            $data[] = [
-                                'name' => $site['name'],
-                                'ssl' => $site['ssl']['subject'],
-                                'site_ssl' => $site['site_ssl']
-                            ];
-                        } else {
+                    if (!in_array($site['ssl']['subject'], $certNames)) {
+                        if (!in_array($site['name'], $siteNames)) {
                             $insertData[] = [
                                 'website' => $site['name'],
                                 'api' => $bt_api,
@@ -55,13 +49,19 @@ class SiteAction
                                 'cert_name' => $site['ssl']['subject'],
                                 'status' => 1,
                             ];
+                        } else {
+                            $data[] = [
+                                'name' => $site['name'],
+                                'ssl' => $site['ssl']['subject'],
+                                'site_ssl' => $site['site_ssl']
+                            ];
                         }
                     }
                 }
             }
         }
         if (!empty($insertData)) {
-//            CertWebsiteModel::insertAll($insertData);
+            CertWebsiteModel::insertAll($insertData);
         }
         return $data;
     }
