@@ -38,11 +38,11 @@ class bt extends CommonController
         $ret = $bt_site->getList();
         $data = [];
         foreach ($ret['data'] as $site) {
-            if ($site['ssl'] === -1)
+            if ($site['ssl'] !== -1)
                 $data[] = [
                     'name' => $site['name'],
                     'ssl' => $site['ssl'],
-                    'type' => gettype($site['ssl']),
+//                    'type' => gettype($site['ssl']),
                     'site_ssl' => $site['site_ssl']
                 ];
         }
