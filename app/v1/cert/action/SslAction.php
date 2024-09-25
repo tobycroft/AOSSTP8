@@ -20,7 +20,7 @@ class SslAction
         if (empty($url_key) || empty($url_cert)) {
             throw new Exception("证书获取失败");
         }
-        CertUrlModel::where('tag', $tag)->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key])
+        CertUrlModel::where('tag', $tag)->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key]);
         return [
             'publickey' => $url_cert,
             'privatekey' => $url_key
