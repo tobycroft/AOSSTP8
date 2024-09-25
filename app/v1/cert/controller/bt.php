@@ -14,6 +14,7 @@ use yixinba\Bt\Site;
 class bt extends CommonController
 {
     public $cert;
+    public Site $site;
 
     public function initialize()
     {
@@ -28,7 +29,6 @@ class bt extends CommonController
 
     public function test()
     {
-        $this->site = new Site($this->cert['api'], $this->cert['key'], './');
         return json_encode($this->site->getList(), 320);
     }
 
@@ -47,6 +47,23 @@ class bt extends CommonController
         } catch (Exception $e) {
             \Ret::Fail('500', null, $e->getMessage());
         }
+    }
+
+    public function setssl()
+    {
+        $name = Input::Get('cert');
+        $website = Input::Get('website');
+        try {
+            $ssl = SslAction::updatessl($this->cert['tag'], $name);
+        } catch (Exception $e) {
+            \Ret::Fail('500', null, $e->getMessage());
+        }
+        $site = CertWebsiteModel::where('website', $website)->where('cert_url_tag', $name)->where('status', 1)->find();
+        if (!$site) {
+            \Ret::Fail(404, null, "项目中没有该站点，请先在自动更新库中添加本站点");
+        }
+        $this->site = new Site($this->cert['api'], $this->cert['key'], './');
+        $this->site->setSSL(1, $website, $key, $csr);
 
     }
 
@@ -60,11 +77,5 @@ class bt extends CommonController
         $url_cert = file_get_contents($cert_url['url_crt']);
         $url_key = file_get_contents($cert_url['url_key']);
         CertWebsiteModel::where('cert_url_tag', $name);
-    }
-
-    public function setssl()
-    {
-
-//        $this->site->setSSL(1, $siteName, $key, $csr);
     }
 }
