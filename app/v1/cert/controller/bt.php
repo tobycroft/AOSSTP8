@@ -75,7 +75,7 @@ class bt extends CommonController
     {
         $name = Input::Get('cert');
         try {
-            $ssl = SslAction::updatessl($this->cert['tag'], $name);
+            $ssl = SslAction::updatessl($name);
         } catch (Exception $e) {
             \Ret::Fail('500', null, $e->getMessage());
         }
