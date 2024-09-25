@@ -8,7 +8,6 @@ use think\Exception;
 class SslAction
 {
 
-
     public static function updatessl($tag, $name): array|null
     {
         $cert_url = CertUrlModel::where('tag', $tag)->where('cert', $name)->find();
