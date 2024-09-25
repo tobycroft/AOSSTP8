@@ -114,6 +114,6 @@ class bt extends CommonController
                 $rets['fail']++;
             }
         }
-        \Ret::Success(0, $rets, $ret);
+        \Ret::Success(0, $ret);
     }
 }
