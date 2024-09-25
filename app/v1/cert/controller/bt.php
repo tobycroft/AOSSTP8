@@ -40,12 +40,14 @@ class bt extends CommonController
         foreach ($ret['data'] as $site) {
             if ($site['ssl'] !== -1) {
                 if (isset($site['ssl']['subject'])) {
-                    $data[] = [
-                        'name' => $site['name'],
-                        'ssl' => $site['ssl']['subject'],
+                    if (CertUrlModel::where('cert', $site['ssl']['subject'])->find()) {
+                        $data[] = [
+                            'name' => $site['name'],
+                            'ssl' => $site['ssl']['subject'],
 //                    'type' => gettype($site['ssl']),
-                        'site_ssl' => $site['site_ssl']
-                    ];
+                            'site_ssl' => $site['site_ssl']
+                        ];
+                    }
                 }
             }
         }
