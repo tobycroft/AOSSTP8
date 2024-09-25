@@ -107,7 +107,7 @@ class bt extends CommonController
             } else {
                 CertLogModel::insert([
                     'appname' => $this->cert['appname'],
-                    'success' => 1,
+                    'success' => 0,
                     'website' => $site['website'],
                     'recv' => $ret,
                 ]);
