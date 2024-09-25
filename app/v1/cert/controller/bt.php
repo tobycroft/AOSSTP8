@@ -18,9 +18,9 @@ class bt extends CommonController
     public function initialize()
     {
         parent::initialize();
-        $tag = Input::Get('tag');
-        $key = Input::Get('key');
-        $this->cert = CertModel::where('tag', $tag)->where('key', $key)->find();
+        $appname = Input::Get('appname');
+        $appkey = Input::Get('appkey');
+        $this->cert = CertModel::where('appname', $appname)->where('appkey', $appkey)->find();
         if (!$this->cert) {
             \Ret::Fail("404", null, "未找到证书项目");
         }

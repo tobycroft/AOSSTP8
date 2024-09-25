@@ -8,9 +8,9 @@ use think\Exception;
 class SslAction
 {
 
-    public static function updatessl($tag, $name): array|null
+    public static function updatessl(string $cert_name): array|null
     {
-        $cert_url = CertUrlModel::where('tag', $tag)->where('cert', $name)->find();
+        $cert_url = CertUrlModel::where('cert', $cert_name)->find();
         if (!$cert_url) {
             throw new Exception("未找到证书项目");
         }
@@ -19,7 +19,7 @@ class SslAction
         if (empty($url_key) || empty($url_cert)) {
             throw new Exception("证书获取失败");
         }
-        CertUrlModel::where('tag', $tag)->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key]);
+        CertUrlModel::where('cert', $cert_name)->update(['publickey' => $url_cert, 'privatekey' => $url_key]);
         return [
             'crt' => $url_cert,
             'key' => $url_key
