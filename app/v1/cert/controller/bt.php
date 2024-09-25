@@ -35,23 +35,26 @@ class bt extends CommonController
 
     }
 
-    public function pullssl()
+    private function updatessl($name)
     {
-        $name = Input::Get('cert');
         $cert_url = CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->find();
         if (!$cert_url) {
-            \Ret::Fail("404", null, "未找到证书项目");
+            \Ret::Fail('404', null, '未找到证书项目');
         }
         $url_cert = file_get_contents($cert_url['url_crt']);
         $url_key = file_get_contents($cert_url['url_key']);
         if (empty($url_key) || empty($url_cert)) {
             \Ret::Fail('402', null, '证书获取失败');
         }
-        if (CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key])) {
-            \Ret::Success(0, ['public' => $url_cert, 'private' => $url_key]);
-        } else {
+        if (!CertUrlModel::where('tag', $this->cert['tag'])->where('cert', $name)->update(['publickey' => $url_cert, 'privatekey' => $url_key])) {
             \Ret::Fail(500);
         }
+    }
+
+    public function pullssl()
+    {
+        $name = Input::Get('cert');
+        $this->updatessl($name);
     }
 
     public function autossl()
