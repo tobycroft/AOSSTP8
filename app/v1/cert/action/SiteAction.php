@@ -41,7 +41,7 @@ class SiteAction
         foreach ($ret['data'] as $site) {
             if ($site['ssl'] !== -1) {
                 if (isset($site['ssl']['subject'])) {
-                    if (!in_array($site['ssl']['subject'], $certNames)) {
+                    if (in_array($site['ssl']['subject'], $certNames)) {
                         if (!in_array($site['name'], $siteNames)) {
                             $insertData[] = [
                                 'website' => $site['name'],
@@ -61,7 +61,6 @@ class SiteAction
                 }
             }
         }
-        \Ret::Success(0, [$certNames, $siteNames, $insertData, $ret['data']]);
         if (!empty($insertData)) {
             CertWebsiteModel::insertAll($insertData);
         }
