@@ -44,7 +44,6 @@ class bt extends CommonController
                         $data[] = [
                             'name' => $site['name'],
                             'ssl' => $site['ssl']['subject'],
-//                    'type' => gettype($site['ssl']),
                             'site_ssl' => $site['site_ssl']
                         ];
                     }
