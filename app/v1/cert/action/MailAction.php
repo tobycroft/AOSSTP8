@@ -51,7 +51,7 @@ class MailAction
         $data = $ret['msg']['data'];
         $insertData = [];
         $certNames = CertUrlModel::column('cert');
-        $siteNames = CertWebsiteModel::whereIn('cert_name', $certNames)->column('website');
+        $siteNames = CertWebsiteModel::whereIn('cert_name', $certNames)->where('type', 'mail')->column('website');
         $domains = [];
 
         foreach ($data as $site) {
