@@ -45,6 +45,7 @@ class SiteAction
                         if (!in_array($site['name'], $siteNames)) {
                             $insertData[] = [
                                 'website' => $site['name'],
+                                'type' => 'web',
                                 'api' => $bt_api,
                                 'key' => $bt_key,
                                 'cert_name' => $site['ssl']['subject'],

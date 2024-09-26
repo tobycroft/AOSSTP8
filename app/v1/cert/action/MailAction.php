@@ -47,32 +47,21 @@ class MailAction
         if (isset($ret['message']['data'])) {
             throw new Exception('MailServer返回的data列表为空');
         }
-        $data = [];
+        $data = $ret['message']['data'];
         $insertData = [];
         $certNames = CertUrlModel::column('cert');
         $siteNames = CertWebsiteModel::whereIn('cert_name', $certNames)->column('website');
 
-        foreach ($ret['data'] as $site) {
-            if ($site['ssl'] !== -1) {
-                if (isset($site['ssl']['subject'])) {
-                    if (in_array($site['ssl']['subject'], $certNames)) {
-                        if (!in_array($site['name'], $siteNames)) {
-                            $insertData[] = [
-                                'website' => $site['name'],
-                                'api' => $bt_api,
-                                'key' => $bt_key,
-                                'cert_name' => $site['ssl']['subject'],
-                                'status' => 1,
-                            ];
-                        } else {
-                            $data[] = [
-                                'name' => $site['name'],
-                                'ssl' => $site['ssl']['subject'],
-                                'site_ssl' => $site['site_ssl']
-                            ];
-                        }
-                    }
-                }
+        foreach ($data as $site) {
+            if (!in_array($site['domain'], $siteNames)) {
+                $insertData[] = [
+                    'website' => $site['name'],
+                    'type' => 'mail',
+                    'api' => $bt_api,
+                    'key' => $bt_key,
+                    'cert_name' => $site['ssl']['subject'],
+                    'status' => 1,
+                ];
             }
         }
         if (!empty($insertData)) {
