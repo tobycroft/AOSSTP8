@@ -6,7 +6,7 @@ use app\v1\cert\action\MailAction;
 use app\v1\cert\model\CertWebsiteModel;
 use Input;
 use think\Exception;
-use yixinba\Bt\Site;
+use yixinba\Bt\Base;
 
 class mail extends bt
 {
@@ -30,8 +30,14 @@ class mail extends bt
         } catch (Exception $e) {
             \Ret::Fail('500', null, $e->getMessage());
         }
-        $bt_site = new Site($site['api'], $site['key'], './');
-        $ret = $bt_site->setSSL(1, $website, $ssl['key'], $ssl['crt']);
+        $bt_site = new Base($site['api'], $site['key'], './');
+        $post = [
+            'domain' => $site['website'],
+            'csr' => $ssl['crt'],
+            'key' => $ssl['key'],
+            'act' => 'add',
+        ];
+        $ret = $bt_site->httpPostCookie('/plugin?action=a&name=mail_sys&s=set_mail_certificate_multiple', $post, 10);
         if ($ret) {
             \Ret::Success(0, $ret);
         } else {
