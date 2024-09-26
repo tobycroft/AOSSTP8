@@ -21,7 +21,7 @@ class bt extends CommonController
         parent::initialize();
         $appname = Input::Get('appname');
         $appkey = Input::Get('appkey');
-        $this->cert = CertModel::where('appname', $appname)->where('appkey', $appkey)->find();
+        $this->cert = CertModel::where('appname', $appname)->where('appkey', $appkey)->where('status', 1)->find();
         if (!$this->cert) {
             \Ret::Fail("404", null, "未找到证书项目");
         }
