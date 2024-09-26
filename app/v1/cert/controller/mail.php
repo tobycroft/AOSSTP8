@@ -37,7 +37,7 @@ class mail extends bt
             'key' => $ssl['key'],
             'act' => 'add',
         ];
-        $ret = $bt_site->httpPostCookie('/plugin?action=a&name=mail_sys&s=set_mail_certificate_multiple', $post, 10);
+        $ret = $bt_site->httpPostCookie('/plugin?action=a&name=mail_sys&s=set_mail_certificate_multiple', $post, 15);
         if ($ret) {
             \Ret::Success(0, $ret);
         } else {
