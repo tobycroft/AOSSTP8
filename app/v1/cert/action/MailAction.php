@@ -60,7 +60,7 @@ class MailAction
                     'type' => 'mail',
                     'api' => $bt_api,
                     'key' => $bt_key,
-                    'cert_name' => $site['ssl']['subject'],
+                    'cert_name' => $site['domain'],
                     'status' => 1,
                 ];
             }
