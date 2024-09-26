@@ -41,7 +41,7 @@ class MailAction
             'size' => 10000
         ];
         $ret = $bt_site->httpPostCookie(self::getDomainList, $post, 10);
-//        \Ret::Success(0, $ret);
+        \Ret::Success(0, $ret);
         if (!isset($ret['message'])) {
             throw new Exception('MailServer返回的message列表为空');
         }
