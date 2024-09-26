@@ -117,7 +117,7 @@ class bt extends CommonController
             if ($ret) {
                 CertLogModel::create([
                     'appname' => $this->cert['appname'],
-                    'type' => $sites['type'],
+                    'type' => $site['type'],
                     'success' => 1,
                     'website' => $site['website'],
                     'recv' => json_encode($ret, 320),
@@ -126,7 +126,7 @@ class bt extends CommonController
             } else {
                 CertLogModel::create([
                     'appname' => $this->cert['appname'],
-                    'type' => $sites['type'],
+                    'type' => $site['type'],
                     'success' => 0,
                     'website' => $site['website'],
                     'recv' => json_encode($ret, 320),

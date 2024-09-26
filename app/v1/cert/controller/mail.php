@@ -84,7 +84,7 @@ class mail extends bt
             if ($ret) {
                 CertLogModel::create([
                     'appname' => $this->cert['appname'],
-                    'type' => $sites['type'],
+                    'type' => $site['type'],
                     'success' => 1,
                     'website' => $site['website'],
                     'recv' => json_encode($ret, 320),
@@ -93,7 +93,7 @@ class mail extends bt
             } else {
                 CertLogModel::create([
                     'appname' => $this->cert['appname'],
-                    'type' => $sites['type'],
+                    'type' => $site['type'],
                     'success' => 0,
                     'website' => $site['website'],
                     'recv' => json_encode($ret, 320),
