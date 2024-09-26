@@ -3,26 +3,17 @@
 namespace app\v1\cert\controller;
 
 use app\v1\cert\action\MailAction;
-use app\v1\cert\model\CertModel;
 use app\v1\cert\model\CertWebsiteModel;
-use BaseController\CommonController;
 use Input;
 use think\Exception;
 use yixinba\Bt\Site;
 
-class mail extends CommonController
+class mail extends bt
 {
-    public $cert;
 
     public function initialize()
     {
         parent::initialize();
-        $appname = Input::Get('appname');
-        $appkey = Input::Get('appkey');
-        $this->cert = CertModel::where('appname', $appname)->where('appkey', $appkey)->find();
-        if (!$this->cert) {
-            \Ret::Fail('404', null, '未找到证书项目');
-        }
     }
 
 
