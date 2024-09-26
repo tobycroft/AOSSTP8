@@ -3,6 +3,7 @@
 namespace app\v1\cert\controller;
 
 use app\v1\cert\action\MailAction;
+use app\v1\cert\action\SiteAction;
 use app\v1\cert\model\CertWebsiteModel;
 use Input;
 use think\Exception;
@@ -11,11 +12,17 @@ use yixinba\Bt\Base;
 class mail extends bt
 {
 
+
     public function initialize()
     {
         parent::initialize();
     }
 
+    public function getlist()
+    {
+        $data = MailAction::updateSiteListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
+        \Ret::Success(0, $data);
+    }
 
     public function setssl()
     {
@@ -37,7 +44,7 @@ class mail extends bt
             'key' => $ssl['key'],
             'act' => 'add',
         ];
-        $ret = $bt_site->httpPostCookie('/plugin?action=a&name=mail_sys&s=set_mail_certificate_multiple', $post, 15);
+        $ret = $bt_site->httpPostCookie(MailAction::setCert, $post, 15);
         if ($ret) {
             \Ret::Success(0, $ret);
         } else {

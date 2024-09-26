@@ -5,10 +5,13 @@ namespace app\v1\cert\action;
 use app\v1\cert\model\CertUrlModel;
 use app\v1\cert\model\CertWebsiteModel;
 use think\Exception;
+use yixinba\Bt\Base;
 use yixinba\Bt\Site;
 
 class MailAction
 {
+    const setCert = '/plugin?action=a&name=mail_sys&s=set_mail_certificate_multiple';
+    const getDomain = '/plugin?action=a&name=mail_sys&s=get_domains';
 
     public static function updatessl(string $cert_name): array|null
     {
@@ -31,7 +34,7 @@ class MailAction
 
     public static function updateSiteListWhichHadSSL($bt_api, $bt_key): array
     {
-        $bt_site = new Site($bt_api, $bt_key, './');
+        $bt_site = new Base($bt_api, $bt_key, './');
         $ret = $bt_site->getList();
         $data = [];
         $insertData = [];
