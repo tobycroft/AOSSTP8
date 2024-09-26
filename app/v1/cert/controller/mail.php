@@ -2,10 +2,12 @@
 
 namespace app\v1\cert\controller;
 
-use app\v1\cert\action\SiteAction;
+use app\v1\cert\action\MailAction;
 use app\v1\cert\model\CertModel;
 use app\v1\cert\model\CertWebsiteModel;
 use BaseController\CommonController;
+use Input;
+use think\Exception;
 use yixinba\Bt\Site;
 
 class mail extends CommonController
@@ -33,7 +35,7 @@ class mail extends CommonController
             \Ret::Fail(404, null, '项目中没有该站点，请先在自动更新库中添加本站点');
         }
         try {
-            $ssl = SiteAction::updatessl($name);
+            $ssl = MailAction::updatessl($name);
         } catch (Exception $e) {
             \Ret::Fail('500', null, $e->getMessage());
         }
