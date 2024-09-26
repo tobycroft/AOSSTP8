@@ -42,13 +42,13 @@ class MailAction
         ];
         $ret = $bt_site->httpPostCookie(self::getDomainList, $post, 10);
         \Ret::Success(0, $ret);
-        if (!isset($ret['message'])) {
+        if (!isset($ret['msg'])) {
             throw new Exception('MailServer返回的message列表为空');
         }
-        if (!isset($ret['message']['data'])) {
+        if (!isset($ret['msg']['data'])) {
             throw new Exception('MailServer返回的data列表为空');
         }
-        $data = $ret['message']['data'];
+        $data = $ret['msg']['data'];
         $insertData = [];
         $certNames = CertUrlModel::column('cert');
         $siteNames = CertWebsiteModel::whereIn('cert_name', $certNames)->column('website');
