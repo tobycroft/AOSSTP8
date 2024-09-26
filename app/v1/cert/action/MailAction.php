@@ -73,5 +73,17 @@ class MailAction
         return $domains;
     }
 
+    public static function updateMailSSL($bt_api, $bt_key, $website, $csr, $key)
+    {
+        $bt_site = new Base($bt_api, $bt_key, './');
+        $post = [
+            'domain' => $website,
+            'csr' => $csr,
+            'key' => $key,
+            'act' => 'add',
+        ];
+        return $bt_site->httpPostCookie(self::setCert, $post, 15);
+    }
+
 
 }

@@ -3,14 +3,11 @@
 namespace app\v1\cert\controller;
 
 use app\v1\cert\action\MailAction;
-use app\v1\cert\action\SiteAction;
 use app\v1\cert\model\CertLogModel;
 use app\v1\cert\model\CertUrlModel;
 use app\v1\cert\model\CertWebsiteModel;
 use Input;
 use think\Exception;
-use yixinba\Bt\Base;
-use yixinba\Bt\Site;
 
 class mail extends bt
 {
@@ -40,14 +37,7 @@ class mail extends bt
         } catch (Exception $e) {
             \Ret::Fail('500', null, $e->getMessage());
         }
-        $bt_site = new Base($site['api'], $site['key'], './');
-        $post = [
-            'domain' => $site['website'],
-            'csr' => $ssl['crt'],
-            'key' => $ssl['key'],
-            'act' => 'add',
-        ];
-        $ret = $bt_site->httpPostCookie(MailAction::setCert, $post, 15);
+        $ret = MailAction::updateMailSSL($this->cert['bt_api'], $this->cert['bt_key'], $site['website'], $ssl['csr'], $ssl['key']);
         if ($ret) {
             \Ret::Success(0, $ret);
         } else {
@@ -79,8 +69,7 @@ class mail extends bt
             'fail' => 0
         ];
         foreach ($sites as $site) {
-            $bt_site = new Site($site['api'], $site['key'], './');
-            $ret = $bt_site->setSSL(1, $site['website'], $ssl['key'], $ssl['crt']);
+            $ret = MailAction::updateMailSSL($site['api'], $site['key'], $site['website'], $ssl['csr'], $ssl['key']);
             if ($ret) {
                 CertLogModel::create([
                     'appname' => $this->cert['appname'],
