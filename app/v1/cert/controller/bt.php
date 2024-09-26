@@ -106,7 +106,7 @@ class bt extends CommonController
             \Ret::Fail('500', null, $e->getMessage());
         }
 
-        $sites = CertWebsiteModel::where('cert_name', $name)->where('status', 1)->select();
+        $sites = CertWebsiteModel::where('type', 'web')->where('cert_name', $name)->where('status', 1)->select();
         $rets = [
             'success' => 0,
             'fail' => 0
