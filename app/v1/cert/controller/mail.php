@@ -20,7 +20,7 @@ class mail extends bt
 
     public function getlist()
     {
-        $data = MailAction::updateSiteListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
+        $data = MailAction::updateMailListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
         \Ret::Success(0, $data);
     }
 

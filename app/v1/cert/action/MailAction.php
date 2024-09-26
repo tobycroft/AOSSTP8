@@ -6,12 +6,11 @@ use app\v1\cert\model\CertUrlModel;
 use app\v1\cert\model\CertWebsiteModel;
 use think\Exception;
 use yixinba\Bt\Base;
-use yixinba\Bt\Site;
 
 class MailAction
 {
     const setCert = '/plugin?action=a&name=mail_sys&s=set_mail_certificate_multiple';
-    const getDomain = '/plugin?action=a&name=mail_sys&s=get_domains';
+    const getDomainList = '/plugin?action=a&name=mail_sys&s=get_domains';
 
     public static function updatessl(string $cert_name): array|null
     {
@@ -32,10 +31,16 @@ class MailAction
         ];
     }
 
-    public static function updateSiteListWhichHadSSL($bt_api, $bt_key): array
+    public static function updateMailListWhichHadSSL($bt_api, $bt_key): array
     {
         $bt_site = new Base($bt_api, $bt_key, './');
-        $ret = $bt_site->getList();
+        //p: 1
+        //size: 10
+        $post = [
+            'p' => 1,
+            'size' => 10000
+        ];
+        $ret = $bt_site->httpPostCookie(self::getDomainList, $post, 10);
         $data = [];
         $insertData = [];
         $certNames = CertUrlModel::column('cert');
