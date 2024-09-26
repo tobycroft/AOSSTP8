@@ -56,7 +56,7 @@ class MailAction
         foreach ($data as $site) {
             if (!in_array($site['domain'], $siteNames)) {
                 $insertData[] = [
-                    'website' => $site['name'],
+                    'website' => $site['domain'],
                     'type' => 'mail',
                     'api' => $bt_api,
                     'key' => $bt_key,
