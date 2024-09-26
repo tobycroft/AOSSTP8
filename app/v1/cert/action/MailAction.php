@@ -52,8 +52,10 @@ class MailAction
         $insertData = [];
         $certNames = CertUrlModel::column('cert');
         $siteNames = CertWebsiteModel::whereIn('cert_name', $certNames)->column('website');
+        $domains = [];
 
         foreach ($data as $site) {
+            $domains[] = $site['domain'];
             if (!in_array($site['domain'], $siteNames)) {
                 $insertData[] = [
                     'website' => $site['domain'],
@@ -68,7 +70,7 @@ class MailAction
         if (!empty($insertData)) {
             CertWebsiteModel::insertAll($insertData);
         }
-        return $data;
+        return $domains;
     }
 
 
