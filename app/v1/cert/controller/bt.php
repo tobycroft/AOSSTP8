@@ -2,6 +2,7 @@
 
 namespace app\v1\cert\controller;
 
+use app\v1\cert\action\MailAction;
 use app\v1\cert\action\SiteAction;
 use app\v1\cert\model\CertLogModel;
 use app\v1\cert\model\CertModel;
@@ -100,6 +101,7 @@ class bt extends CommonController
             \Ret::Fail(401, null, '本证书自动下发功能不可用');
         }
         try {
+            MailAction::updateMailListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
             SiteAction::updateSiteListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
             $ssl = SiteAction::updatessl($name);
         } catch (Exception $e) {
