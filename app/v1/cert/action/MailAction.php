@@ -41,7 +41,8 @@ class MailAction
             'size' => 10000
         ];
         $ret = $bt_site->httpPostCookie(self::getDomainList, $post, 10);
-        $data = [];
+        if (isset($ret['message']))
+            $data = [];
         $insertData = [];
         $certNames = CertUrlModel::column('cert');
         $siteNames = CertWebsiteModel::whereIn('cert_name', $certNames)->column('website');
