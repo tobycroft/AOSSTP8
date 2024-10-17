@@ -16,7 +16,7 @@ class index extends CommonController
             Ret::Fail(400, null, 'file字段没有用文件提交');
         }
         Ret::Success(0, [
-            $file->getPath(), $file->getFilename(),
+            $file->getPath(), $file->getFilename(), $file->getBasename()
         ]);
         $content = file_get_contents($file->getFilename());
         Ret::Success(0, $content);
