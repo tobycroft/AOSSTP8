@@ -2,15 +2,22 @@
 
 namespace app\v1\cidr\controller;
 
+use app\Request;
 use BaseController\CommonController;
+use Ret;
 
 class index extends CommonController
 {
 
-    public function index()
+    public function index(Request $request)
     {
-        $cidr = \Input::Post('cidr');
-        $missingRanges = $this->calculateMissingRanges($cidr);
+        $file = $request->file('file');
+        if (!$file || !$file->isFile()) {
+            Ret::Fail(400, null, 'file字段没有用文件提交');
+        }
+        $content = file_get_contents($file->getPath());
+        Ret::Success(0, $content);
+        $missingRanges = $this->calculateMissingRanges($content);
 
         echo "Missing IP Ranges:\n";
         foreach ($missingRanges as $range) {
