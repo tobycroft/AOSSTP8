@@ -10,6 +10,12 @@ class index extends CommonController
     public function index()
     {
         $cidr = \Input::Post('cidr');
+        $missingRanges = $this->calculateMissingRanges($cidr);
+
+        echo "Missing IP Ranges:\n";
+        foreach ($missingRanges as $range) {
+            echo $range . "\n";
+        }
     }
 
     public function cidrToRange($cidr)
