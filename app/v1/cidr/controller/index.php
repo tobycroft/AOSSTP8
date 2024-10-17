@@ -16,7 +16,7 @@ class index extends CommonController
             Ret::Fail(400, null, 'file字段没有用文件提交');
         }
         $content = file_get_contents($file->getPath() . DIRECTORY_SEPARATOR . $file->getFilename());
-        Ret::Success(0, $content);
+//        Ret::Success(0, $content);
         $missingRanges = $this->calculateMissingRanges($content);
 
         echo "Missing IP Ranges:\n";
