@@ -17,7 +17,7 @@ class index extends CommonController
         }
         $content = file_get_contents($file->getPath() . DIRECTORY_SEPARATOR . $file->getFilename());
 //        Ret::Success(0, $content);
-        $missingRanges = $this->calculateMissingRanges($content);
+        $missingRanges = $this->calculateMissingRanges(explode('\r\n', $content));
 
         echo "Missing IP Ranges:\n";
         foreach ($missingRanges as $range) {
