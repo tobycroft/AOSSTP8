@@ -29,7 +29,7 @@ class index extends CommonController
     {
         list($subnet, $mask) = explode('/', $cidr);
         $ip = ip2long($subnet);
-        echo $mask;
+        $mask = (int)$mask;  // 强制转换为整数
         $mask = 0xffffffff << (32 - $mask);
         $start = $ip & $mask;
         $end = $start | (~$mask & 0xffffffff);
