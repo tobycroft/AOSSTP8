@@ -15,10 +15,7 @@ class index extends CommonController
         if (!$file || !$file->isFile()) {
             Ret::Fail(400, null, 'file字段没有用文件提交');
         }
-        Ret::Success(0, [
-            $file->getPath(), $file->getFilename(), $file->getBasename()
-        ]);
-        $content = file_get_contents($file->getFilename());
+        $content = file_get_contents($file->getPath() . DIRECTORY_SEPARATOR . $file->getFilename());
         Ret::Success(0, $content);
         $missingRanges = $this->calculateMissingRanges($content);
 
