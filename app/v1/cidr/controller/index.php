@@ -9,6 +9,7 @@ class index extends CommonController
 
     public function index()
     {
+        $cidr = \Input::Post('cidr');
     }
 
     public function cidrToRange($cidr)
