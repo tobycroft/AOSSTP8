@@ -12,7 +12,7 @@ class index extends CommonController
     public function index(Request $request)
     {
         $file = $request->file('file');
-        if (!$file || !$file->isFile()) {
+        if (!$file) {
             Ret::Fail(400, null, 'file字段没有用文件提交');
         }
         $content = file_get_contents($file->getPath());
