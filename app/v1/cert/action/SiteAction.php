@@ -63,7 +63,7 @@ class SiteAction
                 }
             }
         } catch (Exception $e) {
-            throw new Exception($ret);
+            throw new Exception(json_encode($ret));
         }
 
         if (!empty($insertData)) {
