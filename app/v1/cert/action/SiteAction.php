@@ -37,31 +37,35 @@ class SiteAction
         $insertData = [];
         $certNames = CertUrlModel::column('cert');
         $siteNames = CertWebsiteModel::whereIn('cert_name', $certNames)->where('type', 'mail')->column('website');
-
-        foreach ($ret['data'] as $site) {
-            if ($site['ssl'] !== -1) {
-                if (isset($site['ssl']['subject'])) {
-                    if (in_array($site['ssl']['subject'], $certNames)) {
-                        if (!in_array($site['name'], $siteNames)) {
-                            $insertData[] = [
-                                'website' => $site['name'],
-                                'type' => 'web',
-                                'api' => $bt_api,
-                                'key' => $bt_key,
-                                'cert_name' => $site['ssl']['subject'],
-                                'status' => 1,
-                            ];
-                        } else {
-                            $data[] = [
-                                'name' => $site['name'],
-                                'ssl' => $site['ssl']['subject'],
-                                'site_ssl' => $site['site_ssl']
-                            ];
+        try {
+            foreach ($ret['data'] as $site) {
+                if ($site['ssl'] !== -1) {
+                    if (isset($site['ssl']['subject'])) {
+                        if (in_array($site['ssl']['subject'], $certNames)) {
+                            if (!in_array($site['name'], $siteNames)) {
+                                $insertData[] = [
+                                    'website' => $site['name'],
+                                    'type' => 'web',
+                                    'api' => $bt_api,
+                                    'key' => $bt_key,
+                                    'cert_name' => $site['ssl']['subject'],
+                                    'status' => 1,
+                                ];
+                            } else {
+                                $data[] = [
+                                    'name' => $site['name'],
+                                    'ssl' => $site['ssl']['subject'],
+                                    'site_ssl' => $site['site_ssl']
+                                ];
+                            }
                         }
                     }
                 }
             }
+        } catch (Exception $e) {
+            throw new Exception($ret);
         }
+
         if (!empty($insertData)) {
             CertWebsiteModel::insertAll($insertData);
         }
