@@ -32,14 +32,19 @@ class SiteAction
     public static function updateSiteListWhichHadSSL($bt_api, $bt_key): array
     {
         $bt_site = new Site($bt_api, $bt_key, './');
-        $ret = $bt_site->getList();
+        try {
+            $ret = $bt_site->getList();
+            if (!isset($ret['data'])) {
+                throw new Exception(json_encode('返回故障：' . $ret));
+            }
+        } catch (Exception $e) {
+            throw new Exception('BT故障：' . $e);
+        }
         $data = [];
         $insertData = [];
         $certNames = CertUrlModel::column('cert');
         $siteNames = CertWebsiteModel::whereIn('cert_name', $certNames)->where('type', 'mail')->column('website');
-        if (!isset($ret['data'])) {
-            throw new Exception(json_encode('返回故障：' . $ret));
-        }
+
         foreach ($ret['data'] as $site) {
             if ($site['ssl'] !== -1) {
                 if (isset($site['ssl']['subject'])) {
