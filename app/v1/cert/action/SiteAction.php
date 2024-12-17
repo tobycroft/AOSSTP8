@@ -38,7 +38,7 @@ class SiteAction
         $certNames = CertUrlModel::column('cert');
         $siteNames = CertWebsiteModel::whereIn('cert_name', $certNames)->where('type', 'mail')->column('website');
         if (!isset($ret['data'])) {
-            throw new Exception(json_encode($ret));
+            throw new Exception(json_encode('返回故障：' . $ret));
         }
         foreach ($ret['data'] as $site) {
             if ($site['ssl'] !== -1) {
