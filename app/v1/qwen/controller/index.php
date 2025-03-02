@@ -8,6 +8,7 @@ use app\v1\nlp\model\NlpModel;
 use app\v1\qwen\model\QwenModel;
 use Qwen\Enums\Models;
 use Qwen\QwenClient;
+use think\Response;
 
 class index extends create
 {
@@ -32,6 +33,7 @@ class index extends create
             ->withModel('qwen2.5-1.5b-instruct')
             ->run();
 
-        echo $response;
+//        echo $response;
+        Response::create($response)->send();
     }
 }
