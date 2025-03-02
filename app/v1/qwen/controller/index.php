@@ -29,7 +29,7 @@ class index extends create
     public function aliyun()
     {
         $response = QwenClient::build($this->qwen['appkey'], 'https://dashscope.aliyuncs.com')
-            ->query('Hello qwen, how are you today?')
+            ->query('你好，今天是几月几日?')
             ->withModel('qwen2.5-1.5b-instruct')
             ->run();
 
