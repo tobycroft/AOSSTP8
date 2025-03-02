@@ -43,7 +43,8 @@
       "alibabacloud/alinlp-20200629": "^2.0",
         "topthink/think-captcha": "^3.0",
       "kekalainen/gamerq": "^3.0",
-        "yixinba/btapi": "^1.0"
+      "yixinba/btapi": "^1.0",
+      "alibabacloud/bailian-20231229": "^2.0"
     },
     "require-dev": {
         "symfony/var-dumper": ">=4.2",
