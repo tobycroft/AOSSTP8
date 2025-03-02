@@ -37,6 +37,6 @@ class index extends create
             ->run();
 
 //        echo $response;
-        Response::create($response)->send();
+        Response::create(json_decode($response), 'json')->send();
     }
 }
