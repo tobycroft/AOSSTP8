@@ -29,7 +29,7 @@ class index extends create
         }
     }
 
-    public function index()
+    public function aliyun()
     {
         $apiKey = 'your-api-key';
 
