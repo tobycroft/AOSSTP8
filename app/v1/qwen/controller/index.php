@@ -30,7 +30,7 @@ class index extends create
     {
         $response = QwenClient::build($this->qwen['appkey'], 'https://dashscope.aliyuncs.com')
             ->query('你好，今天是几月几日?')
-            ->withModel('qwen2.5-1.5b-instruct')
+            ->withModel('deepseek-r1-distill-llama-8b')
             ->run();
 
 //        echo $response;
