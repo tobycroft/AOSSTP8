@@ -27,7 +27,8 @@ class index extends create
 
     public function aliyun()
     {
-
+        echo $this->qwen['appkey'];
+        exit();
         $response = QwenClient::build($this->qwen['appkey'])
             ->query('Hello qwen, how are you today?')
             ->withModel('qwen2.5-1.5b-instruct')
