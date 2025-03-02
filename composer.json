@@ -38,8 +38,6 @@
         "ext-libxml": "*",
         "guzzlehttp/guzzle": "^7.7",
       "tencentcloud/tencentcloud-sdk-php": "^3.0",
-      "pj8912/php-bard-api": "^1.0",
-        "maximerenou/bing-ai": "^1.1",
         "tobycroft/zbuilder": "^1.0",
       "topthink/think-helper": "^3.1",
       "alibabacloud/alinlp-20200629": "^2.0",
