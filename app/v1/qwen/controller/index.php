@@ -32,6 +32,6 @@ class index extends create
             ->withModel('qwen2.5-1.5b-instruct')
             ->run();
 
-        echo 'API Response:' . $response;
+        echo $response;
     }
 }
