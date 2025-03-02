@@ -3,14 +3,10 @@
 namespace app\v1\qwen\controller;
 
 
-use AlibabaCloud\SDK\Alinlp\V20200629\Alinlp;
-use AlibabaCloud\SDK\Alinlp\V20200629\Models\GetSaChGeneralRequest;
-use AlibabaCloud\Tea\Exception\TeaUnableRetryError;
 use app\v1\image\controller\create;
-use app\v1\nlp\model\NlpAliyunModel;
 use app\v1\nlp\model\NlpModel;
-use Darabonba\OpenApi\Models\Config;
-use AlibabaCloud\SDK\Bailian\V20231229\Models\UpdateFileTagRequest;
+use Qwen\Enums\Models;
+use Qwen\QwenClient;
 
 class index extends create
 {
@@ -35,6 +31,13 @@ class index extends create
 
     public function index()
     {
-        Bai
+        $apiKey = 'your-api-key';
+
+        $response = QwenClient::build($apiKey)
+            ->query('Hello qwen, how are you today?')
+            ->withModel('qwen2.5-1.5b-instruct')
+            ->run();
+
+        echo 'API Response:' . $response;
     }
 }
