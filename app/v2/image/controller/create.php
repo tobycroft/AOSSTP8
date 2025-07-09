@@ -141,55 +141,107 @@ class create extends index
         $this->height = Input::Combi('height');
         $this->background = Input::Combi('background');
         $data = Input::PostJson('data');
-        $document = ImageWorkshop::initVirginLayer($this->width, $this->height);
+
+        // 新增：获取DPI参数（默认72）
+        $dpi = Input::PostInt('dpi', 72);
+
+        // 毫米转像素（保留原有参数单位，但转换为像素）
+        $width_px = round(($this->width * $dpi) / 25.4);
+        $height_px = round(($this->height * $dpi) / 25.4);
+
+        // === 修改部分：使用Imagick替代ImageWorkshop ===
+        $canvas = new Imagick();
+        $canvas->newImage($width_px, $height_px, new ImagickPixel($this->background));
+        $canvas->setImageResolution($dpi, $dpi);
+        $canvas->setImageUnits(Imagick::RESOLUTION_PIXELSPERINCH);
 
         foreach ($data as $item) {
             try {
-                $layer_class = new DataAction($item);
-                $layer = $layer_class->handle();
-                $document->addLayer(1, $layer, $layer_class->x, $layer_class->y, $layer_class->position);
+                // 传递DPI给DataAction
+                $handler = new DataAction($item, $dpi);
+                $layer = $handler->handle();
+
+                if ($layer instanceof \Imagick) {
+                    // 毫米转像素
+                    $x_px = round(($handler->x * $dpi) / 25.4);
+                    $y_px = round(($handler->y * $dpi) / 25.4);
+
+                    // 计算实际位置（复用canvas方法中的逻辑）
+                    list($x, $y) = $this->calculatePosition(
+                        $handler->position,
+                        $x_px,
+                        $y_px,
+                        $layer->getImageWidth(),
+                        $layer->getImageHeight(),
+                        $width_px,
+                        $height_px
+                    );
+
+                    // 合成图层
+                    $canvas->compositeImage(
+                        $layer,
+                        Imagick::COMPOSITE_DEFAULT,
+                        $x,
+                        $y
+                    );
+                    $layer->clear(); // 释放资源
+                }
             } catch (Exception $e) {
                 Ret::Fail(300, null, $e->getMessage());
             }
         }
+        // === Imagick部分结束 ===
+
+        // 保持原有的MD5生成逻辑不变
         $crypt = [
-            "width" => $this->width,
-            "height" => $this->height,
-            "background" => $this->background,
-            "data" => $data
+            'width' => $this->width,
+            'height' => $this->height,
+            'background' => $this->background,
+            'data' => $data
         ];
         $md5 = md5(json_encode($crypt, 320));
-        $document->getResult($this->background);
-        $document->save("./upload/image/" . $this->token, $md5 . ".jpg");
-        $path_name = "./upload/image/" . $this->token . "/" . $md5 . ".jpg";
-        $fileName = "image/" . $this->token . "/" . $md5 . ".jpg";
 
-        if ($this->proc["type"] == "local" || $this->proc["type"] == "all") {
+        // 创建保存目录
+        $saveDir = './upload/image/' . $this->token;
+        if (!is_dir($saveDir)) {
+            mkdir($saveDir, 0777, true);
+        }
+
+        // 修改：使用Imagick保存图片
+        $path_name = "{$saveDir}/{$md5}.jpg";
+        $canvas->setImageFormat('jpg');
+        $canvas->writeImage($path_name);
+        $canvas->clear(); // 释放资源
+
+        $fileName = 'image/' . $this->token . '/' . $md5 . '.jpg';
+
+        // 保持原有的存储逻辑不变
+        if ($this->proc['type'] == 'local' || $this->proc['type'] == 'all') {
             if ($this->proc['main_type'] == 'local') {
-                $sav = $this->proc['url'] . "/image/" . $this->token . DIRECTORY_SEPARATOR . $md5 . ".jpg";
+                $sav = $this->proc['url'] . '/image/' . $this->token . DIRECTORY_SEPARATOR . $md5 . '.jpg';
             }
         }
-        if ($this->proc["type"] == "dp" || $this->proc["type"] == "all") {
+        if ($this->proc['type'] == 'dp' || $this->proc['type'] == 'all') {
             $sf = new SendFile();
-            $ret = $sf->send('http://' . $this->proc["endpoint"] . '/up?token=' . $this->proc["bucket"], realpath('./upload/' . $fileName), "image/jpg", $md5 . "jpg");
+            $ret = $sf->send('http://' . $this->proc['endpoint'] . '/up?token=' . $this->proc['bucket'], realpath('./upload/' . $fileName), 'image/jpg', $md5 . 'jpg');
             $json = json_decode($ret, 1);
-            $sav = $this->proc['url'] . '/' . $json["data"];
+            $sav = $this->proc['url'] . '/' . $json['data'];
         }
-        if ($this->proc["type"] == "oss" || $this->proc["type"] == "all") {
+        if ($this->proc['type'] == 'oss' || $this->proc['type'] == 'all') {
             try {
                 $oss = new AliyunOSS($this->proc);
                 $ret = $oss->uploadFile($this->proc['bucket'], $fileName, $path_name);
             } catch (OssException $e) {
                 Ret::Fail(200, null, $e->getMessage());
             }
-            if (empty($ret->getData()["info"]["url"])) {
-                Ret::Fail(300, null, "OSS不正常");
+            if (empty($ret->getData()['info']['url'])) {
+                Ret::Fail(300, null, 'OSS不正常');
             }
             if ($this->proc['main_type'] == 'oss') {
                 $sav = $this->proc['url'] . '/' . $fileName;
             }
-            if ($this->proc["type"] != "all") {
-                $document->delete();
+            if ($this->proc['type'] != 'all') {
+                // 修改：删除本地文件（原$document->delete()改为unlink）
                 unlink($path_name);
             }
         }
