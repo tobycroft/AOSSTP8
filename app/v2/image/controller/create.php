@@ -30,9 +30,7 @@ class create extends index
         $this->width = Input::Combi('width');
         $this->height = Input::Combi('height');
         $this->background = Input::Combi('background');
-        $json=Input::PostJson('data');
-        $json = $request->post("data");
-        $data = json_decode($json, 1);
+        $data=Input::PostJson('data');
         $document = ImageWorkshop::initVirginLayer($this->width, $this->height);
 
         foreach ($data as $item) {
