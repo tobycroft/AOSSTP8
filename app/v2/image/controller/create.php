@@ -117,14 +117,17 @@ class create extends index
                     $canvasWidth - $layerWidth - $x,
                     ($canvasHeight - $layerHeight) / 2 + $y
                 ];
-            case 'LB': // 左下
+            case 'LB':
+            case 'LD': // 左下
                 return [$x, $canvasHeight - $layerHeight - $y];
-            case 'CB': // 中下
+            case 'CB':
+            case 'CD': // 中下
                 return [
                     ($canvasWidth - $layerWidth) / 2 + $x,
                     $canvasHeight - $layerHeight - $y
                 ];
             case 'RB': // 右下
+            case 'RD': // 右下
                 return [
                     $canvasWidth - $layerWidth - $x,
                     $canvasHeight - $layerHeight - $y
