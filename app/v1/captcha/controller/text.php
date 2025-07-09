@@ -2,7 +2,7 @@
 
 namespace app\v1\captcha\controller;
 
-use app\v1\captcha\model\PrintUserModel;
+use app\v1\captcha\model\CaptchaModel;
 use app\v1\captcha\utils\Captcha;
 use app\v1\image\controller\create;
 use Input;
@@ -45,7 +45,7 @@ class text extends create
         $sess = new Session($this->app);
         $capt = new Captcha($con, $sess);
         $create = $capt->create();
-        PrintUserModel::create([
+        CaptchaModel::create([
             'ident' => $this->ident,
             'code' => $capt->question,
             'hash' => $capt->hash,
@@ -117,7 +117,7 @@ class text extends create
         $sess = new Session($this->app);
         $capt = new Captcha($con, $sess);
         $create = $capt->create();
-        PrintUserModel::create([
+        CaptchaModel::create([
             'ident' => $this->ident,
             "code" => $capt->key,
             "hash" => $capt->hash,
@@ -138,7 +138,7 @@ class text extends create
         $sess = new Session($this->app);
         $capt = new Captcha($con, $sess);
         $create = $capt->create();
-        PrintUserModel::create([
+        CaptchaModel::create([
             "ident" => $this->ident,
             "code" => $capt->question,
             "hash" => $capt->hash,
