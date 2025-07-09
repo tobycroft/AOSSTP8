@@ -70,8 +70,8 @@ class create extends index
         }
 
         // 设置输出格式和质量
-        $canvas->setImageFormat('jpeg');
-        $canvas->setImageCompressionQuality(95);
+        $canvas->setImageFormat('png');
+//        $canvas->setImageCompressionQuality(95);
 
         // 输出结果
         response($canvas->getImageBlob())->contentType('image/png')->send();
