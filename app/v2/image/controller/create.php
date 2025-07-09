@@ -26,11 +26,11 @@ class create extends index
     public function canvas(Request $request)
     {
         // 获取基础参数
-        $width = Input::Combi('width');
-        $height = Input::Combi('height');
-        $background = Input::Combi('background');
+        $width = Input::Post('width');
+        $height = Input::Post('height');
+        $background = Input::Post('background');
         $data = Input::PostJson('data');
-        $dpi = (int)Input::Combi('dpi');
+        $dpi = Input::PostInt('dpi');
 
         // 创建画布
         $canvas = new Imagick();
