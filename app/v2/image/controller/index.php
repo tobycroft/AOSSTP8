@@ -23,5 +23,6 @@ class index extends CommonController
         if (!$this->project) {
             Ret::Fail(401, null, '项目不可用');
         }
+
     }
 }

@@ -18,7 +18,6 @@ use think\Request;
 class create extends index
 {
 
-
     protected int $width;
     protected int $height;
     protected string $background;
@@ -216,35 +215,7 @@ class create extends index
         $fileName = 'image/' . $this->token . '/' . $md5 . '.jpg';
 
         // 保持原有的存储逻辑不变
-        if ($this->proc['type'] == 'local' || $this->proc['type'] == 'all') {
-            if ($this->proc['main_type'] == 'local') {
-                $sav = $this->proc['url'] . '/image/' . $this->token . DIRECTORY_SEPARATOR . $md5 . '.jpg';
-            }
-        }
-        if ($this->proc['type'] == 'dp' || $this->proc['type'] == 'all') {
-            $sf = new SendFile();
-            $ret = $sf->send('http://' . $this->proc['endpoint'] . '/up?token=' . $this->proc['bucket'], realpath('./upload/' . $fileName), 'image/jpg', $md5 . 'jpg');
-            $json = json_decode($ret, 1);
-            $sav = $this->proc['url'] . '/' . $json['data'];
-        }
-        if ($this->proc['type'] == 'oss' || $this->proc['type'] == 'all') {
-            try {
-                $oss = new AliyunOSS($this->proc);
-                $ret = $oss->uploadFile($this->proc['bucket'], $fileName, $path_name);
-            } catch (OssException $e) {
-                Ret::Fail(200, null, $e->getMessage());
-            }
-            if (empty($ret->getData()['info']['url'])) {
-                Ret::Fail(300, null, 'OSS不正常');
-            }
-            if ($this->proc['main_type'] == 'oss') {
-                $sav = $this->proc['url'] . '/' . $fileName;
-            }
-            if ($this->proc['type'] != 'all') {
-                // 修改：删除本地文件（原$document->delete()改为unlink）
-                unlink($path_name);
-            }
-        }
+        $sav = 'https://image.tuuz.cc:444//image/' . $this->token . DIRECTORY_SEPARATOR . $md5 . '.jpg';
         Ret::Success(0, $sav);
     }
 
