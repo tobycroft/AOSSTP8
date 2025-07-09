@@ -100,7 +100,7 @@ class create extends index
         float  $canvasHeight
     ): array
     {
-        switch ($position) {
+        switch (strtoupper($position)) {
             case 'CT': // 中上
                 return [($canvasWidth - $layerWidth) / 2 + $x, $y];
             case 'RT': // 右上
