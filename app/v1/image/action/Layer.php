@@ -15,7 +15,7 @@ class Layer
     public mixed $y = 0;
     public string $url = "";
 
-    private string $font = "../public/static/Misans/MiSans VF.ttf";
+    private string $font = "../public/static/MiSans/MiSans VF.ttf";
     private string $font_color = "000000";
 
     public function text(): ImageWorkshopLayer
