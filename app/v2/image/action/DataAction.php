@@ -55,7 +55,7 @@ class DataAction
         $text = $this->item['text'];
         $size = $this->item['size'] ?? 24;      // 默认字号
         $color = $this->item['color'] ?? 'black'; // 默认颜色
-        $font = $this->item['font'] ?? null;    // 字体文件路径
+        $font = $this->item['font'] ?? '../public/static/MiSans/MiSans VF.ttf';    // 字体文件路径
 
         // 创建绘图对象
         $draw = new ImagickDraw();
