@@ -3,10 +3,7 @@
 namespace app\v2\image\controller;
 
 
-use app\v1\file\action\OssSelectionAction;
 use app\v2\image\action\DataAction;
-use app\v1\oss\model\OssModel;
-use BaseController\CommonController;
 use Input;
 use OSS\AliyunOSS;
 use OSS\Core\OssException;
@@ -30,7 +27,7 @@ class create extends index
         $this->width = Input::Combi('width');
         $this->height = Input::Combi('height');
         $this->background = Input::Combi('background');
-        $data=Input::PostJson('data');
+        $data = Input::PostJson('data');
         $document = ImageWorkshop::initVirginLayer($this->width, $this->height);
 
         foreach ($data as $item) {
