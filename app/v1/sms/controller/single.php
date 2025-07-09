@@ -2,7 +2,7 @@
 
 namespace app\v1\sms\controller;
 
-use app\v1\project\model\OssModel;
+use app\v1\oss\model\OssModel;
 use app\v1\sms\action\SendAction;
 use BaseController\CommonController;
 use Input;

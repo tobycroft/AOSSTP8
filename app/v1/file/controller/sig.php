@@ -3,7 +3,7 @@
 namespace app\v1\file\controller;
 
 use app\v1\file\action\OssSelectionAction;
-use app\v1\project\model\OssModel;
+use app\v1\oss\model\OssModel;
 use Ret;
 use think\Request;
 

@@ -4,7 +4,7 @@ namespace app\v1\image\controller;
 
 use app\v1\file\action\OssSelectionAction;
 use app\v1\image\action\QRImageWithLogo;
-use app\v1\project\model\OssModel;
+use app\v1\oss\model\OssModel;
 use BaseController\CommonController;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
