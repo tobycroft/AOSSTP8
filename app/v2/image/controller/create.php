@@ -25,16 +25,20 @@ class create extends index
 
     public function canvas(Request $request)
     {
-        // 获取基础参数
-        $width = Input::Post('width');
-        $height = Input::Post('height');
+        // 获取基础参数（单位：mm）
+        $width_mm = Input::Post('width');       // 毫米单位
+        $height_mm = Input::Post('height');     // 毫米单位
         $background = Input::Post('background');
         $data = Input::PostJson('data');
         $dpi = Input::PostInt('dpi');
 
-        // 创建画布
+        // 毫米转像素（1英寸=25.4毫米）
+        $width_px = round(($width_mm * $dpi) / 25.4);
+        $height_px = round(($height_mm * $dpi) / 25.4);
+
+        // 创建画布（使用像素尺寸）
         $canvas = new Imagick();
-        $canvas->newImage($width, $height, new ImagickPixel($background));
+        $canvas->newImage($width_px, $height_px, new ImagickPixel($background));
         $canvas->setImageResolution($dpi, $dpi);
         $canvas->setImageUnits(Imagick::RESOLUTION_PIXELSPERINCH);
 
@@ -44,15 +48,19 @@ class create extends index
                 $layer = $handler->handle();
 
                 if ($layer) {
-                    // 根据位置参数计算实际坐标
+                    // 将位置参数的毫米单位转换为像素
+                    $x_px = round(($handler->x * $dpi) / 25.4);
+                    $y_px = round(($handler->y * $dpi) / 25.4);
+
+                    // 计算实际坐标（使用像素单位）
                     list($x, $y) = $this->calculatePosition(
                         $handler->position,
-                        $handler->x,
-                        $handler->y,
+                        $x_px,  // 转换后的X坐标（像素）
+                        $y_px,  // 转换后的Y坐标（像素）
                         $layer->getImageWidth(),
                         $layer->getImageHeight(),
-                        $width,
-                        $height
+                        $width_px,
+                        $height_px
                     );
 
                     // 合成图层
