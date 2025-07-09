@@ -92,8 +92,10 @@ class create extends index
         // 获取最终图像数据
         $imageData = $canvas->getImageBlob();
         $canvas->destroy();
+
         // 输出结果
-        response($canvas->getImageBlob())->contentType('image/png')->send();
+        return response($imageData)
+            ->header('Content-Type', 'image/jpeg');
     }
 
     public function file(Request $request)
