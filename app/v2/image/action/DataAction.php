@@ -7,7 +7,6 @@ use ImagickDraw;
 use ImagickPixel;
 use think\Exception;
 
-
 class DataAction
 {
     private $item;
@@ -32,8 +31,20 @@ class DataAction
         $this->position = $this->item['position'] ?? 'LT';
     }
 
-    // ... handle() 方法保持不变 ...
-
+    /**
+     * @throws Exception
+     */
+    public function handle(): ?Imagick
+    {
+        switch ($this->item['type']) {
+            case 'text':
+                return $this->createTextLayer();
+            case 'image':
+                return $this->createImageLayer();
+            default:
+                return null;
+        }
+    }
     /**
      * 毫米转像素
      */
