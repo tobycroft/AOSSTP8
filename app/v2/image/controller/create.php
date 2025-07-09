@@ -21,26 +21,16 @@ class create extends index
 {
 
 
-    public mixed $proc;
     protected int $width;
     protected int $height;
     protected string $background;
 
     public function canvas(Request $request)
     {
-        $this->proc = OssSelectionAction::App_find_byProc($this->proc);
-        if (!$request->has("width")) {
-            Ret::Fail(400, null, "width");
-        }
-        if (!$request->has("height")) {
-            Ret::Fail(400, null, "height");
-        }
-        if (!$request->has("background")) {
-            Ret::Fail(400, null, "background");
-        }
-        $this->width = input("width");
-        $this->height = input("height");
-        $this->background = input("background");
+        $this->width = Input::Combi('width');
+        $this->height = Input::Combi('height');
+        $this->background = Input::Combi('background');
+        $json=Input::PostJson('data');
         $json = $request->post("data");
         $data = json_decode($json, 1);
         $document = ImageWorkshop::initVirginLayer($this->width, $this->height);
@@ -62,7 +52,6 @@ class create extends index
 
     public function file(Request $request)
     {
-        $this->proc = OssSelectionAction::App_find_byProc($this->proc);
         if (!$request->has("width")) {
             Ret::Fail(400, null, "width");
         }
