@@ -26,8 +26,8 @@ class create extends index
     public function canvas(Request $request)
     {
         // 获取基础参数（单位：mm）
-        $width_mm = Input::Post('width');       // 毫米单位
-        $height_mm = Input::Post('height');     // 毫米单位
+        $width_mm = Input::Post('width');
+        $height_mm = Input::Post('height');
         $background = Input::Post('background');
         $data = Input::PostJson('data');
         $dpi = Input::PostInt('dpi');
@@ -44,7 +44,8 @@ class create extends index
 
         foreach ($data as $item) {
             try {
-                $handler = new DataAction($item);
+                // 将DPI传递给DataAction
+                $handler = new DataAction($item, $dpi);
                 $layer = $handler->handle();
 
                 if ($layer) {
@@ -55,8 +56,8 @@ class create extends index
                     // 计算实际坐标（使用像素单位）
                     list($x, $y) = $this->calculatePosition(
                         $handler->position,
-                        $x_px,  // 转换后的X坐标（像素）
-                        $y_px,  // 转换后的Y坐标（像素）
+                        $x_px,
+                        $y_px,
                         $layer->getImageWidth(),
                         $layer->getImageHeight(),
                         $width_px,
