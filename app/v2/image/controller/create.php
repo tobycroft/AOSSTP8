@@ -30,7 +30,7 @@ class create extends index
         $height = Input::Combi('height');
         $background = Input::Combi('background');
         $data = Input::PostJson('data');
-        $dpi = (int)Input::Combi('dpi', 203);
+        $dpi = (int)Input::Combi('dpi');
 
         // 创建画布
         $canvas = new Imagick();
