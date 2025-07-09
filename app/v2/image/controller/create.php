@@ -25,56 +25,105 @@ class create extends index
 
     public function canvas(Request $request)
     {
-        // 获取参数
-        $this->width = Input::Combi('width');
-        $this->height = Input::Combi('height');
-        $this->background = Input::Combi('background');
+        // 获取基础参数
+        $width = Input::Combi('width');
+        $height = Input::Combi('height');
+        $background = Input::Combi('background');
         $data = Input::PostJson('data');
         $dpi = (int)Input::Combi('dpi', 203);
 
-        // 直接创建 Imagick 画布作为基础层
+        // 创建画布
         $canvas = new Imagick();
-        $canvas->newImage($this->width, $this->height, new ImagickPixel($this->background), 'png');
+        $canvas->newImage($width, $height, new ImagickPixel($background));
         $canvas->setImageResolution($dpi, $dpi);
         $canvas->setImageUnits(Imagick::RESOLUTION_PIXELSPERINCH);
 
-        // 处理所有图层
         foreach ($data as $item) {
             try {
-                $layer_class = new DataAction($item);
-                $layer = $layer_class->handle();
+                $handler = new DataAction($item);
+                $layer = $handler->handle();
 
-                // 将 GD 图层转换为 Imagick
-                ob_start();
-                imagepng($layer);
-                $layerData = ob_get_clean();
+                if ($layer) {
+                    // 根据位置参数计算实际坐标
+                    list($x, $y) = $this->calculatePosition(
+                        $handler->position,
+                        $handler->x,
+                        $handler->y,
+                        $layer->getImageWidth(),
+                        $layer->getImageHeight(),
+                        $width,
+                        $height
+                    );
 
-                $layerImage = new Imagick();
-                $layerImage->readImageBlob($layerData);
+                    // 合成图层
+                    $canvas->compositeImage(
+                        $layer,
+                        Imagick::COMPOSITE_DEFAULT,
+                        $x,
+                        $y
+                    );
 
-                // 将图层合成到画布上
-                $canvas->compositeImage(
-                    $layerImage,
-                    Imagick::COMPOSITE_DEFAULT,
-                    $layer_class->x,
-                    $layer_class->y
-                );
-
-                // 清理资源
-                $layerImage->destroy();
-                imagedestroy($layer);
+                    $layer->clear(); // 及时释放资源
+                }
 
             } catch (Exception $e) {
                 Ret::Fail(300, null, $e->getMessage());
             }
         }
 
-        // 设置输出格式和质量
+        // 设置输出格式
         $canvas->setImageFormat('png');
-//        $canvas->setImageCompressionQuality(95);
-
-        // 输出结果
         response($canvas->getImageBlob())->contentType('image/png')->send();
+
+        // 清理资源
+        $canvas->clear();
+    }
+
+    /**
+     * 根据位置标识计算实际坐标
+     */
+    private function calculatePosition(
+        string $position,
+        float  $x,
+        float  $y,
+        float  $layerWidth,
+        float  $layerHeight,
+        float  $canvasWidth,
+        float  $canvasHeight
+    ): array
+    {
+        switch ($position) {
+            case 'CT': // 中上
+                return [($canvasWidth - $layerWidth) / 2 + $x, $y];
+            case 'RT': // 右上
+                return [$canvasWidth - $layerWidth - $x, $y];
+            case 'LC': // 左中
+                return [$x, ($canvasHeight - $layerHeight) / 2 + $y];
+            case 'CC': // 中心
+                return [
+                    ($canvasWidth - $layerWidth) / 2 + $x,
+                    ($canvasHeight - $layerHeight) / 2 + $y
+                ];
+            case 'RC': // 右中
+                return [
+                    $canvasWidth - $layerWidth - $x,
+                    ($canvasHeight - $layerHeight) / 2 + $y
+                ];
+            case 'LB': // 左下
+                return [$x, $canvasHeight - $layerHeight - $y];
+            case 'CB': // 中下
+                return [
+                    ($canvasWidth - $layerWidth) / 2 + $x,
+                    $canvasHeight - $layerHeight - $y
+                ];
+            case 'RB': // 右下
+                return [
+                    $canvasWidth - $layerWidth - $x,
+                    $canvasHeight - $layerHeight - $y
+                ];
+            default: // LT 左上及其他情况
+                return [$x, $y];
+        }
     }
 
     public function file(Request $request)
