@@ -6,7 +6,6 @@ namespace app\v2\image\controller;
 use app\v2\image\action\DataAction;
 use Imagick;
 use ImagickPixel;
-use ImagickPixelException;
 use Input;
 use OSS\AliyunOSS;
 use OSS\Core\OssException;
@@ -26,27 +25,16 @@ class create extends index
 
     public function canvas(Request $request)
     {
-        // 获取基本参数
-        $this->width = (int)Input::Combi('width');
-        $this->height = (int)Input::Combi('height');
+        // 获取参数
+        $this->width = Input::Combi('width');
+        $this->height = Input::Combi('height');
         $this->background = Input::Combi('background');
         $data = Input::PostJson('data');
         $dpi = (int)Input::Combi('dpi', 203);
 
-        // 创建 Imagick 画布作为基础层
+        // 直接创建 Imagick 画布作为基础层
         $canvas = new Imagick();
-
-        // 处理背景颜色（修复 Unable to construct ImagickPixel 错误）
-        try {
-            // 尝试解析背景颜色
-            $bgColor = new ImagickPixel($this->background);
-        } catch (ImagickPixelException $e) {
-            // 颜色解析失败时回退到白色
-            $bgColor = new ImagickPixel('white');
-        }
-
-        // 创建新图像
-        $canvas->newImage($this->width, $this->height, $bgColor);
+        $canvas->newImage($this->width, $this->height, new ImagickPixel($this->background), 'png');
         $canvas->setImageResolution($dpi, $dpi);
         $canvas->setImageUnits(Imagick::RESOLUTION_PIXELSPERINCH);
 
@@ -54,19 +42,15 @@ class create extends index
         foreach ($data as $item) {
             try {
                 $layer_class = new DataAction($item);
-                $gdLayer = $layer_class->handle();
+                $layer = $layer_class->handle();
 
                 // 将 GD 图层转换为 Imagick
+                ob_start();
+                imagepng($layer);
+                $layerData = ob_get_clean();
+
                 $layerImage = new Imagick();
-
-                // 使用临时文件转换 GD 到 Imagick
-                $tempFile = tempnam(sys_get_temp_dir(), 'lyr_');
-                imagepng($gdLayer, $tempFile);
-                $layerImage->readImage($tempFile);
-                unlink($tempFile); // 删除临时文件
-
-                // 设置图层位置
-                $layerImage->setImagePage(0, 0, 0, 0); // 重置偏移
+                $layerImage->readImageBlob($layerData);
 
                 // 将图层合成到画布上
                 $canvas->compositeImage(
@@ -78,11 +62,10 @@ class create extends index
 
                 // 清理资源
                 $layerImage->destroy();
-                imagedestroy($gdLayer);
+                imagedestroy($layer);
 
             } catch (Exception $e) {
-                // 记录错误但继续处理其他图层
-                error_log('Layer processing error: ' . $e->getMessage());
+                Ret::Fail(300, null, $e->getMessage());
             }
         }
 
@@ -90,13 +73,8 @@ class create extends index
         $canvas->setImageFormat('jpeg');
         $canvas->setImageCompressionQuality(95);
 
-        // 获取最终图像数据
-        $imageData = $canvas->getImageBlob();
-        $canvas->destroy();
-
         // 输出结果
-        return response($imageData)
-            ->header('Content-Type', 'image/jpeg');
+        response($canvas->getImageBlob())->contentType('image/png')->send();
     }
 
     public function file(Request $request)
