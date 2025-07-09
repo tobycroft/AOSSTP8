@@ -1,9 +1,9 @@
 <?php
 
-namespace app\v1\image\controller;
+namespace app\v2\image\controller;
 
 use app\v1\file\action\OssSelectionAction;
-use app\v1\image\action\QRImageWithLogo;
+use app\v2\image\action\QRImageWithLogo;
 use app\v1\oss\model\OssModel;
 use BaseController\CommonController;
 use chillerlan\QRCode\QRCode;
@@ -12,27 +12,9 @@ use Ret;
 use think\facade\Response;
 use think\Request;
 
-class qr extends CommonController
+class qr extends index
 {
 
-
-    public mixed $token;
-    public mixed $proc;
-
-    public function initialize()
-    {
-        set_time_limit(0);
-        parent::initialize();
-        $this->token = input('get.token');
-        if (!$this->token) {
-            \Ret::Fail(401, null, 'token');
-        }
-        $this->proc = OssModel::api_find_token($this->token);
-        if (!$this->proc) {
-            Ret::Fail(401, null, '项目不可用');
-        }
-        $this->proc = OssSelectionAction::App_find_byProc($this->proc);
-    }
 
     public function png(Request $request)
     {

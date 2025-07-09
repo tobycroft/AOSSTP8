@@ -1,10 +1,10 @@
 <?php
 
-namespace app\v1\image\controller;
+namespace app\v2\image\controller;
 
 
 use app\v1\file\action\OssSelectionAction;
-use app\v1\image\action\DataAction;
+use app\v2\image\action\DataAction;
 use app\v1\oss\model\OssModel;
 use BaseController\CommonController;
 use Input;
@@ -17,28 +17,14 @@ use think\Exception;
 use think\facade\Response;
 use think\Request;
 
-class create extends CommonController
+class create extends index
 {
 
 
-    public null|string $token = null;
     public mixed $proc;
     protected int $width;
     protected int $height;
     protected string $background;
-
-    public function initialize()
-    {
-        set_time_limit(0);
-        parent::initialize();
-        if (!$this->token) {
-            $this->token = Input::Combi('token');
-        }
-        $this->proc = OssModel::api_find_token($this->token);
-        if (!$this->proc) {
-            Ret::Fail(401, null, '项目不可用');
-        }
-    }
 
     public function canvas(Request $request)
     {

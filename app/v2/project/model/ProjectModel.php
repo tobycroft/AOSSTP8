@@ -10,6 +10,6 @@ class ProjectModel extends Model
 
     public function api_find_token($token)
     {
-        return $this->where("is_opentoken", '=', '1')->where('open_token', '=', $token)->findOrEmpty();
+        return $this->where('open_token', '=', $token)->findOrEmpty();
     }
 }

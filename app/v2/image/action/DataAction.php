@@ -1,6 +1,6 @@
 <?php
 
-namespace app\v1\image\action;
+namespace app\v2\image\action;
 
 use PHPImageWorkshop\Core\ImageWorkshopLayer;
 use think\Exception;

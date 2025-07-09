@@ -1,6 +1,6 @@
 <?php
 
-namespace app\v1\image\controller;
+namespace app\v2\image\controller;
 
 use app\v1\file\action\OssSelectionAction;
 use app\v1\oss\model\OssModel;
@@ -8,11 +8,11 @@ use app\v2\project\model\ProjectModel;
 use BaseController\CommonController;
 use Picqer\Barcode as bc;
 use Ret;
-use think\facade\Response;
 use think\Request;
+use think\Response;
 
 
-class barcode extends CommonController
+class barcode extends index
 {
 
 
