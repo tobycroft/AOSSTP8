@@ -5,6 +5,7 @@ namespace app\v2\image\controller;
 
 use app\v2\image\action\DataAction;
 use http\Client\Response;
+use Imagick;
 use Input;
 use OSS\AliyunOSS;
 use OSS\Core\OssException;
@@ -29,6 +30,7 @@ class create extends index
         $this->background = Input::Combi('background');
         $data = Input::PostJson('data');
         $document = ImageWorkshop::initVirginLayer($this->width, $this->height);
+        $image = new Imagick('image.jpg');
 
         foreach ($data as $item) {
             try {
