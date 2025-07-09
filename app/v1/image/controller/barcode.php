@@ -3,7 +3,7 @@
 namespace app\v1\image\controller;
 
 use app\v1\file\action\OssSelectionAction;
-use app\v1\project\model\ProjectModel;
+use app\v1\project\model\OssModel;
 use BaseController\CommonController;
 use Picqer\Barcode as bc;
 use Ret;
@@ -26,7 +26,7 @@ class barcode extends CommonController
         if (!$this->token) {
             \Ret::Fail(401, null, 'token');
         }
-        $this->proc = ProjectModel::api_find_token($this->token);
+        $this->proc = OssModel::api_find_token($this->token);
         if (!$this->proc) {
             Ret::Fail(401, null, '项目不可用');
         }

@@ -5,7 +5,7 @@ namespace app\v1\file\controller;
 
 use app\v1\file\action\OssSelectionAction;
 use app\v1\file\model\AttachmentModel;
-use app\v1\project\model\ProjectModel;
+use app\v1\project\model\OssModel;
 use BaseController\CommonController;
 use getID3;
 use Input;
@@ -121,7 +121,7 @@ class dp extends CommonController
     {
         set_time_limit(0);
         $token = $this->token;
-        $proc = ProjectModel::api_find_token($token);
+        $proc = OssModel::api_find_token($token);
         if (!$proc) {
             return $this->uploadError($from, "项目不可用");
         }

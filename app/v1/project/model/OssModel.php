@@ -11,7 +11,7 @@ namespace app\v1\project\model;
 
 use think\Model;
 
-class ProjectModel extends Model
+class OssModel extends Model
 {
 
     protected $table = 'ao_oss';

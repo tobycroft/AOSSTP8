@@ -5,7 +5,7 @@ namespace app\v1\image\controller;
 
 use app\v1\file\action\OssSelectionAction;
 use app\v1\image\action\DataAction;
-use app\v1\project\model\ProjectModel;
+use app\v1\project\model\OssModel;
 use BaseController\CommonController;
 use Input;
 use OSS\AliyunOSS;
@@ -34,7 +34,7 @@ class create extends CommonController
         if (!$this->token) {
             $this->token = Input::Combi('token');
         }
-        $this->proc = ProjectModel::api_find_token($this->token);
+        $this->proc = OssModel::api_find_token($this->token);
         if (!$this->proc) {
             Ret::Fail(401, null, '项目不可用');
         }

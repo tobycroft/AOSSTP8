@@ -6,7 +6,7 @@ namespace app\v1\file\controller;
 
 use app\v1\file\action\OssSelectionAction;
 use app\v1\file\model\AttachmentChunkModel;
-use app\v1\project\model\ProjectModel;
+use app\v1\project\model\OssModel;
 use Ret;
 
 class chunk extends dp
@@ -28,7 +28,7 @@ class chunk extends dp
     public function upload_chunk($dir = '', $from = '', $module = '')
     {
         $token = $this->token;
-        $proc = ProjectModel::api_find_token($token);
+        $proc = OssModel::api_find_token($token);
         if (!$proc) {
             return $this->uploadError($from, "项目不可用");
         }
