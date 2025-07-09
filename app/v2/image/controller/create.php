@@ -42,7 +42,7 @@ class create extends index
         $image = $document->getResult($this->background);
         $document->delete();
         imagejpeg($image, null, 95);
-        Response::contentType("image/png")->send();
+        response()->contentType('image/png')->send();
     }
 
     public function file(Request $request)
