@@ -14,8 +14,8 @@ use PHPImageWorkshop\ImageWorkshop;
 use Ret;
 use SendFile\SendFile;
 use think\Exception;
-use think\facade\Response;
 use think\Request;
+use think\Response;
 
 class create extends index
 {
