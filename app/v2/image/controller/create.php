@@ -47,20 +47,10 @@ class create extends index
 
     public function file(Request $request)
     {
-        if (!$request->has("width")) {
-            Ret::Fail(400, null, "width");
-        }
-        if (!$request->has("height")) {
-            Ret::Fail(400, null, "height");
-        }
-        if (!$request->has("background")) {
-            Ret::Fail(400, null, "background");
-        }
-        $this->width = input("width");
-        $this->height = input("height");
-        $this->background = input("background");
-        $json = $request->post("data");
-        $data = json_decode($json, 1);
+        $this->width = Input::Combi('width');
+        $this->height = Input::Combi('height');
+        $this->background = Input::Combi('background');
+        $data = Input::PostJson('data');
         $document = ImageWorkshop::initVirginLayer($this->width, $this->height);
 
         foreach ($data as $item) {
