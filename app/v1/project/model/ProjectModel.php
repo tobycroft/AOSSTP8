@@ -14,7 +14,7 @@ use think\Model;
 class ProjectModel extends Model
 {
 
-    protected $table = 'ao_project';
+    protected $table = 'ao_oss';
 
     public static function api_find_token($token): array
     {
