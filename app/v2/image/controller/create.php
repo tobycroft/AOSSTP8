@@ -4,8 +4,8 @@ namespace app\v2\image\controller;
 
 
 use app\v2\image\action\DataAction;
-use http\Client\Response;
 use Imagick;
+use ImagickPixel;
 use Input;
 use OSS\AliyunOSS;
 use OSS\Core\OssException;
@@ -25,26 +25,56 @@ class create extends index
 
     public function canvas(Request $request)
     {
+        // 获取参数
         $this->width = Input::Combi('width');
         $this->height = Input::Combi('height');
         $this->background = Input::Combi('background');
         $data = Input::PostJson('data');
-        $document = ImageWorkshop::initVirginLayer($this->width, $this->height);
-        $image = new Imagick('image.jpg');
+        $dpi = (int)Input::Combi('dpi', 203);
 
+        // 直接创建 Imagick 画布作为基础层
+        $canvas = new Imagick();
+        $canvas->newImage($this->width, $this->height, new ImagickPixel($this->background), 'png');
+        $canvas->setImageResolution($dpi, $dpi);
+        $canvas->setImageUnits(Imagick::RESOLUTION_PIXELSPERINCH);
+
+        // 处理所有图层
         foreach ($data as $item) {
             try {
                 $layer_class = new DataAction($item);
                 $layer = $layer_class->handle();
-                $document->addLayer(1, $layer, $layer_class->x, $layer_class->y, $layer_class->position);
+
+                // 将 GD 图层转换为 Imagick
+                ob_start();
+                imagepng($layer);
+                $layerData = ob_get_clean();
+
+                $layerImage = new Imagick();
+                $layerImage->readImageBlob($layerData);
+
+                // 将图层合成到画布上
+                $canvas->compositeImage(
+                    $layerImage,
+                    Imagick::COMPOSITE_DEFAULT,
+                    $layer_class->x,
+                    $layer_class->y
+                );
+
+                // 清理资源
+                $layerImage->destroy();
+                imagedestroy($layer);
+
             } catch (Exception $e) {
                 Ret::Fail(300, null, $e->getMessage());
             }
         }
-        $image = $document->getResult($this->background);
-        $document->delete();
-        imagejpeg($image, null, 95);
-        response()->contentType('image/png')->send();
+
+        // 设置输出格式和质量
+        $canvas->setImageFormat('jpeg');
+        $canvas->setImageCompressionQuality(95);
+
+        // 输出结果
+        response($canvas->getImageBlob())->contentType('image/png')->send();
     }
 
     public function file(Request $request)
