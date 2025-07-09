@@ -4,6 +4,7 @@ namespace app\v2\image\controller;
 
 
 use app\v2\image\action\DataAction;
+use http\Client\Response;
 use Input;
 use OSS\AliyunOSS;
 use OSS\Core\OssException;
@@ -12,7 +13,6 @@ use Ret;
 use SendFile\SendFile;
 use think\Exception;
 use think\Request;
-use think\Response;
 
 class create extends index
 {
