@@ -6,6 +6,7 @@ namespace app\v2\image\controller;
 use app\v2\image\action\DataAction;
 use Imagick;
 use ImagickPixel;
+use ImagickPixelException;
 use Input;
 use OSS\AliyunOSS;
 use OSS\Core\OssException;
