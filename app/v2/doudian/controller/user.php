@@ -4,6 +4,7 @@ namespace app\v2\doudian\controller;
 
 use app\v2\doudian\model\DoudianUserModel;
 use Input;
+use Ret;
 
 class user extends index
 {
@@ -48,7 +49,7 @@ CREATE TABLE `ao_doudian_user` (
             ->where('uid', '=', $uid)
             ->find();
         if ($model) {
-            \Ret::Success(
+            Ret::Success(
                 0,
                 [
                     'uid' => $model->uid,
@@ -63,6 +64,15 @@ CREATE TABLE `ao_doudian_user` (
 
     public function del()
     {
-
+        $uid=Input::PostInt('uid');
+        $model = DoudianUserModel::where('appid', '=', $this->project['appid'])
+            ->where('uid', '=', $uid)
+            ->find();
+        if ($model) {
+            $model->delete();
+            Ret::Success(0, null, 'User deleted successfully');
+        } else {
+            Ret::Fail(404, null, 'User not found');
+        }
     }
 }
