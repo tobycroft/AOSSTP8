@@ -15,7 +15,7 @@ class cookie extends index
         if ($cookie->isEmpty()) {
             Ret::Fail(404, null, 'Cookie not found'.$appid);
         } else {
-            Ret::Success(0, $cookie['cookie'],320, 'Cookie retrieved successfully');
+            Ret::Success(0, $cookie['cookie'], 'Cookie retrieved successfully');
         }
     }
 
