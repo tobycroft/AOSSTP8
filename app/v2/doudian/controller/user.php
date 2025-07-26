@@ -21,12 +21,17 @@ class user extends index
      */
     public function add()
     {
-        DoudianUserModel::create([
+        $model = DoudianUserModel::create([
             ['uid', '=', Input::PostInt('uid')],
             ['screen_name', '=', Input::Post('screen_name')],
             ['avatar_url', '=', Input::Post('avatar_url')],
             ['is_black', '=', Input::PostBool('is_black', 0)],
         ]);
+        if ($model) {
+            \Ret::Success();
+        } else {
+            \Ret::Fail(500, null, '添加失败');
+        }
     }
 
     public function edit()
