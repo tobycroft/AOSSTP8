@@ -19,7 +19,7 @@ class index extends CommonController
         parent::initialize();
         $this->token = Input::Get('token');
         if (empty($this->token)) {
-           $appid=Input::Get('appid');
+            $appid = Input::Get('appid');
             if (empty($appid)) {
                 Ret::Fail(400, null, '缺少参数appid');
             }
@@ -27,7 +27,11 @@ class index extends CommonController
             if (!$this->project) {
                 Ret::Fail(401, null, '项目不可用');
             }
-        }else {
+            $salt = Input::Post('salt');
+            if (md5($this->project['appid'] . $this->project['appsecret'] . $salt) != Input::Get('sign')) {
+                Ret::Fail(401, null, '签名错误');
+            }
+        } else {
             $this->project = (new ProjectModel)->api_find_token($this->token);
             if (!$this->project) {
                 Ret::Fail(401, null, '项目不可用');
