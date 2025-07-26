@@ -28,7 +28,7 @@ class index extends CommonController
                 Ret::Fail(401, null, '项目不可用');
             }
             $salt = Input::Post('salt');
-            if (md5($this->project['appid'] . $this->project['appsecret'] . $salt) != Input::Get('sign')) {
+            if (md5($this->project['appid'] . $this->project['appsecret'] . $salt) != Input::Post('sign')) {
                 Ret::Fail(401, null, '签名错误');
             }
         } else {
