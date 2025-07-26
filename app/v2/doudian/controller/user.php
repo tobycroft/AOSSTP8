@@ -20,7 +20,7 @@ CREATE TABLE `ao_doudian_user` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='抖店用户头像等';
      */
-    public function add()
+    public function auto()
     {
         $model = DoudianUserModel::where('appid', '=', $this->project['appid'])
             ->where('uid', '=', Input::PostInt('uid'))
@@ -28,7 +28,7 @@ CREATE TABLE `ao_doudian_user` (
         if ($model) {
             $model->screen_name = Input::Post('screen_name');
             $model->avatar_url = Input::Post('avatar_url');
-            $model->is_black = Input::PostInt('is_black',false);
+            $model->is_black = Input::PostInt('is_black', false);
             $model->save();
         } else {
             $model = new DoudianUserModel();
@@ -41,9 +41,24 @@ CREATE TABLE `ao_doudian_user` (
         }
     }
 
-    public function edit()
+    public function get()
     {
-
+        $uid = Input::PostInt('uid');
+        $model = DoudianUserModel::where('appid', '=', $this->project['appid'])
+            ->where('uid', '=', $uid)
+            ->find();
+        if ($model) {
+            \Ret::Success(
+                0,
+                [
+                    'uid' => $model->uid,
+                    'screen_name' => $model->screen_name,
+                    'avatar_url' => $model->avatar_url,
+                    'is_black' => $model->is_black
+                ],
+                'User information retrieved successfully'
+            );
+        }
     }
 
     public function del()
