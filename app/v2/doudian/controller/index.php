@@ -17,7 +17,7 @@ class index extends CommonController
     {
         set_time_limit(0);
         parent::initialize();
-        $this->token = Input::Get('token');
+        $this->token = Input::Get('token',false);
         if (empty($this->token)) {
             $appid = Input::PostInt('appid');
             if (empty($appid)) {
