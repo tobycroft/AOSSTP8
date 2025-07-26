@@ -67,6 +67,8 @@ CREATE TABLE `ao_doudian_user` (
                 ],
                 'User information retrieved successfully'
             );
+        }else{
+            Ret::Fail(404, null, 'User not found');
         }
     }
 
