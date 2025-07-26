@@ -2,7 +2,6 @@
 
 namespace app\v2\doudian\controller;
 
-use app\v2\doudian\controller\index;
 use app\v2\doudian\model\DoudianCookieModel;
 use Ret;
 
