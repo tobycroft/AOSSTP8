@@ -29,7 +29,7 @@ CREATE TABLE `ao_doudian_user` (
         if ($model) {
             $model->screen_name = Input::Post('screen_name');
             $model->avatar_url = Input::Post('avatar_url');
-            $model->is_black = Input::PostBool('is_black', 1);
+            $model->is_black = Input::PostBool('is_black', 0);
             $model->save();
         } else {
             $model = new DoudianUserModel();
@@ -37,7 +37,7 @@ CREATE TABLE `ao_doudian_user` (
             $model->uid = Input::PostInt('uid');
             $model->screen_name = Input::Post('screen_name');
             $model->avatar_url = Input::Post('avatar_url');
-            $model->is_black = Input::PostBool('is_black', 1);
+            $model->is_black = Input::PostBool('is_black', 0);
             $model->save();
         }
     }
