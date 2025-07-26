@@ -8,8 +8,9 @@ use Input;
 class user extends index
 {
     /*
-     * CREATE TABLE `ao_doudian_user` (
+CREATE TABLE `ao_doudian_user` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `appid` int unsigned DEFAULT '0',
   `uid` bigint unsigned DEFAULT '0' COMMENT '用户抖店id飞书id',
   `screen_name` varchar(255) DEFAULT NULL COMMENT '一般是用户抖音名称',
   `avatar_url` varchar(255) DEFAULT NULL COMMENT '一般是用户抖音头像',
@@ -21,16 +22,22 @@ class user extends index
      */
     public function add()
     {
-        $model = DoudianUserModel::create([
-            ['uid', '=', Input::PostInt('uid')],
-            ['screen_name', '=', Input::Post('screen_name')],
-            ['avatar_url', '=', Input::Post('avatar_url')],
-            ['is_black', '=', Input::PostBool('is_black', 0)],
-        ]);
+        $model = DoudianUserModel::where('appid', '=', $this->project['appid'])
+            ->where('uid', '=', Input::PostInt('uid'))
+            ->find();
         if ($model) {
-            \Ret::Success();
+            $model->screen_name = Input::Post('screen_name');
+            $model->avatar_url = Input::Post('avatar_url');
+            $model->is_black = Input::PostInt('is_black',false);
+            $model->save();
         } else {
-            \Ret::Fail(500, null, '添加失败');
+            $model = new DoudianUserModel();
+            $model->appid = $this->project['appid'];
+            $model->uid = Input::PostInt('uid');
+            $model->screen_name = Input::Post('screen_name');
+            $model->avatar_url = Input::Post('avatar_url');
+            $model->is_black = Input::PostInt('is_black', false);
+            $model->save();
         }
     }
 
