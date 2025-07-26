@@ -19,7 +19,7 @@ class index extends CommonController
         parent::initialize();
         $this->token = Input::Get('token');
         if (empty($this->token)) {
-            $appid = Input::Get('appid');
+            $appid = Input::PostInt('appid');
             if (empty($appid)) {
                 Ret::Fail(400, null, '缺少参数appid');
             }
