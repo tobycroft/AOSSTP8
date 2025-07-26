@@ -2,7 +2,7 @@
 
 namespace app\v2\doudian\controller;
 
-use app\v1\captcha\model\DoudianUserModel;
+use app\v2\doudian\model\DoudianUserModel;
 use Input;
 
 class user extends index
