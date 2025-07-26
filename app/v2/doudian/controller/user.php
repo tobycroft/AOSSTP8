@@ -30,7 +30,11 @@ CREATE TABLE `ao_doudian_user` (
             $model->screen_name = Input::Post('screen_name');
             $model->avatar_url = Input::Post('avatar_url');
             $model->is_black = Input::PostBool('is_black', false);
-            $model->save();
+            if($model->save()){
+                Ret::Success(0, null, 'User information updated successfully');
+            } else {
+                Ret::Fail(500, null, 'Failed to update user information');
+            }
         } else {
             $model = new DoudianUserModel();
             $model->appid = $this->project['appid'];
@@ -38,7 +42,11 @@ CREATE TABLE `ao_doudian_user` (
             $model->screen_name = Input::Post('screen_name');
             $model->avatar_url = Input::Post('avatar_url');
             $model->is_black = Input::PostBool('is_black', false);
-            $model->save();
+            if ($model->save()) {
+                Ret::Success(0, null, 'User information saved successfully');
+            } else {
+                Ret::Fail(500, null, 'Failed to save user information');
+            }
         }
     }
 
