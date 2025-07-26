@@ -10,7 +10,7 @@ class Input
         if (!$in && $must_have) {
             Ret::Fail(400, null, 'Input-Post-Float:[' . $name . ']');
             return 0;
-        } elseif (!is_float($in)) {
+        } elseif (!is_float($in) && $must_have) {
             Ret::Fail(400, null, 'Input-Post-Float:[' . $name . '] is not float');
             return 0;
         } else {
@@ -36,7 +36,7 @@ class Input
         if (!$in && $must_have) {
             Ret::Fail(400, null, 'Input-Post-Bool:[' . $name . ']');
             return 0;
-        } elseif (!is_bool($in)) {
+        } elseif (!is_bool($in) && $must_have) {
             Ret::Fail(400, null, 'Input-Post-Bool:[' . $name . '] is not boolean');
             return 0;
         } else {
@@ -50,7 +50,7 @@ class Input
         if (!$in && $must_have) {
             Ret::Fail(400, null, 'Input-Post-Int:[' . $name . ']');
             return 0;
-        } elseif (!is_int($in)) {
+        } elseif (!is_int($in) && $must_have) {
             Ret::Fail(400, null, 'Input-Post-Int:[' . $name . '] is not integer');
             return 0;
         } else {
