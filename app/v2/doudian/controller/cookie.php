@@ -24,12 +24,12 @@ class cookie extends index
         $appid = $this->project['appid'];
         $cookie = DoudianCookieModel::where('appid', $appid)->find();
         if ($cookie) {
-            $cookie->cookie = Input::Post('cookie');
+            $cookie->cookie = Input::PostJson('cookie');
             $cookie->save();
         } else {
             $cookie = new DoudianCookieModel();
             $cookie->appid = $appid;
-            $cookie->cookie = Input::Post('cookie');
+            $cookie->cookie = Input::PostJson('cookie');
             $cookie->save();
         }
     }
