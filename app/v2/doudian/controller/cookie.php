@@ -13,7 +13,7 @@ class cookie extends index
         $appid = $this->project['appid'];
         $cookie = DoudianCookieModel::where('appid','=', $appid)->findOrEmpty();
         if ($cookie->isEmpty()) {
-            Ret::Fail(404, null, 'Cookie not found');
+            Ret::Fail(404, null, 'Cookie not found'.$appid);
         } else {
             Ret::Success(0, $cookie['cookie'], 'Cookie retrieved successfully');
         }
