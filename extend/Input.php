@@ -7,10 +7,12 @@ class Input
     public static function PostFloat(string $name, bool $must_have = true): float
     {
         $in = Request::post($name, null, 'float');
-        if (!$in && $must_have) {
-            Ret::Fail(400, null, 'Input-Post-Float:[' . $name . ']');
+        if (!$in) {
+            if ($must_have) {
+                Ret::Fail(400, null, 'Input-Post-Float:[' . $name . ']');
+            }
             return 0;
-        } elseif (!is_float($in) && $must_have) {
+        } elseif (!is_float($in)) {
             Ret::Fail(400, null, 'Input-Post-Float:[' . $name . '] is not float');
             return 0;
         } else {
@@ -33,10 +35,12 @@ class Input
     public static function PostBool(string $name, bool $must_have = true): bool
     {
         $in = Request::post($name, null, 'bool');
-        if (!$in && $must_have) {
-            Ret::Fail(400, null, 'Input-Post-Bool:[' . $name . ']');
+        if (!$in) {
+            if ($must_have) {
+                Ret::Fail(400, null, 'Input-Post-Bool:[' . $name . ']');
+            }
             return 0;
-        } elseif (!is_bool($in) && $must_have) {
+        } elseif (!is_bool($in)) {
             Ret::Fail(400, null, 'Input-Post-Bool:[' . $name . '] is not boolean');
             return 0;
         } else {
@@ -47,10 +51,12 @@ class Input
     public static function PostInt(string $name, bool $must_have = true): int
     {
         $in = Request::post($name, null, 'int');
-        if (!$in && $must_have) {
-            Ret::Fail(400, null, 'Input-Post-Int:[' . $name . ']');
+        if (!$in) {
+            if ($must_have) {
+                Ret::Fail(400, null, 'Input-Post-Int:[' . $name . ']');
+            }
             return 0;
-        } elseif (!is_int($in) && $must_have) {
+        } elseif (!is_int($in)) {
             Ret::Fail(400, null, 'Input-Post-Int:[' . $name . '] is not integer');
             return 0;
         } else {
