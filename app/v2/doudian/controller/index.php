@@ -18,10 +18,20 @@ class index extends CommonController
         set_time_limit(0);
         parent::initialize();
         $this->token = Input::Get('token');
-        $this->project = (new ProjectModel)->api_find_token($this->token);
-        if (!$this->project) {
-            Ret::Fail(401, null, '项目不可用');
+        if (empty($this->token)) {
+           $appid=Input::Get('appid');
+            if (empty($appid)) {
+                Ret::Fail(400, null, '缺少参数appid');
+            }
+            $this->project = (new ProjectModel)->api_find_appid($appid);
+            if (!$this->project) {
+                Ret::Fail(401, null, '项目不可用');
+            }
+        }else {
+            $this->project = (new ProjectModel)->api_find_token($this->token);
+            if (!$this->project) {
+                Ret::Fail(401, null, '项目不可用');
+            }
         }
-
     }
 }
