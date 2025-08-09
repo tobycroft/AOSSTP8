@@ -33,7 +33,7 @@ class cookie extends index
                 Ret::Fail(500, null, 'Failed to save cookie');
             }
         } else {
-            if (DoudianCookieModel::where('appid', $appid)->update([
+            if (DoudianCookieModel::where('appid', $appid)->force()->update([
                 'cookie' => Input::PostJson('data'),
             ])) {
                 Ret::Success(0, null, 'Cookie updated successfully');
