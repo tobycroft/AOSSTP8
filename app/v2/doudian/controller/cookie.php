@@ -34,7 +34,7 @@ class cookie extends index
             }
         }else{
             if(DoudianCookieModel::where('appid', $appid)->update([
-                ['cookie', '=', Input::PostJson('data']
+                ['cookie', '=', Input::PostJson('data')],
             ])){
                 Ret::Success(0, null, 'Cookie updated successfully');
             } else {
