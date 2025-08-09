@@ -25,8 +25,8 @@ class cookie extends index
         $cookie = (new DoudianCookieModel)->where('appid', $appid)->find();
         if (!$cookie) {
             if (DoudianCookieModel::insert([
-                ['appid' => $appid],
-                ['cookie' => Input::PostJson('data')],
+                'appid' => $appid,
+                'cookie' => Input::PostJson('data'),
             ])) {
                 Ret::Success(0, null, 'Cookie saved successfully');
             } else {
