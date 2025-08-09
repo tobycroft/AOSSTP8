@@ -31,7 +31,6 @@ class cookie extends index
                 Ret::Success();
             }
         } else {
-            $cookie = new DoudianCookieModel();
             $cookie->appid = $appid;
             if (!$cookie->save()) {
                 Ret::Fail(500, null, 'Failed to save cookie');
