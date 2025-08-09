@@ -24,19 +24,13 @@ class cookie extends index
         $appid = $this->project['appid'];
         $cookie = (new DoudianCookieModel)->where('appid', $appid)->find();
         $cookie->cookie = Input::PostJson('data');
-        if ($cookie) {
-            if (!$cookie->save()) {
-                Ret::Fail(500, null, 'Failed to update cookie');
-            } else {
-                Ret::Success();
-            }
-        } else {
+        if (!$cookie) {
             $cookie->appid = $appid;
-            if (!$cookie->save()) {
-                Ret::Fail(500, null, 'Failed to save cookie');
-            } else {
-                Ret::Success();
-            }
+        }
+        if (!$cookie->save()) {
+            Ret::Fail(500, null, 'Failed to save cookie');
+        } else {
+            Ret::Success();
         }
     }
 }
