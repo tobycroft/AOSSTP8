@@ -27,7 +27,7 @@ class cookie extends index
             $cookie = new DoudianCookieModel();
             $cookie->appid = $appid;
         }
-        $cookie->cookie = Input::PostJson('data');
+        $cookie->cookie = json_encode(Input::PostJson('data'), 320);
         if (!$cookie->save()) {
             Ret::Fail(500, null, 'Failed to save cookie');
         } else {
