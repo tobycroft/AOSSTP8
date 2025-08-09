@@ -23,10 +23,11 @@ class cookie extends index
     {
         $appid = $this->project['appid'];
         $cookie = (new DoudianCookieModel)->where('appid', $appid)->find();
+        $data=Input::PostJson('data');
         if (!$cookie) {
             if (DoudianCookieModel::insert([
                 'appid' => $appid,
-                'cookie' => Input::PostJson('data'),
+                'cookie' => json_encode($data,320),
             ])) {
                 Ret::Success(0, null, 'Cookie saved successfully');
             } else {
@@ -34,7 +35,7 @@ class cookie extends index
             }
         } else {
             if (DoudianCookieModel::where('appid', $appid)->force()->update([
-                'cookie' => Input::PostJson('data'),
+                'cookie' => json_encode($data,320),
             ])) {
                 Ret::Success(0, null, 'Cookie updated successfully');
             } else {
