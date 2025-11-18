@@ -7,7 +7,6 @@ use BaseController\CommonController;
 
 class game extends CommonController
 {
-
     public function rand2()
     {
         $num = \Input::PostInt("num");
