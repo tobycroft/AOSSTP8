@@ -3,8 +3,9 @@
 namespace app\v2\doudian\controller;
 
 use app\v2\doudian\model\DoudianGameModel;
+use BaseController\CommonController;
 
-class game extends index
+class game extends CommonController
 {
 
     public function rand2()
