@@ -10,7 +10,7 @@ class game extends CommonController
     public function rand2()
     {
         $num = \Input::PostInt("num");
-        $game_data = (new DoudianGameModel())->where("num", $num)->find();
+        $game_data = (new DoudianGameModel())->where("num", $num)->select();
         \Ret::Success(0, $game_data);
     }
 }
