@@ -20,4 +20,18 @@ class auth extends text
         }
     }
 
+    public function check_in_time()
+    {
+        $code = \Input::Post("code");
+        $second = \Input::Post("second");
+        $capt = CaptchaModel::where("code", $code)->where("ident", $this->ident)->where("date", "<", time() - $second)->find();
+        if ($capt) {
+            CaptchaIpModel::create(["ident" => $this->ident]);
+            CaptchaModel::where("ident", $this->ident)->delete();
+            \Ret::Success(0, null, "验证码正确");
+        } else {
+            \Ret::Fail(403, null, "验证码错误");
+        }
+    }
+
 }
