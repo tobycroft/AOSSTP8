@@ -23,10 +23,10 @@ class auth extends text
     public function check_in_time()
     {
         $code = \Input::Post("code");
-        $second = \Input::Post("second");
+        $second = \Input::PostInt("second");
         $capt = CaptchaModel::where("code", $code)->where("ident", $this->ident)->find();
         if ($capt) {
-            if (strtotime($capt["date"]) - $second < time()) {
+            if (strtotime($capt["date"]) + $second < time()) {
                 \Ret::Fail(403, null, "验证码已经过期啦");
             }
             CaptchaIpModel::create(["ident" => $this->ident]);
