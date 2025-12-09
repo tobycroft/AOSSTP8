@@ -26,5 +26,6 @@ class game extends CommonController
     {
         $mode = \Input::PostInt("mode");
         $game_data = (new DoudianGameFallModel())->where("mode", "=", $mode)->where("status", "=", 1)->order("rank asc")->select();
+        \Ret::Success(0, $game_data);
     }
 }
