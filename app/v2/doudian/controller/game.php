@@ -17,7 +17,7 @@ class game extends CommonController
 
     public function wheel()
     {
-        $game_data = (new DoudianGameWheelModel())->order("num asc")->select();
+        $game_data = (new DoudianGameWheelModel())->where("status","=",1)->order("num asc")->select();
         \Ret::Success(0, $game_data);
     }
 }
