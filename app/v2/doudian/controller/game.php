@@ -3,6 +3,7 @@
 namespace app\v2\doudian\controller;
 
 use app\v2\doudian\model\DoudianGameModel;
+use app\v2\doudian\model\DoudianGameWheelModel;
 use BaseController\CommonController;
 
 class game extends CommonController
@@ -11,6 +12,12 @@ class game extends CommonController
     {
         $num = \Input::PostInt("num");
         $game_data = (new DoudianGameModel())->where("num", $num)->find();
+        \Ret::Success(0, $game_data);
+    }
+
+    public function wheel()
+    {
+        $game_data = (new DoudianGameWheelModel())->find();
         \Ret::Success(0, $game_data);
     }
 }
