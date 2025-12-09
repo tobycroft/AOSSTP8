@@ -17,7 +17,7 @@ class game extends CommonController
 
     public function wheel()
     {
-        $game_data = (new DoudianGameWheelModel())->find();
+        $game_data = (new DoudianGameWheelModel())->select();
         \Ret::Success(0, $game_data);
     }
 }
