@@ -24,8 +24,8 @@ class game extends CommonController
 
     public function fall()
     {
-        $mode = \Input::PostInt("mode");
-        $game_data = (new DoudianGameFallModel())->where("mode", "=", $mode)->where("status", "=", 1)->order("rank asc")->select();
+        $pack = \Input::PostInt("pack");
+        $game_data = (new DoudianGameFallModel())->where("pack", "=", $pack)->where("status", "=", 1)->order("rank asc")->select();
         \Ret::Success(0, $game_data);
     }
 }
