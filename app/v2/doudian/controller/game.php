@@ -33,7 +33,7 @@ class game extends CommonController
     public function fanka()
     {
         $pack = \Input::PostInt('pack');
-        $game_data = (new DoudianGameFankaModel())->where('pack', '=', $pack)->where('status', '=', 1)->order('rank asc')->select();
+        $game_data = (new DoudianGameFankaModel())->where('pack', '=', $pack)->where('status', '=', 1)->select();
         \Ret::Success(0, $game_data);
     }
 }
