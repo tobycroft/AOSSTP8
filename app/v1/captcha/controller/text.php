@@ -17,6 +17,7 @@ class text extends CommonController
 
     protected string $ident;
     public $token;
+    public mixed $proc;
 
     public function initialize()
     {
