@@ -25,7 +25,7 @@ class text extends CommonController
         if (!$this->token) {
             $this->token = Input::Combi('token');
         }
-        $this->proc = (new ProjectModel())->api_find_token($this->token);
+        $this->proc = (new ProjectModel())->api_find_token($this->token)->toArray();
         if (!$this->proc) {
             Ret::Fail(401, null, '项目不可用');
         }
