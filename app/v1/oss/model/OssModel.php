@@ -18,7 +18,7 @@ class OssModel extends Model
 
     public static function api_find_token($token): array
     {
-        return self::where('open_token', $token)->where('is_avail', 1)->findOrEmpty()->toArray();
+        return self::where('token', $token)->where('status', 1)->findOrEmpty()->toArray();
     }
 
 
