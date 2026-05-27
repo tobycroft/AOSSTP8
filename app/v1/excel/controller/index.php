@@ -70,8 +70,8 @@ class index extends CommonController
         }
         $savename = md5(json_encode($data)) . '.xlsx';
         $writer->save('./upload/excel/tempfile/' . $this->token . DIRECTORY_SEPARATOR . $savename);
-
-        Ret::Success(0, "https://image.familyeducation.org.cn" . '/excel/tempfile/' . $this->token . DIRECTORY_SEPARATOR . $savename);
+        $url = $this->proc['url'];
+        Ret::Success(0, $url . '/excel/tempfile/' . $this->token . DIRECTORY_SEPARATOR . $savename);
     }
 
     public function index(Request $request)
