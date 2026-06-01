@@ -5,11 +5,11 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/app" isTestSource="false" packagePrefix="app\" />
       <sourceFolder url="file://$MODULE_DIR$/extend" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/aliyuncs/oss-sdk-php" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/chillerlan/php-qrcode" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/chillerlan/php-settings-container" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/composer" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/evenement/evenement" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/ezyang/htmlpurifier" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/flc/dysms" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/guzzlehttp/guzzle" />
@@ -21,10 +21,8 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/maennchen/zipstream-php" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/markbaker/complex" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/markbaker/matrix" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/maximerenou/bing-ai" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/phpoffice/phpspreadsheet" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/picqer/php-barcode-generator" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/pj8912/php-bard-api" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/psr/container" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/psr/http-client" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/psr/http-factory" />
@@ -33,14 +31,6 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/psr/simple-cache" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/qcloudsms/qcloudsms_php" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/ralouphie/getallheaders" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/ratchet/pawl" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/ratchet/rfc6455" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/react/cache" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/react/dns" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/react/event-loop" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/react/promise" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/react/socket" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/react/stream" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/sybio/image-workshop" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/deprecation-contracts" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/polyfill-mbstring" />
@@ -61,6 +51,15 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/tobycroft/zbuilder" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-template" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-view" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/kekalainen/gamerq" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/league/flysystem-cached-adapter" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/php-http/discovery" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/php-http/multipart-stream-builder" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/psr/cache" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/qwen-php/qwen-php-client" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-container" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-validate" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/yixinba/btapi" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
