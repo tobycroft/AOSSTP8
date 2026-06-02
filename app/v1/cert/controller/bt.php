@@ -43,6 +43,9 @@ class bt extends CommonController
     {
         $bt_site = new Site($this->cert['bt_api'], $this->cert['bt_key'], './');
         $ret = $bt_site->getList();
+        if ($ret === false) {
+            \Ret::Fail(500, null, 'BT API调用失败: ' . $bt_site->getError());
+        }
         $data = [];
         foreach ($ret['data'] as $site) {
             if ($site['ssl'] === -1)

@@ -75,7 +75,9 @@ class MailAction
             'size' => 10000
         ];
         $ret = $bt_site->httpPostCookie(self::getDomainList, $post, 10);
-//        \Ret::Success(0, $ret);
+        if ($ret === false) {
+            throw new Exception('MailServer API调用失败: ' . $bt_site->getError());
+        }
         if (!isset($ret['msg'])) {
             throw new Exception('MailServer返回的message列表为空');
         }

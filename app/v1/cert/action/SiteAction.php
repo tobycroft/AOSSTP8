@@ -65,11 +65,14 @@ class SiteAction
         $bt_site = new Site($bt_api, $bt_key, './');
         try {
             $ret = $bt_site->getList();
+            if ($ret === false) {
+                throw new Exception('BT API调用失败: ' . $bt_site->getError());
+            }
             if (!isset($ret['data'])) {
-                throw new Exception(json_encode('返回故障：' . $ret));
+                throw new Exception('返回数据异常: ' . json_encode($ret));
             }
         } catch (Exception $e) {
-            throw new Exception('BT故障：' . $e);
+            throw new Exception('BT故障：' . $e->getMessage());
         }
         $data = [];
         $insertData = [];
