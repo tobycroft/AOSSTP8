@@ -2,6 +2,7 @@
 
 namespace app\v1\cert\controller;
 
+use app\v1\cert\action\ConfigAction;
 use app\v1\cert\action\SiteAction;
 use app\v1\cert\model\CertLogModel;
 use app\v1\cert\model\CertModel;
@@ -135,5 +136,40 @@ class bt extends CommonController
             }
         }
         \Ret::Success(0, $rets);
+    }
+
+    public function savepanelssl()
+    {
+        $name = Input::Get('cert');
+        $cert = CertUrlModel::where('cert', $name)->find();
+        if (!$cert) {
+            \Ret::Fail(404, null, '未找到证书项目');
+        }
+        try {
+            $ssl = SiteAction::updatessl($name);
+        } catch (Exception $e) {
+            \Ret::Fail('500', null, $e->getMessage());
+        }
+
+        $ret = ConfigAction::savePanelSSL($this->cert['bt_api'], $this->cert['bt_key'], $ssl['csr'], $ssl['key']);
+        if ($ret) {
+            CertLogModel::create([
+                'appname' => $this->cert['appname'],
+                'type' => 'panel',
+                'success' => 1,
+                'website' => 'panel',
+                'recv' => json_encode($ret, 320),
+            ]);
+            \Ret::Success(0, $ret);
+        } else {
+            CertLogModel::create([
+                'appname' => $this->cert['appname'],
+                'type' => 'panel',
+                'success' => 0,
+                'website' => 'panel',
+                'recv' => json_encode($ret, 320),
+            ]);
+            \Ret::Fail(500, $ret);
+        }
     }
 }
