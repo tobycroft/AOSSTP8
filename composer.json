@@ -31,7 +31,7 @@
     "sybio/image-workshop": "^2.2",
     "topthink/think-image": "^1.0",
     "picqer/php-barcode-generator": "^3.0",
-    "chillerlan/php-qrcode": "^6.0",
+    "endroid/qr-code": "^6.1",
     "ext-gd": "*",
     "flc/dysms": "^1.0",
     "qcloudsms/qcloudsms_php": "^0.1.4",

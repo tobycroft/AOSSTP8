@@ -6,8 +6,10 @@ use app\v1\file\action\OssSelectionAction;
 use app\v1\image\action\QRImageWithLogo;
 use app\v1\oss\model\OssModel;
 use BaseController\CommonController;
-use chillerlan\QRCode\QRCode;
-use chillerlan\QRCode\QROptions;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\Color\Color;
 use Ret;
 use think\facade\Response;
 use think\Request;
@@ -52,19 +54,19 @@ class qr extends CommonController
 
     public function qr($data)
     {
-        $opt = new QROptions([
-            'version' => 11,
-            'eccLevel' => QRCode::ECC_L,
-            'scale' => 7,
-            'imageBase64' => false,
-            'bgColor' => [200, 200, 200],
-            'imageTransparent' => false,
-            'drawCircularModules' => true,
-            'circleRadius' => 0.8,
-        ]);
-        $qr = new QRCode($opt);
+        $qrCode = new QrCode(
+            data: $data,
+            errorCorrectionLevel: ErrorCorrectionLevel::Low,
+            size: 300,
+            margin: 10,
+            foregroundColor: new Color(0, 0, 0),
+            backgroundColor: new Color(200, 200, 200)
+        );
+        
+        $writer = new PngWriter();
+        $result = $writer->write($qrCode);
 
-        return $qr->render($data);
+        return $result->getString();
     }
 
     public function base64(Request $request)
@@ -86,25 +88,27 @@ class qr extends CommonController
         }
         $json = input("data");
         $url = input("url");
-        $opt = new QROptions([
-            'version' => 10,
-            'eccLevel' => QRCode::ECC_H,
-            'scale' => 7,
-            'imageBase64' => false,
-            'bgColor' => [255, 255, 255],
-            'imageTransparent' => false,
-            'drawCircularModules' => true,
-            'circleRadius' => 0.8,
-            'addLogoSpace' => true,
-        ]);
-        $qr = new QRCode($opt);
-        $mat = $qr->getMatrix($json);
-//        $mat->setLogoSpace(10, 10, null, null);
-
-        $qrp = new QRImageWithLogo($opt, $mat);
-        echo $qrp->dump(null, $url);
+        
+        $qrCode = new QrCode(
+            data: $json,
+            errorCorrectionLevel: ErrorCorrectionLevel::High,
+            size: 400,
+            margin: 15,
+            foregroundColor: new Color(0, 0, 0),
+            backgroundColor: new Color(255, 255, 255)
+        );
+        
+        $logo = new \Endroid\QrCode\Logo\Logo(
+            path: $url,
+            resizeToWidth: 150,
+            resizeToHeight: 150
+        );
+        
+        $writer = new PngWriter();
+        $result = $writer->write($qrCode, $logo);
+        
+        echo $result->getString();
         Response::contentType("image/png")->send();
     }
 
 }
-

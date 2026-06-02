@@ -2,59 +2,39 @@
 
 namespace app\v1\image\action;
 
-use chillerlan\QRCode\Output\QRImage;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\Color\Color;
+use Endroid\QrCode\Logo\Logo;
 
-class QRImageWithLogo extends QRImage
+class QRImageWithLogo
 {
 
-    /**
-     * @param string|null $file
-     * @param string|null $logo
-     *
-     * @return string
-     * @throws \chillerlan\QRCode\Output\QRCodeOutputException
-     */
-    public function dump(string $file = null, string $logo = null): string
+    public static function generate($data, $logoPath = null, $size = 400, $margin = 15)
     {
-        // set returnResource to true to skip further processing for now
-        $this->options->returnResource = true;
-
-        // of course you could accept other formats too (such as resource or Imagick)
-        // i'm not checking for the file type either for simplicity reasons (assuming PNG)
-//        $logo = file_get_contents($logo);
-//        if (!is_file($logo) || !is_readable($logo)) {
-//            throw new QRCodeOutputException('invalid logo');
-//        }
-
-        // there's no need to save the result of dump() into $this->image here
-        parent::dump($file);
-        $im = file_get_contents($logo);
-        $im = imagecreatefromstring($im);
-        // get logo image size
-        $w = imagesx($im);
-        $h = imagesy($im);
-
-
-        // set new logo size, leave a border of 1 module (no proportional resize/centering)
-        $lw = $this->matrix->size() * 1.5;
-        $lh = $this->matrix->size() * 1.5;
-
-        // get the qrcode size
-        $ql = $this->matrix->size() * $this->options->scale;
-        // scale the logo and copy it over. done!
-        imagecopyresampled($this->image, $im, ($ql - $lw) / 2, ($ql - $lh) / 2, 0, 0, $lw, $lh, $w, $h);
-//        imagecopymerge($this->image, $im, ($ql - $lw) / 2, ($ql - $lh) / 2, 0, 0, $lw, $lh, 75);
-        $imageData = $this->dumpImage();
-
-        if ($file !== null) {
-            $this->saveToFile($imageData, $file);
+        $qrCode = new QrCode(
+            data: $data,
+            errorCorrectionLevel: ErrorCorrectionLevel::High,
+            size: $size,
+            margin: $margin,
+            foregroundColor: new Color(0, 0, 0),
+            backgroundColor: new Color(255, 255, 255)
+        );
+        
+        $logo = null;
+        if ($logoPath) {
+            $logo = new Logo(
+                path: $logoPath,
+                resizeToWidth: 150,
+                resizeToHeight: 150
+            );
         }
-
-        if ($this->options->imageBase64) {
-            $imageData = $this->toBase64DataURI($imageData, 'image/' . $this->options->outputType);
-        }
-
-        return $imageData;
+        
+        $writer = new PngWriter();
+        $result = $writer->write($qrCode, $logo);
+        
+        return $result->getString();
     }
 
 }
