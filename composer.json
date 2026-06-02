@@ -42,9 +42,9 @@
     "alibabacloud/alinlp-20200629": "^3.0",
     "topthink/think-captcha": "^3.0",
     "kekalainen/gamerq": "^3.0",
-    "yixinba/btapi": "^1.0",
     "qwen-php/qwen-php-client": "^1.0",
-    "ext-imagick": "*"
+    "ext-imagick": "*",
+    "tobycroft/btapi": "dev-master"
   },
   "require-dev": {
     "symfony/var-dumper": ">=4.2",

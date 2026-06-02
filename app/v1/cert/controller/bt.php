@@ -11,7 +11,7 @@ use app\v1\cert\model\CertWebsiteModel;
 use BaseController\CommonController;
 use Exception;
 use Input;
-use yixinba\Bt\Site;
+use tobycroft\Bt\Site;
 
 class bt extends CommonController
 {

@@ -51,7 +51,7 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/qwen-php/qwen-php-client" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-container" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-validate" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/yixinba/btapi" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/tobycroft/btapi" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/bacon/bacon-qr-code" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/dasprid/enum" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/endroid/qr-code" />

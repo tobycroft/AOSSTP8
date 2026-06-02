@@ -3,7 +3,7 @@
 namespace app\v1\cert\action;
 
 use think\Exception;
-use yixinba\Bt\Base;
+use tobycroft\Bt\Base;
 
 /**
  * 配置操作类

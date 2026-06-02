@@ -5,7 +5,7 @@ namespace app\v1\cert\action;
 use app\v1\cert\model\CertUrlModel;
 use app\v1\cert\model\CertWebsiteModel;
 use think\Exception;
-use yixinba\Bt\Site;
+use tobycroft\Bt\Site;
 
 /**
  * 站点操作类
