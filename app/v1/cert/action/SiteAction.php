@@ -7,9 +7,24 @@ use app\v1\cert\model\CertWebsiteModel;
 use think\Exception;
 use yixinba\Bt\Site;
 
+/**
+ * 站点操作类
+ * 用于处理SSL证书更新和站点列表同步
+ */
 class SiteAction
 {
-
+    /**
+     * 更新SSL证书
+     * 
+     * @param string $cert_name 证书名称
+     * @return array|null 返回包含证书内容的信息数组，格式为：
+     *                     [
+     *                         'crt' => string,  // 证书内容
+     *                         'key' => string,  // 私钥内容
+     *                         'remark' => string // 备注
+     *                     ]
+     * @throws Exception 当未找到证书项目或证书获取失败时抛出异常
+     */
     public static function updatessl(string $cert_name): array|null
     {
         $cert_url = CertUrlModel::where('cert', $cert_name)->find();
@@ -29,6 +44,22 @@ class SiteAction
         ];
     }
 
+    /**
+     * 更新已配置SSL的站点列表
+     * 
+     * 从宝塔面板获取站点列表，筛选出已配置SSL且证书匹配的站点，
+     * 将新发现的站点插入数据库，并返回已存在的站点信息
+     * 
+     * @param string $bt_api 宝塔API地址
+     * @param string $bt_key 宝塔API密钥
+     * @return array 返回已存在的站点信息数组，每个元素包含：
+     *               [
+     *                   'name' => string,      // 站点名称
+     *                   'ssl' => string,       // SSL证书主题
+     *                   'site_ssl' => mixed   // 站点SSL状态
+     *               ]
+     * @throws Exception 当宝塔API调用失败或返回数据异常时抛出异常
+     */
     public static function updateSiteListWhichHadSSL($bt_api, $bt_key): array
     {
         $bt_site = new Site($bt_api, $bt_key, './');
@@ -75,6 +106,4 @@ class SiteAction
         }
         return $data;
     }
-
-
 }
