@@ -7,10 +7,7 @@
       <sourceFolder url="file://$MODULE_DIR$/extend" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/aliyuncs/oss-sdk-php" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/chillerlan/php-qrcode" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/chillerlan/php-settings-container" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/composer" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/ezyang/htmlpurifier" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/flc/dysms" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/guzzlehttp/guzzle" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/guzzlehttp/promises" />
@@ -48,18 +45,17 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/alibabacloud/tea-utils" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/alibabacloud/tea-xml" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/lizhichao/one-sm" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/tobycroft/zbuilder" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-template" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-view" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/kekalainen/gamerq" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/league/flysystem-cached-adapter" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/php-http/discovery" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/php-http/multipart-stream-builder" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/psr/cache" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/qwen-php/qwen-php-client" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-container" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-validate" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/yixinba/btapi" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/bacon/bacon-qr-code" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/dasprid/enum" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/endroid/qr-code" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/league/flysystem-local" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
