@@ -173,7 +173,7 @@ class bt extends CommonController
             \Ret::Fail('500', null, $e->getMessage());
         }
 
-        $ret = ConfigAction::savePanelSSL($this->cert['bt_api'], $this->cert['bt_key'], $ssl['csr'], $ssl['key']);
+        $ret = ConfigAction::savePanelSSL($this->cert['bt_api'], $this->cert['bt_key'], $ssl['crt'], $ssl['key']);
         if ($ret) {
             CertLogModel::create([
                 'appname' => $this->cert['appname'],
