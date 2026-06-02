@@ -38,7 +38,6 @@
     "ext-libxml": "*",
     "guzzlehttp/guzzle": "^7.7",
     "tencentcloud/tencentcloud-sdk-php": "^3.0",
-    "tobycroft/zbuilder": "^1.0",
     "topthink/think-helper": "^3.1",
     "alibabacloud/alinlp-20200629": "^3.0",
     "topthink/think-captcha": "^3.0",
