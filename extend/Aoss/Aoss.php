@@ -44,7 +44,7 @@ class Aoss
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
         $response = curl_exec($ch);
-        curl_close($ch);
+        
         return new AossCompleteRet($response);
     }
 
@@ -59,7 +59,6 @@ class Aoss
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
         $response = curl_exec($ch);
-        curl_close($ch);
         return new AossSimpleRet($response);
     }
 
@@ -79,7 +78,7 @@ class Aoss
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
         $response = curl_exec($ch);
-        curl_close($ch);
+        
         return new AossCompleteRet($response);
     }
 }

@@ -76,7 +76,6 @@ class Send
                 throw new Exception('政务云短信平台无返回');
             }
         }
-        curl_close($ch);        //>关闭curl
         return $response;
     }
 

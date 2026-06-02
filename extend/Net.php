@@ -26,7 +26,7 @@ class Net
                 throw new Exception('PostJson超时');
             }
         }
-        curl_close($ch);
+        
         return $response;
     }
 
@@ -47,7 +47,7 @@ class Net
                 throw new Exception('PostJson超时');
             }
         }
-        curl_close($ch);
+        
         return $response;
     }
 
@@ -70,7 +70,7 @@ class Net
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
         $response = curl_exec($ch);
-        curl_close($ch);
+        
         return $response;
     }
 
@@ -90,7 +90,7 @@ class Net
 
         }
         $httpCodes = curl_getinfo($ch);
-        curl_close($ch);
+        
         return $result;
     }
 

@@ -91,7 +91,6 @@ class Shineupay
         if (curl_errno($curl)) {
             echo 'Errno' . curl_error($curl); //捕抓异常
         }
-        curl_close($curl);
         return $output;
     }
 
