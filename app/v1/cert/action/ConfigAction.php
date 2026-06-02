@@ -23,16 +23,16 @@ class ConfigAction
      * 
      * @param string $bt_api 宝塔API地址
      * @param string $bt_key 宝塔API密钥
-     * @param string $csr 证书内容
-     * @param string $key 私钥内容
+     * @param string $privateKey 私钥内容
+     * @param string $certPem 证书内容
      * @return mixed 返回宝塔面板的响应结果
      */
-    public static function savePanelSSL($bt_api, $bt_key, $csr, $key)
+    public static function savePanelSSL($bt_api, $bt_key, $privateKey, $certPem)
     {
         $bt_site = new Base($bt_api, $bt_key, './');
         $post = [
-            'csr' => $csr,
-            'key' => $key,
+            'privateKey' => $privateKey,
+            'certPem' => $certPem,
         ];
         return $bt_site->httpPostCookie(self::setPanelSSL, $post, 15);
     }
