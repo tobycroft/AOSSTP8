@@ -46,6 +46,9 @@ class bt extends CommonController
         if ($ret === false) {
             \Ret::Fail(500, null, 'BT API调用失败: ' . $bt_site->getError());
         }
+        if ($ret === null) {
+            \Ret::Fail(500, null, 'BT API返回空数据');
+        }
         $data = [];
         foreach ($ret['data'] as $site) {
             if ($site['ssl'] === -1)

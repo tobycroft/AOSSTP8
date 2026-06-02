@@ -78,6 +78,9 @@ class MailAction
         if ($ret === false) {
             throw new Exception('MailServer API调用失败: ' . $bt_site->getError());
         }
+        if ($ret === null) {
+            throw new Exception('MailServer API返回空数据');
+        }
         if (!isset($ret['msg'])) {
             throw new Exception('MailServer返回的message列表为空');
         }

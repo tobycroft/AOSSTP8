@@ -68,6 +68,9 @@ class SiteAction
             if ($ret === false) {
                 throw new Exception('BT API调用失败: ' . $bt_site->getError());
             }
+            if ($ret === null) {
+                throw new Exception('BT API返回空数据');
+            }
             if (!isset($ret['data'])) {
                 throw new Exception('返回数据异常: ' . json_encode($ret));
             }
