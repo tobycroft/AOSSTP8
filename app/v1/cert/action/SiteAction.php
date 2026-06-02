@@ -15,7 +15,7 @@ class SiteAction
 {
     /**
      * 更新SSL证书
-     * 
+     *
      * @param string $cert_name 证书名称
      * @return array|null 返回包含证书内容的信息数组，格式为：
      *                     [
@@ -46,10 +46,10 @@ class SiteAction
 
     /**
      * 更新已配置SSL的站点列表
-     * 
+     *
      * 从宝塔面板获取站点列表，筛选出已配置SSL且证书匹配的站点，
      * 将新发现的站点插入数据库，并返回已存在的站点信息
-     * 
+     *
      * @param string $bt_api 宝塔API地址
      * @param string $bt_key 宝塔API密钥
      * @return array 返回已存在的站点信息数组，每个元素包含：
@@ -63,19 +63,15 @@ class SiteAction
     public static function updateSiteListWhichHadSSL($bt_api, $bt_key): array
     {
         $bt_site = new Site($bt_api, $bt_key, './');
-        try {
-            $ret = $bt_site->getList();
-            if ($ret === false) {
-                throw new Exception('BT API调用失败: ' . $bt_site->getError());
-            }
-            if ($ret === null) {
-                throw new Exception('BT API返回空数据');
-            }
-            if (!isset($ret['data'])) {
-                throw new Exception('返回数据异常: ' . json_encode($ret));
-            }
-        } catch (Exception $e) {
-            throw new Exception('BT故障：' . $e->getMessage());
+        $ret = $bt_site->getList();
+        if ($ret === false) {
+            throw new Exception('BT API调用失败: ' . $bt_site->getError());
+        }
+        if ($ret === null) {
+            return [];
+        }
+        if (!isset($ret['data'])) {
+            throw new Exception('返回数据异常: ' . json_encode($ret));
         }
         $data = [];
         $insertData = [];
