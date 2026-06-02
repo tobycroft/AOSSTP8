@@ -135,6 +135,28 @@ class bt extends CommonController
                 $rets['fail']++;
             }
         }
+
+        $ret = ConfigAction::savePanelSSL($this->cert['bt_api'], $this->cert['bt_key'], $ssl['crt'], $ssl['key']);
+        if ($ret) {
+            CertLogModel::create([
+                'appname' => $this->cert['appname'],
+                'type' => 'panel',
+                'success' => 1,
+                'website' => 'panel',
+                'recv' => json_encode($ret, 320),
+            ]);
+            $rets['success']++;
+        } else {
+            CertLogModel::create([
+                'appname' => $this->cert['appname'],
+                'type' => 'panel',
+                'success' => 0,
+                'website' => 'panel',
+                'recv' => json_encode($ret, 320),
+            ]);
+            $rets['fail']++;
+        }
+
         \Ret::Success(0, $rets);
     }
 
