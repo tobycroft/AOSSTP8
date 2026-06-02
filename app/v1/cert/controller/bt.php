@@ -110,7 +110,7 @@ class bt extends CommonController
             SiteAction::updateSiteListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
             $ssl = SiteAction::updatessl($name);
         } catch (Exception $e) {
-            \Ret::Fail('500', null, $e->getMessage());
+            \Ret::Fail('501', null, $e->getMessage());
         }
 
         $sites = CertWebsiteModel::where('type', 'web')->where('cert_name', $name)->where('status', 1)->select();
