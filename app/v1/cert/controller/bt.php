@@ -106,37 +106,35 @@ class bt extends CommonController
         if ($cert['auto'] != 1) {
             \Ret::Fail(401, null, '本证书自动下发功能不可用');
         }
-        $updated = SiteAction::updateSiteListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
-        if (!empty($updated)) {
-            $ssl = SiteAction::updatessl($name);
+        SiteAction::updateSiteListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
+        $ssl = SiteAction::updatessl($name);
 
-            $sites = CertWebsiteModel::where('type', 'web')->where('cert_name', $name)->where('status', 1)->select();
-            $rets = [
-                'success' => 0,
-                'fail' => 0
-            ];
-            foreach ($sites as $site) {
-                $bt_site = new Site($site['api'], $site['key'], './');
-                $ret = $bt_site->setSSL(1, $site['website'], $ssl['key'], $ssl['crt']);
-                if ($ret) {
-                    CertLogModel::create([
-                        'appname' => $this->cert['appname'],
-                        'type' => $site['type'],
-                        'success' => 1,
-                        'website' => $site['website'],
-                        'recv' => json_encode($ret, 320),
-                    ]);
-                    $rets['success']++;
-                } else {
-                    CertLogModel::create([
-                        'appname' => $this->cert['appname'],
-                        'type' => $site['type'],
-                        'success' => 0,
-                        'website' => $site['website'],
-                        'recv' => json_encode($ret, 320),
-                    ]);
-                    $rets['fail']++;
-                }
+        $sites = CertWebsiteModel::where('type', 'web')->where('cert_name', $name)->where('status', 1)->select();
+        $rets = [
+            'success' => 0,
+            'fail' => 0
+        ];
+        foreach ($sites as $site) {
+            $bt_site = new Site($site['api'], $site['key'], './');
+            $ret = $bt_site->setSSL(1, $site['website'], $ssl['key'], $ssl['crt']);
+            if ($ret) {
+                CertLogModel::create([
+                    'appname' => $this->cert['appname'],
+                    'type' => $site['type'],
+                    'success' => 1,
+                    'website' => $site['website'],
+                    'recv' => json_encode($ret, 320),
+                ]);
+                $rets['success']++;
+            } else {
+                CertLogModel::create([
+                    'appname' => $this->cert['appname'],
+                    'type' => $site['type'],
+                    'success' => 0,
+                    'website' => $site['website'],
+                    'recv' => json_encode($ret, 320),
+                ]);
+                $rets['fail']++;
             }
         }
 
