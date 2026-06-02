@@ -136,25 +136,28 @@ class bt extends CommonController
             }
         }
 
-        $ret = ConfigAction::savePanelSSL($this->cert['bt_api'], $this->cert['bt_key'], $ssl['key'], $ssl['crt']);
-        if ($ret) {
-            CertLogModel::create([
-                'appname' => $this->cert['appname'],
-                'type' => 'panel',
-                'success' => 1,
-                'website' => 'panel',
-                'recv' => json_encode($ret, 320),
-            ]);
-            $rets['success']++;
-        } else {
-            CertLogModel::create([
-                'appname' => $this->cert['appname'],
-                'type' => 'panel',
-                'success' => 0,
-                'website' => 'panel',
-                'recv' => json_encode($ret, 320),
-            ]);
-            $rets['fail']++;
+        $btCertDomain = $this->cert['bt_cert_domain'] ?? '';
+        if (!empty($btCertDomain) && $name === $btCertDomain) {
+            $ret = ConfigAction::savePanelSSL($this->cert['bt_api'], $this->cert['bt_key'], $ssl['key'], $ssl['crt']);
+            if ($ret) {
+                CertLogModel::create([
+                    'appname' => $this->cert['appname'],
+                    'type' => 'panel',
+                    'success' => 1,
+                    'website' => 'panel',
+                    'recv' => json_encode($ret, 320),
+                ]);
+                $rets['success']++;
+            } else {
+                CertLogModel::create([
+                    'appname' => $this->cert['appname'],
+                    'type' => 'panel',
+                    'success' => 0,
+                    'website' => 'panel',
+                    'recv' => json_encode($ret, 320),
+                ]);
+                $rets['fail']++;
+            }
         }
 
         \Ret::Success(0, $rets);
