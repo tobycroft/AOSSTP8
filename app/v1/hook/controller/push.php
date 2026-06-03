@@ -61,6 +61,7 @@ class push extends CommonController
             Ret::Fail(400, null, "未找到repository-name字段");
         }
         $branch = "master";
+
         if (!empty($payload['ref'])) {
             $ref = explode('/', $payload['ref']);
             $branch = end($ref);
