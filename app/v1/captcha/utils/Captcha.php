@@ -181,7 +181,7 @@ class Captcha
         $this->color = imagecolorallocate($this->im, mt_rand(1, 150), mt_rand(1, 150), mt_rand(1, 150));
 
         // 验证码使用随机字体
-        $ttfPath = dirname(__DIR__, 3) . '/vendor/topthink/think-captcha/assets/' . ($this->useZh ? 'zhttfs' : 'ttfs') . '/';
+        $ttfPath = dirname(__DIR__, 3) . '/vendor/tobycroft/think-captcha/assets/' . ($this->useZh ? 'zhttfs' : 'ttfs') . '/';
 
         if (empty($this->fontttf)) {
             $dir  = dir($ttfPath);
@@ -292,7 +292,7 @@ class Captcha
 
     protected function background(): void
     {
-        $path = dirname(__DIR__, 3) . '/vendor/topthink/think-captcha/assets/bgs/';
+        $path = dirname(__DIR__, 3) . '/vendor/tobycroft/think-captcha/assets/bgs/';
         $dir  = dir($path);
 
         $bgs = [];

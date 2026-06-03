@@ -40,7 +40,7 @@
     "tencentcloud/tencentcloud-sdk-php": "^3.0",
     "topthink/think-helper": "^3.1",
     "alibabacloud/alinlp-20200629": "^3.0",
-    "topthink/think-captcha": "^3.0",
+    "tobycroft/think-captcha": "^3.0",
     "kekalainen/gamerq": "^3.0",
     "qwen-php/qwen-php-client": "^1.0",
     "ext-imagick": "*",
