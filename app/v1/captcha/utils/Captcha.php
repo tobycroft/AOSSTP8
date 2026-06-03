@@ -2,7 +2,9 @@
 
 namespace app\v1\captcha\utils;
 
-class Captcha extends \think\captcha\Captcha
+use tobycroft\captcha\Captcha as TobycroftCaptcha;
+
+class Captcha extends TobycroftCaptcha
 {
 
     private $session = null;
