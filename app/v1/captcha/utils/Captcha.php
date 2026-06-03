@@ -10,6 +10,7 @@ class Captcha extends \think\captcha\Captcha
     public $key;
     public $hash;
     public $question;
+    protected $im;
 
     protected function generate(): array
     {
