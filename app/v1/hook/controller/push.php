@@ -14,7 +14,7 @@ class push extends CommonController
     public function single()
     {
         $tag = Input::Get("tag");
-        $param=Input::Get("param",false);
+        $param = Input::Get("param", false);
         $data = HookModel::where("tag", $tag)->select();
         if ($data) {
             $rets = [];
@@ -27,8 +27,15 @@ class push extends CommonController
                             'access_key' => $datum['key'],
                             'param' => $datum['param'],
                         ];
-                        if(!empty($param)){
+                        if (!empty($param)) {
                             $query['param'] = $param;
+                        } else {
+                            if (empty($datum['param'])) {
+                                $query['param'] = $datum['remark'];
+                            }
+                            if (empty($datum['param'])) {
+                                $query['param'] = $tag;
+                            }
                         }
                         $ret = Net::PostJson($path, $query);
                         $rets[$datum['remark']] = $ret;
