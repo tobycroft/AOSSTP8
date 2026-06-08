@@ -16,7 +16,7 @@ class push extends CommonController
         $tag = Input::Get("tag");
         $param = Input::Get("param", false);
         $data = HookModel::where("tag", $tag)->select();
-        if (!empty($data)) {
+        if (!$data->isEmpty()) {
             $rets = [];
             $status = [];
             foreach ($data->toArray() as $datum) {
