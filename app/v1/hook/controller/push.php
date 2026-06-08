@@ -90,6 +90,12 @@ class push extends CommonController
                             'access_key' => $datum['key'],
                             'param' => $datum['param'],
                         ];
+                        if (empty($datum['param'])) {
+                            $query['param'] = $datum['remark'];
+                        }
+                        if (empty($datum['param'])) {
+                            $query['param'] = $payload['repository']['name'];
+                        }
                         $ret = Net::PostJson($path, $query);
                         $rets[$datum['remark']] = $ret;
                         if ($ret) {
