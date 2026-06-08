@@ -57,6 +57,7 @@ class push extends CommonController
     }
 
     //http://upload.tuuz.cc:8000/v1/hook/push/github
+    //http://upload.tuuz.cc:8000/github
     public function github()
     {
         $in = Input::Post('payload');
