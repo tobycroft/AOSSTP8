@@ -44,6 +44,13 @@ class push extends CommonController
                         } else {
                             $status[$datum['remark']] = 'fail';
                         }
+                        HookLogModel::create([
+                            'tag' => $datum['tag'],
+                            'remark' => $datum['remark'],
+                            'success' => false,
+                            'url' => $path . '?' . http_build_query($query),
+                            'recv' => $ret,
+                        ]);
                         break;
 
                     default:
@@ -54,6 +61,13 @@ class push extends CommonController
                         } else {
                             $status[$datum['remark']] = 'fail';
                         }
+                        HookLogModel::create([
+                            'tag' => $datum['tag'],
+                            'remark' => $datum['remark'],
+                            'success' => false,
+                            'url' => $datum['url'],
+                            'recv' => $ret,
+                        ]);
                         break;
                 }
                 Ret::Success(0, $rets, 'total:' . count($data) . ',fail:' . count($status));
