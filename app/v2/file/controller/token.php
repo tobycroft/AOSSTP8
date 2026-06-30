@@ -47,4 +47,30 @@ class token extends CommonController
             'expired_at' => $expired_at,
         ]);
     }
+
+    public function upload_url()
+    {
+        $appid = Input::Post('appid');
+        $timestamp = Input::Post('timestamp');
+        $sign = Input::Post('sign');
+
+        $now = time();
+        if (abs($now - intval($timestamp)) > 300) {
+            Ret::Fail(400, null, '请求已过期');
+        }
+
+        $project = (new ProjectModel)->api_find_appid($appid);
+        if (!$project) {
+            Ret::Fail(401, null, '项目不存在');
+        }
+
+        $expected_sign = md5($appid . $project['open_token'] . $timestamp);
+        if ($sign !== $expected_sign) {
+            Ret::Fail(401, null, '签名验证失败');
+        }
+
+        Ret::Success(0, [
+            'upload_url' => 'https://upload.tuuz.cc:433/v2/file/index/upfull',
+        ]);
+    }
 }
