@@ -7,6 +7,7 @@ use app\v1\oss\model\OssModel;
 use app\v2\file\model\FileTokenModel;
 use Input;
 use Ret;
+use think\Request;
 
 class index extends V1Index
 {
@@ -34,5 +35,10 @@ class index extends V1Index
 
         $file_token->is_used = 1;
         $file_token->save();
+    }
+
+    public function uphash(Request $request)
+    {
+        $this->upload_file($request, 1, 'hash');
     }
 }

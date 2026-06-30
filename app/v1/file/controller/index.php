@@ -190,6 +190,10 @@ class index extends search
                     Ret::Success(0, $file_info);
                     break;
 
+                case "hash":
+                    Ret::Success(0, $file_info['md5']);
+                    break;
+
                 default:
                     Ret::Success(0, $sav);
                     break;
