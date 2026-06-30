@@ -70,8 +70,23 @@ class token extends CommonController
             Ret::Fail(401, null, '签名验证失败');
         }
 
+        $temp_token = md5(uniqid('ft_', true) . $token . microtime());
+        $expired_at = date('Y-m-d H:i:s', $now + 300);
+
+        FileTokenModel::create([
+            'token' => $temp_token,
+            'oss_token' => $token,
+            'created_at' => date('Y-m-d H:i:s', $now),
+            'expired_at' => $expired_at,
+            'is_used' => 0,
+        ]);
+
+        $base_url = 'https://upload.tuuz.cc:433/v2/file/index/upfull';
         Ret::Success(0, [
-            'upload_url' => 'https://upload.tuuz.cc:433/v2/file/index/upfull',
+            'token' => $temp_token,
+            'expired_at' => $expired_at,
+            'url' => $base_url,
+            'upload_url' => $base_url . '?token=' . $temp_token,
         ]);
     }
 
@@ -96,8 +111,23 @@ class token extends CommonController
             Ret::Fail(401, null, '签名验证失败');
         }
 
+        $temp_token = md5(uniqid('ft_', true) . $token . microtime());
+        $expired_at = date('Y-m-d H:i:s', $now + 300);
+
+        FileTokenModel::create([
+            'token' => $temp_token,
+            'oss_token' => $token,
+            'created_at' => date('Y-m-d H:i:s', $now),
+            'expired_at' => $expired_at,
+            'is_used' => 0,
+        ]);
+
+        $base_url = 'https://upload.tuuz.cc:433/v2/file/index/uphash';
         Ret::Success(0, [
-            'upload_url' => 'https://upload.tuuz.cc:433/v2/file/index/uphash',
+            'token' => $temp_token,
+            'expired_at' => $expired_at,
+            'url' => $base_url,
+            'upload_url' => $base_url . '?token=' . $temp_token,
         ]);
     }
 
