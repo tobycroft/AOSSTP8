@@ -88,7 +88,7 @@ class token extends CommonController
 
         $oss = OssModel::api_find_token($token);
         if (!$oss) {
-            Ret::Fail(401, null, '项目不存在');
+            Ret::Fail(401, null, '项目不存在-'.$token);
         }
 
         $expected_sign = md5($token . $timestamp);
