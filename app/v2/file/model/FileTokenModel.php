@@ -6,7 +6,7 @@ use think\Model;
 
 class FileTokenModel extends Model
 {
-    protected $table = 'ao_file_token';
+    protected $table = 'ao_attachment_token';
 
     public function api_find_valid($token)
     {

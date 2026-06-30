@@ -26,7 +26,7 @@ class index extends V1Index
             Ret::Fail(401, null, '临时token无效或已过期');
         }
 
-        $this->token = $file_token['project_token'];
+        $this->token = $file_token['oss_token'];
         $this->proc = OssModel::api_find_token($this->token);
         if (!$this->proc) {
             Ret::Fail(401, null, '项目不可用');
