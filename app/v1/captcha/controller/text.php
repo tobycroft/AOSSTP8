@@ -106,6 +106,31 @@ class text extends CommonController
         return $this->Generated($config);
     }
 
+    public function gif()
+    {
+        $config = [
+            'length' => 4,
+            'codeSet' => '0123456789QWERTYUIOPASDFGHJKLZXCVBNM',
+            'expire' => 1800,
+            'fontSize' => 25,
+            'bg' => [243, 251, 254],
+            'useCurve' => true,
+            'useNoise' => true,
+            'frameDelay' => 100,
+            'imageW' => 0,
+            'imageH' => 0,
+        ];
+        $capt = new \app\v1\captcha\utils\GifCaptcha($config);
+        $response = $capt->create();
+        CaptchaModel::create([
+            'ident' => $this->ident,
+            'code' => $capt->question,
+            'hash' => $capt->hash,
+            'type' => 'gif',
+        ]);
+        return $response;
+    }
+
     public function math()
     {
         $config = [
