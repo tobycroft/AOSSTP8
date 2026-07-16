@@ -116,7 +116,32 @@ class text extends CommonController
             'bg' => [243, 251, 254],
             'useCurve' => true,
             'useNoise' => true,
-            'frameDelay' => 30,
+            'frameDelay' => 100,
+            'imageW' => 0,
+            'imageH' => 0,
+        ];
+        $capt = new \app\v1\captcha\utils\GifCaptcha($config);
+        $response = $capt->create();
+        CaptchaModel::create([
+            'ident' => $this->ident,
+            'code' => $capt->question,
+            'hash' => $capt->hash,
+            'type' => 'math',
+        ]);
+        return $response;
+    }
+
+    public function gif_fast()
+    {
+        $config = [
+            'length' => 4,
+            'codeSet' => '0123456789QWERTYUIOPASDFGHJKLZXCVBNM',
+            'expire' => 1800,
+            'fontSize' => 25,
+            'bg' => [243, 251, 254],
+            'useCurve' => true,
+            'useNoise' => true,
+            'frameDelay' => 50,
             'imageW' => 0,
             'imageH' => 0,
         ];
