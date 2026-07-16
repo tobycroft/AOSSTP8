@@ -126,7 +126,7 @@ class text extends CommonController
             'ident' => $this->ident,
             'code' => $capt->question,
             'hash' => $capt->hash,
-            'type' => 'gif',
+            'type' => 'math',
         ]);
         return $response;
     }
