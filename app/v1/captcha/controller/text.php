@@ -116,7 +116,7 @@ class text extends CommonController
             'bg' => [243, 251, 254],
             'useCurve' => true,
             'useNoise' => true,
-            'frameDelay' => 100,
+            'frameDelay' => 30,
             'imageW' => 0,
             'imageH' => 0,
         ];
