@@ -97,6 +97,40 @@ class gif extends CommonController
         return $this->generateGif($config);
     }
 
+    public function letters()
+    {
+        $config = [
+            'length' => 4,
+            'codeSet' => 'QWERTYUIOPASDFGHJKLZXCVBNM',
+            'expire' => 1800,
+            'fontSize' => 25,
+            'bg' => [243, 251, 254],
+            'useCurve' => true,
+            'useNoise' => true,
+            'frameDelay' => 100,
+            'imageW' => 0,
+            'imageH' => 0,
+        ];
+        return $this->generateGif($config);
+    }
+
+    public function letters_fast()
+    {
+        $config = [
+            'length' => 4,
+            'codeSet' => 'QWERTYUIOPASDFGHJKLZXCVBNM',
+            'expire' => 1800,
+            'fontSize' => 25,
+            'bg' => [243, 251, 254],
+            'useCurve' => true,
+            'useNoise' => true,
+            'frameDelay' => 50,
+            'imageW' => 0,
+            'imageH' => 0,
+        ];
+        return $this->generateGif($config);
+    }
+
     private function generateGif(array $config)
     {
         $capt = new \app\v1\captcha\utils\GifCaptcha($config);
