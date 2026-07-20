@@ -101,9 +101,10 @@ function initSlideCaptacle(options) {
         .then(data => {
             if (data.code === 0) {
                 captchaData = data.data;
-                // 强制刷新图片内容
-                bgImg.src = captchaData.bg + '&t=' + Date.now();
-                blockImg.src = captchaData.block + '&t=' + Date.now();
+                // ✅ 直接使用 base64 内容即可，不需要添加时间戳
+                // 因为每次 generateCaptcha 都会请求新的验证码，图片内容本身就是新的
+                bgImg.src = captchaData.bg;
+                blockImg.src = captchaData.block;
                 blockImg.style.top = captchaData.y + 'px';
                 blockImg.style.left = '0px';
                 blockImg.style.display = 'block';
