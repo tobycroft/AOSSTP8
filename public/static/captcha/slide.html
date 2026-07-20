@@ -132,59 +132,49 @@
 
     <script src="slide.js"></script>
     <script>
+        const statusEl = document.querySelector('.status');
+        const reloadBtn = document.querySelector('.reload-btn');
+
         // 初始化验证码
-        function initCaptcha() {
-            const statusEl = document.querySelector('.status');
-            const reloadBtn = document.querySelector('.reload-btn');
+        initSlideCaptacle({
+            token: 'your-project-token',
+            onSuccess: function() {
+                statusEl.textContent = '✅ 验证成功！';
+                statusEl.className = 'status success';
+                reloadBtn.style.display = 'inline-block';
+                reloadBtn.disabled = false;
+            },
+            onError: function(msg) {
+                statusEl.className = 'status error';
+                statusEl.innerHTML = `❌ ${msg || '验证失败'}，正在自动重新获取... <span class="loading-indicator"><span class="loading-spinner"></span></span>`;
+                reloadBtn.disabled = true;
+                reloadBtn.style.display = 'inline-block';
 
-            initSlideCaptacle({
-                token: 'your-project-token',
-                onSuccess: function() {
-                    statusEl.textContent = '✅ 验证成功！';
-                    statusEl.className = 'status success';
-                    reloadBtn.style.display = 'inline-block';
-                    reloadBtn.disabled = false;
-                    reloadBtn.textContent = '点击重新加载';
-                },
-                onError: function(msg) {
-                    statusEl.className = 'status error';
-                    statusEl.innerHTML = `❌ ${msg || '验证失败'}，正在自动重新获取... <span class="loading-indicator"><span class="loading-spinner"></span></span>`;
-                    reloadBtn.disabled = true;
-                    reloadBtn.style.display = 'inline-block';
-                    reloadBtn.textContent = '重新加载中...';
-
-                    // 1.5秒后显示正在加载新验证码
-                    setTimeout(() => {
+                // 1.5秒后显示正在加载新验证码
+                setTimeout(() => {
+                    if (statusEl.className.includes('error')) {
                         statusEl.className = 'status reloading';
                         statusEl.innerHTML = `🔄 正在获取新验证码... <span class="loading-indicator"><span class="loading-spinner"></span></span>`;
-                    }, 1500);
+                    }
+                }, 1500);
 
-                    // 2秒后重置状态（等待slide.js自动生成新验证码）
-                    setTimeout(() => {
-                        statusEl.className = 'status';
-                        statusEl.textContent = '请拖动滑块完成拼图';
-                        reloadBtn.disabled = false;
-                        reloadBtn.textContent = '点击重新加载';
-                    }, 2000);
-                }
-            });
-        }
-
-        // 页面加载完成后初始化
-        initCaptcha();
+                // 2秒后重置状态
+                setTimeout(() => {
+                    statusEl.className = 'status';
+                    statusEl.textContent = '请拖动滑块完成拼图';
+                    reloadBtn.disabled = false;
+                }, 2000);
+            }
+        });
 
         // 重新加载按钮
-        document.querySelector('.reload-btn').addEventListener('click', function() {
-            const statusEl = document.querySelector('.status');
+        reloadBtn.addEventListener('click', function() {
             statusEl.className = 'status reloading';
             statusEl.innerHTML = `🔄 正在获取新验证码... <span class="loading-indicator"><span class="loading-spinner"></span></span>`;
             this.disabled = true;
 
             setTimeout(() => {
-                initCaptcha();
-                statusEl.className = 'status';
-                statusEl.textContent = '请拖动滑块完成拼图';
-                this.disabled = false;
+                location.reload();
             }, 500);
         });
     </script>

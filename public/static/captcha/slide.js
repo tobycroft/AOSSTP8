@@ -48,20 +48,28 @@ function initSlideCaptacle(options) {
     document.addEventListener('touchend', endDrag);
 
     function generateCaptcha() {
+        // 每次生成新验证码时，使用新的 ident，确保完全独立
+        opts.ident = 'captcha_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
         const formData = new FormData();
         formData.append('token', opts.token);
         formData.append('ident', opts.ident);
 
-        fetch(opts.apiUrl + '/slide/create', {
+        // 添加时间戳参数防止浏览器缓存
+        const url = opts.apiUrl + '/slide/create?t=' + Date.now();
+
+        fetch(url, {
             method: 'POST',
-            body: formData
+            body: formData,
+            cache: 'no-store'
         })
         .then(response => response.json())
         .then(data => {
             if (data.code === 0) {
                 captchaData = data.data;
-                bgImg.src = captchaData.bg;
-                blockImg.src = captchaData.block;
+                // 强制刷新图片内容
+                bgImg.src = captchaData.bg + '&t=' + Date.now();
+                blockImg.src = captchaData.block + '&t=' + Date.now();
                 blockImg.style.top = captchaData.y + 'px';
                 blockImg.style.left = '0px';
                 blockImg.style.display = 'block';
