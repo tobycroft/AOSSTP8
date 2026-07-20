@@ -34,6 +34,7 @@ function initSlideCaptacle(options) {
     let isDragging = false;
     let startX = 0;
     let startLeft = 0;
+    let isVerified = false; // 是否已验证（无论成功或失败）
 
     // 生成验证码
     generateCaptcha();
@@ -66,6 +67,7 @@ function initSlideCaptacle(options) {
                 blockImg.style.display = 'block';
                 sliderHandle.style.left = '0px';
                 reloadBtn.style.display = 'inline-block';
+                isVerified = false; // 新验证码，重置验证状态
             } else {
                 opts.onError(data.echo || '生成验证码失败');
             }
@@ -76,6 +78,7 @@ function initSlideCaptacle(options) {
     }
 
     function startDrag(e) {
+        if (isVerified) return; // 已验证过，不允许再次操作
         isDragging = true;
         startX = e.clientX || e.touches[0].clientX;
         startLeft = parseInt(sliderHandle.style.left) || 0;
@@ -118,13 +121,18 @@ function initSlideCaptacle(options) {
                 blockImg.style.pointerEvents = 'none';
                 sliderHandle.style.pointerEvents = 'none';
             } else {
+                isVerified = true; // 标记为已验证，禁止继续操作
                 sliderHandle.classList.add('error');
+                blockImg.style.pointerEvents = 'none'; // 禁用拼图块
+                sliderHandle.style.pointerEvents = 'none'; // 禁用滑块
                 opts.onError(data.echo || '验证失败');
                 
                 // 验证失败，自动重新加载新的验证码
                 setTimeout(() => {
                     generateCaptcha();
                     sliderHandle.classList.remove('error');
+                    blockImg.style.pointerEvents = 'auto'; // 恢复拼图块
+                    sliderHandle.style.pointerEvents = 'auto'; // 恢复滑块
                 }, 1500);
             }
         })
