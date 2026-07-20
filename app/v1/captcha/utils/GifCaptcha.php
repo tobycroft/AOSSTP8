@@ -47,7 +47,7 @@ class GifCaptcha
         $dir->close();
 
         $chars = str_split($this->question);
-        $totalFrames = $this->length + 1;
+        $totalFrames = $this->length;
         $frames = [];
         $delays = [];
 
