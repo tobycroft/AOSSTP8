@@ -121,18 +121,11 @@ function initSlideCaptacle(options) {
                 sliderHandle.classList.add('error');
                 opts.onError(data.echo || '验证失败');
                 
-                // 如果提示需要重新获取验证码，则自动重新加载
-                if (data.echo && data.echo.includes('重新获取')) {
-                    setTimeout(() => {
-                        generateCaptcha();
-                        sliderHandle.classList.remove('error');
-                    }, 1500);
-                } else {
-                    resetPosition();
-                    setTimeout(() => {
-                        sliderHandle.classList.remove('error');
-                    }, 1500);
-                }
+                // 验证失败，自动重新加载新的验证码
+                setTimeout(() => {
+                    generateCaptcha();
+                    sliderHandle.classList.remove('error');
+                }, 1500);
             }
         })
         .catch(error => {

@@ -60,29 +60,15 @@ class slide extends CommonController
             Ret::Fail(403, null, '验证码不存在');
         }
 
-        // 检查错误次数
-        $errorCount = intval($capt['error_count'] ?? 0);
-        if ($errorCount >= 3) {
-            CaptchaModel::where('ident', $this->ident)->delete();
-            Ret::Fail(403, null, '错误次数过多，请重新获取验证码');
-        }
-
         $answer = intval($capt['code']);
         $tolerance = 4;
         if (abs($x - $answer) <= $tolerance) {
             CaptchaModel::where('ident', $this->ident)->delete();
             Ret::Success(0, null, '验证成功');
         } else {
-            // 验证失败，增加错误次数
-            CaptchaModel::where('ident', $this->ident)->update([
-                'error_count' => $errorCount + 1
-            ]);
-            // 达到3次错误则删除验证码
-            if ($errorCount + 1 >= 3) {
-                Ret::Fail(403, null, '错误次数过多，请重新获取验证码');
-            } else {
-                Ret::Fail(403, null, '验证失败，还有 ' . (3 - ($errorCount + 1)) . ' 次机会');
-            }
+            // 验证失败，立即删除验证码记录，强制重新获取
+            CaptchaModel::where('ident', $this->ident)->delete();
+            Ret::Fail(403, null, '验证失败，请重新获取验证码');
         }
     }
 }
