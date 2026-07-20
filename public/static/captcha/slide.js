@@ -35,17 +35,51 @@ function initSlideCaptacle(options) {
     let startX = 0;
     let startLeft = 0;
     let isVerified = false; // 是否已验证（无论成功或失败）
+    let eventListenersAdded = false; // 防止重复添加事件监听器
 
     // 生成验证码
     generateCaptcha();
 
-    // 事件监听
-    sliderHandle.addEventListener('mousedown', startDrag);
-    document.addEventListener('mousemove', drag);
-    document.addEventListener('mouseup', endDrag);
-    sliderHandle.addEventListener('touchstart', startDrag);
-    document.addEventListener('touchmove', drag);
-    document.addEventListener('touchend', endDrag);
+    // 事件监听（只添加一次）
+    if (!eventListenersAdded) {
+        sliderHandle.addEventListener('mousedown', startDrag);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', endDrag);
+        sliderHandle.addEventListener('touchstart', startDrag);
+        document.addEventListener('touchmove', drag);
+        document.addEventListener('touchend', endDrag);
+
+        // 手动重新加载按钮 - 使用和自动重新获取相同的逻辑
+        if (reloadBtn) {
+            reloadBtn.addEventListener('click', function() {
+                if (reloadBtn.disabled) return;
+                reloadBtn.disabled = true;
+
+                // 显示加载状态
+                const statusEl = document.querySelector('.status');
+                if (statusEl) {
+                    statusEl.className = 'status reloading';
+                    statusEl.innerHTML = `🔄 正在获取新验证码... <span class="loading-indicator"><span class="loading-spinner"></span></span>`;
+                }
+
+                // 调用和自动重新获取完全相同的 generateCaptcha 函数
+                generateCaptcha();
+
+                // 延迟恢复按钮和状态
+                setTimeout(() => {
+                    if (statusEl) {
+                        statusEl.className = 'status';
+                        statusEl.textContent = '请拖动滑块完成拼图';
+                    }
+                    if (reloadBtn) {
+                        reloadBtn.disabled = false;
+                    }
+                }, 500);
+            });
+        }
+
+        eventListenersAdded = true;
+    }
 
     function generateCaptcha() {
         // 每次生成新验证码时，使用新的 ident，确保完全独立

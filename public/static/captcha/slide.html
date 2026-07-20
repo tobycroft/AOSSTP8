@@ -135,7 +135,8 @@
         const statusEl = document.querySelector('.status');
         const reloadBtn = document.querySelector('.reload-btn');
 
-        // 初始化验证码
+        // 初始化验证码 - 手动按钮逻辑已集成到 slide.js 中
+        // 自动重新获取和手动按钮使用完全相同的 generateCaptcha 逻辑
         initSlideCaptacle({
             token: 'your-project-token',
             onSuccess: function() {
@@ -165,17 +166,6 @@
                     reloadBtn.disabled = false;
                 }, 2000);
             }
-        });
-
-        // 重新加载按钮
-        reloadBtn.addEventListener('click', function() {
-            statusEl.className = 'status reloading';
-            statusEl.innerHTML = `🔄 正在获取新验证码... <span class="loading-indicator"><span class="loading-spinner"></span></span>`;
-            this.disabled = true;
-
-            setTimeout(() => {
-                location.reload();
-            }, 500);
         });
     </script>
 </body>
