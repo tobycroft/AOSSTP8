@@ -113,17 +113,35 @@ function initSlideCaptacle(options) {
         .then(response => response.json())
         .then(data => {
             if (data.code === 0) {
+                sliderHandle.classList.add('success');
                 opts.onSuccess();
                 blockImg.style.pointerEvents = 'none';
                 sliderHandle.style.pointerEvents = 'none';
             } else {
+                sliderHandle.classList.add('error');
                 opts.onError(data.echo || '验证失败');
-                resetPosition();
+                
+                // 如果提示需要重新获取验证码，则自动重新加载
+                if (data.echo && data.echo.includes('重新获取')) {
+                    setTimeout(() => {
+                        generateCaptcha();
+                        sliderHandle.classList.remove('error');
+                    }, 1500);
+                } else {
+                    resetPosition();
+                    setTimeout(() => {
+                        sliderHandle.classList.remove('error');
+                    }, 1500);
+                }
             }
         })
         .catch(error => {
+            sliderHandle.classList.add('error');
             opts.onError('网络错误: ' + error.message);
             resetPosition();
+            setTimeout(() => {
+                sliderHandle.classList.remove('error');
+            }, 1500);
         });
     }
 
