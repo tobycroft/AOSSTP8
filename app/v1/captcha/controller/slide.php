@@ -46,7 +46,7 @@ class slide extends CommonController
             'ident' => $this->ident,
             'code' => (string) $capt->x,
             'hash' => $capt->hash,
-            'type' => 'gif',
+            'type' => 'math',
         ]);
 
         Ret::Success(0, $data);
@@ -55,11 +55,11 @@ class slide extends CommonController
     public function check()
     {
         $x = Input::PostInt('x');
-        $capt = CaptchaModel::where('ident', $this->ident)->where('type', 'gif')->find();
+        $capt = CaptchaModel::where('ident', $this->ident)->find();
         if (!$capt) {
             Ret::Fail(403, null, '验证码不存在');
         }
-        $answer = intval($capt['code']);
+        $answer = \intval($capt['code']);
         $tolerance = 4;
         if (abs($x - $answer) <= $tolerance) {
             CaptchaModel::where('ident', $this->ident)->delete();
