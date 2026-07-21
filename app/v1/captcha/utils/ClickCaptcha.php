@@ -312,7 +312,7 @@ class ClickCaptcha
     protected function addNoise($im): void
     {
         // 随机色小点
-        for ($i = 0; $i < 40; $i++) {
+        for ($i = 0; $i < 50; $i++) {
             $color = imagecolorallocate($im,
                 random_int(150, 220),
                 random_int(150, 220),
@@ -320,12 +320,12 @@ class ClickCaptcha
             );
             $cx = random_int(0, $this->bgWidth);
             $cy = random_int(0, $this->bgHeight);
-            $size = random_int(1, 4);
+            $size = random_int(2, 6);
             imagefilledellipse($im, $cx, $cy, $size, $size, $color);
         }
 
         // 随机曲线 / 波浪线
-        for ($i = 0; $i < 4; $i++) {
+        for ($i = 0; $i < 6; $i++) {
             $color = imagecolorallocate($im,
                 random_int(120, 200),
                 random_int(120, 200),
@@ -352,22 +352,53 @@ class ClickCaptcha
             }
         }
 
-        // 小方块 / 矩形
-        for ($i = 0; $i < 5; $i++) {
+        // 小方块 / 矩形遮挡（更多）
+        for ($i = 0; $i < 12; $i++) {
             $color = imagecolorallocate($im,
-                random_int(180, 230),
-                random_int(180, 230),
-                random_int(180, 230)
+                random_int(170, 230),
+                random_int(170, 230),
+                random_int(170, 230)
             );
             $x1 = random_int(0, $this->bgWidth - 30);
             $y1 = random_int(0, $this->bgHeight - 20);
-            $x2 = $x1 + random_int(8, 25);
-            $y2 = $y1 + random_int(6, 18);
+            $x2 = $x1 + random_int(10, 35);
+            $y2 = $y1 + random_int(8, 25);
             imagefilledrectangle($im, $x1, $y1, $x2, $y2, $color);
         }
 
+        // 椭圆形遮挡块
+        for ($i = 0; $i < 8; $i++) {
+            $color = imagecolorallocate($im,
+                random_int(160, 220),
+                random_int(160, 220),
+                random_int(160, 220)
+            );
+            $cx = random_int(10, $this->bgWidth - 10);
+            $cy = random_int(10, $this->bgHeight - 10);
+            $w = random_int(15, 45);
+            $h = random_int(10, 30);
+            imagefilledellipse($im, $cx, $cy, $w, $h, $color);
+        }
+
+        // 多边形遮挡块（随机三角形）
+        for ($i = 0; $i < 4; $i++) {
+            $color = imagecolorallocate($im,
+                random_int(150, 210),
+                random_int(150, 210),
+                random_int(150, 210)
+            );
+            $baseX = random_int(20, $this->bgWidth - 30);
+            $baseY = random_int(20, $this->bgHeight - 20);
+            $points = [
+                $baseX + random_int(-20, 20), $baseY + random_int(-25, -5),
+                $baseX + random_int(-25, -5), $baseY + random_int(5, 25),
+                $baseX + random_int(5, 25), $baseY + random_int(5, 25),
+            ];
+            imagefilledpolygon($im, $points, 3, $color);
+        }
+
         // 像素噪点（更细腻）
-        for ($i = 0; $i < 200; $i++) {
+        for ($i = 0; $i < 300; $i++) {
             $color = imagecolorallocate($im,
                 random_int(160, 230),
                 random_int(160, 230),
