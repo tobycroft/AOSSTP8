@@ -103,26 +103,64 @@ class asset extends CommonController
     }
 
     /**
+     * 调试接口：返回当前请求的完整信息，用于排查端口问题
+     * GET /v1/captcha/asset/debug
+     */
+    public function debug()
+    {
+        $data = [
+            'HTTP_HOST' => $_SERVER['HTTP_HOST'] ?? 'N/A',
+            'SERVER_NAME' => $_SERVER['SERVER_NAME'] ?? 'N/A',
+            'SERVER_PORT' => $_SERVER['SERVER_PORT'] ?? 'N/A',
+            'REQUEST_SCHEME' => $_SERVER['REQUEST_SCHEME'] ?? 'N/A',
+            'HTTPS' => $_SERVER['HTTPS'] ?? 'N/A',
+            'REQUEST_URI' => $_SERVER['REQUEST_URI'] ?? 'N/A',
+            'SCRIPT_NAME' => $_SERVER['SCRIPT_NAME'] ?? 'N/A',
+            'PHP_SELF' => $_SERVER['PHP_SELF'] ?? 'N/A',
+            'api_base' => $this->getApiBase(),
+            'current_url' => $this->getCurrentUrl(),
+        ];
+        Ret::Success(0, $data);
+    }
+
+    /**
+     * 获取当前请求的完整 URL
+     */
+    private function getCurrentUrl()
+    {
+        $scheme = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+        $scheme = $_SERVER['REQUEST_SCHEME'] ?? $scheme;
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $uri = $_SERVER['REQUEST_URI'] ?? '/';
+        return $scheme . '://' . $host . $uri;
+    }
+
+    /**
      * 获取当前 API 的基础 URL，使用浏览器访问的完整 URL
      */
     private function getApiBase()
     {
-        // scheme
-        $scheme = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+        // scheme - 优先使用 REQUEST_SCHEME，兼容性更好
+        if (isset($_SERVER['REQUEST_SCHEME'])) {
+            $scheme = $_SERVER['REQUEST_SCHEME'];
+        } else {
+            $scheme = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+        }
 
         // HTTP_HOST 已经包含端口号（如 localhost:8080）
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 
-        // 如果 HTTP_HOST 没有端口，从 SERVER_PORT 补充
+        // 再次确保端口号被正确处理
         if (strpos($host, ':') === false) {
             $port = $_SERVER['SERVER_PORT'] ?? '80';
-            $standardPort = ($scheme === 'http' && $port == '80') || ($scheme === 'https' && $port == '443');
-            if (!$standardPort) {
+            $isStandard = ($scheme === 'http' && intval($port) === 80)
+                         || ($scheme === 'https' && intval($port) === 443);
+            if (!$isStandard) {
                 $host .= ':' . $port;
             }
         }
 
-        // 获取请求路径
+        // 获取请求路径，去掉 /asset/xxx 部分
         $requestUri = $_SERVER['REQUEST_URI'] ?? '/v1/captcha/asset/html';
         $path = parse_url($requestUri, PHP_URL_PATH);
         $apiPath = preg_replace('#/asset/.*$#', '', $path);
