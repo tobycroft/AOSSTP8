@@ -14,8 +14,16 @@ class SlideCaptcha
     public int $y;
     public string $hash;
 
-    protected int $padTop;
+    public $topBulge;
+    public $rightBulge;
+    public $bottomBulge;
+    public $leftBulge;
+
+    protected int $s;
+    protected int $padLeft;
     protected int $padRight;
+    protected int $padTop;
+    protected int $padBottom;
     protected int $maskW;
     protected int $maskH;
 
@@ -26,21 +34,30 @@ class SlideCaptcha
                 $this->{$key} = $val;
             }
         }
-        $s = (int) ($this->blockSize / 4);
-        $this->padTop = max(0, 2 * $this->radius - $s);
-        $this->padRight = $s + $this->radius;
-        $this->maskW = $this->blockSize + $this->padRight;
-        $this->maskH = $this->blockSize + $this->padTop;
     }
 
     public function generate(): array
     {
         $bg = $this->createBackground();
 
+        // 为本次生成随机形状
+        $this->topBulge = random_int(-1, 1);
+        $this->rightBulge = random_int(-1, 1);
+        $this->bottomBulge = random_int(-1, 1);
+        $this->leftBulge = random_int(-1, 1);
+
+        $this->s = (int) ($this->blockSize / 4);
+        $this->padLeft = $this->leftBulge === 1 ? ($this->s + $this->radius) : 0;
+        $this->padRight = $this->rightBulge === 1 ? ($this->s + $this->radius) : 0;
+        $this->padTop = $this->topBulge === 1 ? ($this->s + $this->radius) : 0;
+        $this->padBottom = $this->bottomBulge === 1 ? ($this->s + $this->radius) : 0;
+        $this->maskW = $this->blockSize + $this->padLeft + $this->padRight;
+        $this->maskH = $this->blockSize + $this->padTop + $this->padBottom;
+
         $minX = $this->blockSize + 10;
-        $maxX = $this->bgWidth - $this->blockSize - 10;
+        $maxX = $this->bgWidth - $this->blockSize - 10 - $this->padRight;
         $this->x = random_int($minX, $maxX);
-        $this->y = random_int($this->padTop + 2, $this->bgHeight - $this->blockSize - 2);
+        $this->y = random_int($this->padTop + 2, $this->bgHeight - $this->blockSize - 2 - $this->padBottom);
 
         $block = $this->createBlock($bg);
         $this->punchHole($bg);
@@ -58,9 +75,10 @@ class SlideCaptcha
         return [
             'bg' => 'data:image/png;base64,' . base64_encode($bgData),
             'block' => 'data:image/png;base64,' . base64_encode($blockData),
-            'y' => $this->y - $this->padTop,
+            'y' => $this->y,
             'y_origin' => $this->y,
             'pad_top' => $this->padTop,
+            'pad_left' => $this->padLeft,
             'bg_width' => $this->bgWidth,
             'bg_height' => $this->bgHeight,
             'block_size' => $this->blockSize,
@@ -115,42 +133,73 @@ class SlideCaptcha
     {
         $size = $this->blockSize;
         $r = $this->radius;
-        $s = (int) ($size / 4);
-        $padTop = $this->padTop;
-        $padRight = $this->padRight;
+        $s = $this->s;
         $w = $this->maskW;
         $h = $this->maskH;
         $r2 = $r * $r;
 
-        $cxTop = $s;
-        $cyTop = $s - $r;
-        $cxRight = $size + $s;
-        $cyRight = $s - $r;
-
         $mask = array_fill(0, $h, array_fill(0, $w, 0));
 
+        // 圆形中心位置（在矩形坐标系统中）
+        // 顶部凸起：在矩形上边外部，向上延伸
+        $topCx = $s + $r;
+        $topCy = -$r;
+        // 底部凸起：在矩形下边外部，向下延伸
+        $botCx = $size / 2;
+        $botCy = $size + $r;
+        // 右侧凸起：在矩形右边外部，向右延伸
+        $rightCx = $size + $r;
+        $rightCy = $s + $r;
+        // 左侧凸起：在矩形左边外部，向左延伸
+        $leftCx = -$r;
+        $leftCy = $s + $r;
+
+        // 对于凹陷，圆形中心在矩形内部，这样圆形区域就会被挖掉
+        // 顶部凹陷：在矩形上边内部，向下凹陷
+        $topCavCx = $s + $r;
+        $topCavCy = $r;
+        $botCavCx = $size / 2;
+        $botCavCy = $size - $r;
+        $rightCavCx = $size - $r;
+        $rightCavCy = $s + $r;
+        $leftCavCx = $r;
+        $leftCavCy = $s + $r;
+
         for ($maskY = 0; $maskY < $h; $maskY++) {
-            $localY = $maskY - $padTop;
+            // 转换为矩形局部坐标（左上角为 0,0）
+            $localY = $maskY - $this->padTop;
             for ($maskX = 0; $maskX < $w; $maskX++) {
-                $localX = $maskX;
-                $in = 0;
-                if ($localX >= 0 && $localX <= $size && $localY >= 0 && $localY <= $size) {
-                    $in = 1;
-                }
-                $dx = $localX - $cxTop;
-                $dy = $localY - $cyTop;
-                if ($dx * $dx + $dy * $dy <= $r2) {
-                    $in = 1;
-                }
-                $dx = $localX - $cxRight;
-                $dy = $localY - $cyRight;
-                if ($dx * $dx + $dy * $dy <= $r2) {
-                    $in = 1;
-                }
-                $mask[$maskY][$maskX] = $in;
+                $localX = $maskX - $this->padLeft;
+
+                // 先判断是否在基本矩形内
+                $inRect = ($localX >= 0 && $localX <= $size && $localY >= 0 && $localY <= $size);
+
+                // 再判断是否在各个凸起/凹陷圆形区域内
+                $inTopBulge = $this->topBulge === 1 ? $this->inCircle($localX, $localY, $topCx, $topCy, $r2) : false;
+                $inBotBulge = $this->bottomBulge === 1 ? $this->inCircle($localX, $localY, $botCx, $botCy, $r2) : false;
+                $inRightBulge = $this->rightBulge === 1 ? $this->inCircle($localX, $localY, $rightCx, $rightCy, $r2) : false;
+                $inLeftBulge = $this->leftBulge === 1 ? $this->inCircle($localX, $localY, $leftCx, $leftCy, $r2) : false;
+
+                $inTopCav = $this->topBulge === -1 ? $this->inCircle($localX, $localY, $topCavCx, $topCavCy, $r2) : false;
+                $inBotCav = $this->bottomBulge === -1 ? $this->inCircle($localX, $localY, $botCavCx, $botCavCy, $r2) : false;
+                $inRightCav = $this->rightBulge === -1 ? $this->inCircle($localX, $localY, $rightCavCx, $rightCavCy, $r2) : false;
+                $inLeftCav = $this->leftBulge === -1 ? $this->inCircle($localX, $localY, $leftCavCx, $leftCavCy, $r2) : false;
+
+                // 组合逻辑：在矩形内 或 在任意凸起内，但不在凹陷内
+                $in = ($inRect || $inTopBulge || $inBotBulge || $inRightBulge || $inLeftBulge)
+                    && !$inTopCav && !$inBotCav && !$inRightCav && !$inLeftCav;
+
+                $mask[$maskY][$maskX] = $in ? 1 : 0;
             }
         }
         return $mask;
+    }
+
+    protected function inCircle($x, $y, $cx, $cy, $r2): bool
+    {
+        $dx = $x - $cx;
+        $dy = $y - $cy;
+        return $dx * $dx + $dy * $dy <= $r2;
     }
 
     protected function punchHole($bg): void
@@ -159,7 +208,7 @@ class SlideCaptcha
         $h = $this->maskH;
         $mask = $this->getShapeMask();
 
-        $startX = $this->x;
+        $startX = $this->x - $this->padLeft;
         $startY = $this->y - $this->padTop;
 
         for ($maskY = 0; $maskY < $h; $maskY++) {
@@ -228,7 +277,7 @@ class SlideCaptcha
         $transparent = imagecolorallocatealpha($block, 0, 0, 0, 127);
         imagefill($block, 0, 0, $transparent);
 
-        $startX = $this->x;
+        $startX = $this->x - $this->padLeft;
         $startY = $this->y - $this->padTop;
 
         for ($maskY = 0; $maskY < $h; $maskY++) {
