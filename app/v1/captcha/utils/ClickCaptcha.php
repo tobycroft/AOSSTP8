@@ -144,7 +144,6 @@ class ClickCaptcha
         ob_start();
         imagepng($bg);
         $bgData = ob_get_clean();
-        imagedestroy($bg);
 
         $this->hash = password_hash(json_encode($this->targets), PASSWORD_BCRYPT, ['cost' => 10]);
 
