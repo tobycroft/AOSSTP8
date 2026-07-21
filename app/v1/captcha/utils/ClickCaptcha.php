@@ -7,7 +7,7 @@ class ClickCaptcha
     public int $bgWidth = 300;
     public int $bgHeight = 200;
     public int $fontSize = 28;
-    public int $tolerance = 35;
+    public int $tolerance = 22;
 
     public array $targets = [];
     public string $hash;
