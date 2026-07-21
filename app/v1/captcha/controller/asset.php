@@ -32,8 +32,9 @@ class asset extends CommonController
      */
     public function html()
     {
-        $apiBase = $this->getApiBase();
-        $html = $this->generateHtmlTemplate($apiBase);
+        // 使用相对路径，让浏览器自动拼接当前访问的 scheme+host+port
+        $apiPath = $this->getApiPath();
+        $html = $this->generateHtmlTemplate($apiPath);
         return response($html, 200, [
             'Content-Type' => 'text/html; charset=utf-8',
             'Cache-Control' => 'no-store'
@@ -46,17 +47,18 @@ class asset extends CommonController
      */
     public function config()
     {
-        $apiBase = $this->getApiBase();
+        // 使用相对路径，让前端自动拼接当前访问的 scheme+host+port
+        $apiPath = $this->getApiPath();
         $config = [
             'token' => $this->token,
-            'api_url' => $apiBase,
-            'create_url' => $apiBase . '/slide/create',
-            'check_url' => $apiBase . '/slide/check',
-            'asset_url' => $apiBase . '/asset',
+            'api_path' => $apiPath,
+            'create_url' => $apiPath . '/slide/create',
+            'check_url' => $apiPath . '/slide/check',
+            'asset_url' => $apiPath . '/asset',
             'assets' => [
-                'js' => $apiBase . '/asset/get?file=slide.js&token=' . $this->token,
-                'css' => $apiBase . '/asset/get?file=slide.css&token=' . $this->token,
-                'html' => $apiBase . '/asset/html?token=' . $this->token,
+                'js' => $apiPath . '/asset/get?file=slide.js&token=' . $this->token,
+                'css' => $apiPath . '/asset/get?file=slide.css&token=' . $this->token,
+                'html' => $apiPath . '/asset/html?token=' . $this->token,
             ],
             'captcha' => [
                 'type' => 'slide',
@@ -103,79 +105,26 @@ class asset extends CommonController
     }
 
     /**
-     * 调试接口：返回当前请求的完整信息，用于排查端口问题
-     * GET /v1/captcha/asset/debug
+     * 获取 API 的相对路径（不含 scheme/host/port）
+     * 让浏览器自动拼接当前访问的完整地址，适配防火墙转发场景
      */
-    public function debug()
+    private function getApiPath()
     {
-        $data = [
-            'HTTP_HOST' => $_SERVER['HTTP_HOST'] ?? 'N/A',
-            'SERVER_NAME' => $_SERVER['SERVER_NAME'] ?? 'N/A',
-            'SERVER_PORT' => $_SERVER['SERVER_PORT'] ?? 'N/A',
-            'REQUEST_SCHEME' => $_SERVER['REQUEST_SCHEME'] ?? 'N/A',
-            'HTTPS' => $_SERVER['HTTPS'] ?? 'N/A',
-            'REQUEST_URI' => $_SERVER['REQUEST_URI'] ?? 'N/A',
-            'SCRIPT_NAME' => $_SERVER['SCRIPT_NAME'] ?? 'N/A',
-            'PHP_SELF' => $_SERVER['PHP_SELF'] ?? 'N/A',
-            'api_base' => $this->getApiBase(),
-            'current_url' => $this->getCurrentUrl(),
-        ];
-        Ret::Success(0, $data);
-    }
-
-    /**
-     * 获取当前请求的完整 URL
-     */
-    private function getCurrentUrl()
-    {
-        $scheme = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-        $scheme = $_SERVER['REQUEST_SCHEME'] ?? $scheme;
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $uri = $_SERVER['REQUEST_URI'] ?? '/';
-        return $scheme . '://' . $host . $uri;
-    }
-
-    /**
-     * 获取当前 API 的基础 URL，使用浏览器访问的完整 URL
-     */
-    private function getApiBase()
-    {
-        // scheme - 优先使用 REQUEST_SCHEME，兼容性更好
-        if (isset($_SERVER['REQUEST_SCHEME'])) {
-            $scheme = $_SERVER['REQUEST_SCHEME'];
-        } else {
-            $scheme = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-        }
-
-        // HTTP_HOST 已经包含端口号（如 localhost:8080）
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-
-        // 再次确保端口号被正确处理
-        if (strpos($host, ':') === false) {
-            $port = $_SERVER['SERVER_PORT'] ?? '80';
-            $isStandard = ($scheme === 'http' && intval($port) === 80)
-                         || ($scheme === 'https' && intval($port) === 443);
-            if (!$isStandard) {
-                $host .= ':' . $port;
-            }
-        }
-
-        // 获取请求路径，去掉 /asset/xxx 部分
         $requestUri = $_SERVER['REQUEST_URI'] ?? '/v1/captcha/asset/html';
         $path = parse_url($requestUri, PHP_URL_PATH);
         $apiPath = preg_replace('#/asset/.*$#', '', $path);
-
-        return $scheme . '://' . $host . rtrim($apiPath, '/');
+        return rtrim($apiPath, '/');
     }
 
     /**
      * 生成完整的 HTML 模板
      */
-    private function generateHtmlTemplate($apiBase)
+    private function generateHtmlTemplate($apiPath)
     {
         $token = htmlspecialchars($this->token, ENT_QUOTES, 'UTF-8');
-        $jsUrl = $apiBase . '/asset/get?file=slide.js&token=' . $token;
-        $cssUrl = $apiBase . '/asset/get?file=slide.css&token=' . $token;
+        // 使用相对路径，浏览器会自动拼接当前访问的 scheme+host+port
+        $jsUrl = $apiPath . '/asset/get?file=slide.js&token=' . $token;
+        $cssUrl = $apiPath . '/asset/get?file=slide.css&token=' . $token;
 
         return '<!DOCTYPE html>
 <html lang="zh-CN">
@@ -322,7 +271,7 @@ class asset extends CommonController
 
         initSlideCaptacle({
             token: "' . $token . '",
-            apiUrl: "' . htmlspecialchars($apiBase, ENT_QUOTES, 'UTF-8') . '",
+            apiUrl: "' . htmlspecialchars($apiPath, ENT_QUOTES, 'UTF-8') . '",
             onSuccess: function() {
                 statusEl.textContent = "✅ 验证成功！";
                 statusEl.className = "status success";
