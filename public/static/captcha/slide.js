@@ -155,11 +155,14 @@ function initSlideCaptacle(options) {
 
         // finalX 是正方形区域的左边位置（即滑块位置）
         const finalX = parseInt(sliderHandle.style.left) || 0;
+        // Y 位置是固定的（用户不能上下拖），即初始生成时的 y
+        const finalY = parseInt(captchaData.y) || 0;
 
         const formData = new FormData();
         formData.append('token', opts.token);
         formData.append('ident', opts.ident);
         formData.append('x', finalX);
+        formData.append('y', finalY);
 
         fetch(opts.apiUrl + '/slide/check', {
             method: 'POST',
