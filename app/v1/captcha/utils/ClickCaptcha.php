@@ -7,7 +7,7 @@ class ClickCaptcha
     public int $bgWidth = 300;
     public int $bgHeight = 200;
     public int $fontSize = 28;
-    public int $tolerance = 60;
+    public int $tolerance = 35;
 
     public array $targets = [];
     public string $hash;
@@ -213,6 +213,15 @@ class ClickCaptcha
         foreach ($allChars as $char) {
             $isTarget = in_array($char, $targetChars, true);
 
+            // 先计算这个字符的实际边界框
+            $bbox = imagettfbbox($this->fontSize, 0, $this->fontPath, $char);
+            $bboxMinX = min($bbox[0], $bbox[2], $bbox[4], $bbox[6]);
+            $bboxMaxX = max($bbox[0], $bbox[2], $bbox[4], $bbox[6]);
+            $bboxMinY = min($bbox[1], $bbox[3], $bbox[5], $bbox[7]);
+            $bboxMaxY = max($bbox[1], $bbox[3], $bbox[5], $bbox[7]);
+            $offsetX = ($bboxMinX + $bboxMaxX) / 2;
+            $offsetY = ($bboxMinY + $bboxMaxY) / 2;
+
             $maxAttempts = 50;
             $placed = false;
             for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
@@ -241,13 +250,9 @@ class ClickCaptcha
                     $angle = random_int(-15, 15);
                     $color = $this->randomDarkColor($im);
 
-                    // 关键：imagettftext 的 x,y 是文字的左下角（基线位置）
-                    // 我们需要根据 centerX, centerY 反推正确的绘制位置
-                    // 对于汉字，字符宽度约等于 fontSize，字符高度也约等于 fontSize
-                    // 字符的中心在 (x + fontSize/2, y - fontSize/2) 的位置
-                    // 所以反推：x = centerX - fontSize/2, y = centerY + fontSize/2
-                    $cx = $centerX - (int)($this->fontSize / 2);
-                    $cy = $centerY + (int)($this->fontSize / 2);
+                    // 根据边界框的偏移反推正确的 cx, cy，确保字符中心在 (centerX, centerY)
+                    $cx = (int)($centerX - $offsetX);
+                    $cy = (int)($centerY - $offsetY);
 
                     imagettftext($im, $this->fontSize, $angle, $cx, $cy, $color, $this->fontPath, $char);
 
@@ -267,8 +272,8 @@ class ClickCaptcha
                 
                 $angle = random_int(-15, 15);
                 $color = $this->randomDarkColor($im);
-                $cx = $centerX - (int)($this->fontSize / 2);
-                $cy = $centerY + (int)($this->fontSize / 2);
+                $cx = (int)($centerX - $offsetX);
+                $cy = (int)($centerY - $offsetY);
                 
                 imagettftext($im, $this->fontSize, $angle, $cx, $cy, $color, $this->fontPath, $char);
                 

@@ -70,7 +70,7 @@ class click extends CommonController
             Ret::Fail(403, null, '验证码数据异常');
         }
 
-        $tolerance = 60;
+        $tolerance = 35;
         if (count($clicks) !== count($targets)) {
             CaptchaModel::where('ident', $this->ident)->delete();
             Ret::Fail(403, null, '点击数量不正确，请重新获取验证码');
