@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>点击验证码</title>
+    <link rel="stylesheet" href="<?= $cssUrl ?>">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="click-captcha-wrapper">
+        <div class="click-captcha-container">
+            <img class="click-captcha-bg" src="" alt="验证码背景">
+        </div>
+        <div class="click-tip"></div>
+        <div class="click-count"></div>
+        <div class="click-status"></div>
+        <button class="click-reload-btn">刷新验证码</button>
+    </div>
+    <script src="<?= $jsUrl ?>"></script>
+    <script>
+        initClickCaptcha({
+            token: "<?= $token ?>",
+            apiUrl: "<?= $apiPath ?>",
+            onSuccess: function() {
+                console.log('验证成功');
+            },
+            onError: function(msg) {
+                console.log('验证失败:', msg);
+            }
+        });
+    </script>
+</body>
+</html>
