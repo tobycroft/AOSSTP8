@@ -34,15 +34,16 @@ class asset extends CommonController
         $apiPath = $this->getApiPath();
         $token = htmlspecialchars($this->token, ENT_QUOTES, 'UTF-8');
 
-        return view('asset@slide', [
-            'token' => $token,
-            'apiPath' => $apiPath,
-            'jsUrl' => $apiPath . '/asset/get?file=slide.js&token=' . $token,
-            'cssUrl' => $apiPath . '/asset/get?file=slide.css&token=' . $token,
-        ], 200, [
-            'Content-Type' => 'text/html; charset=utf-8',
-            'Cache-Control' => 'no-store',
-        ]);
+        return response()
+            ->view('asset@slide', [
+                'token' => $token,
+                'apiPath' => $apiPath,
+                'jsUrl' => $apiPath . '/asset/get?file=slide.js&token=' . $token,
+                'cssUrl' => $apiPath . '/asset/get?file=slide.css&token=' . $token,
+            ])
+            ->code(200)
+            ->header('Content-Type', 'text/html; charset=utf-8')
+            ->header('Cache-Control', 'no-store');
     }
 
     /**
