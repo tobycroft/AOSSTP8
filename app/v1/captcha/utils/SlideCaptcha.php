@@ -62,6 +62,50 @@ class SlideCaptcha
         $block = $this->createBlock($bg);
         $this->punchHole($bg);
 
+        // ====== 在背景上绘制1-2个干扰假缺口 ======
+        // 假缺口：比真正缺口小，位置在同一行附近，增加 AI 识别难度
+        $numDecoys = random_int(1, 2);
+        for ($i = 0; $i < $numDecoys; $i++) {
+            // 假缺口尺寸 25-32 像素（比40小一些，但仍然明显）
+            $decoysize = random_int(25, 32);
+            $decoyS = (int)($decoysize / 4);
+            $decoyR = (int)($decoysize / 4.5);
+            if ($decoyR < 6) $decoyR = 6;
+
+            // 假缺口有自己独立的随机形状
+            $decoyTop = random_int(-1, 1);
+            $decoyRight = random_int(-1, 1);
+            $decoyBot = random_int(-1, 1);
+            $decoyLeft = random_int(-1, 1);
+
+            // 计算假缺口在背景上的位置
+            $decoypadT = $decoyTop === 1 ? ($decoyS + $decoyR) : 0;
+            $decoypadL = $decoyLeft === 1 ? ($decoyS + $decoyR) : 0;
+            $decoypadR = $decoyRight === 1 ? ($decoyS + $decoyR) : 0;
+
+            // 假缺口的 Y 位置：与真缺口在同一行（y 值相同或接近）
+            $decoyY = $this->y + random_int(-5, 5);
+            $decoyY = max($decoypadT + 2, min($decoyY, $this->bgHeight - $decoysize - 2));
+
+            // 假缺口的 X 位置：离真缺口至少 60 像素
+            $decoyMinX = $this->blockSize + 5;
+            $decoyMaxX = $this->bgWidth - $decoysize - 5 - $decoypadR;
+            $decoyX = random_int($decoyMinX, $decoyMaxX);
+            // 如果离真缺口太近，换到另一边
+            if (abs($decoyX - $this->x) < 60) {
+                if ($decoyX < $this->x) {
+                    $decoyX = max($decoyMinX, $this->x - 60 - random_int(0, 20));
+                } else {
+                    $decoyX = min($decoyMaxX, $this->x + 60 + random_int(0, 20));
+                }
+            }
+
+            // 生成假缺口的形状掩码
+            $decoyMask = $this->getShapeMask($decoysize, $decoyR, $decoyS, $decoyTop, $decoyRight, $decoyBot, $decoyLeft);
+            // 在背景上绘制假缺口
+            $this->drawCustomHole($bg, $decoyMask, $decoyX, $decoyY);
+        }
+
         ob_start();
         imagepng($bg);
         $bgData = ob_get_clean();
@@ -131,13 +175,14 @@ class SlideCaptcha
         return $im;
     }
 
-    protected function getShapeMask(): array
+    protected function getShapeMask(int $size, int $r, int $s, int $topB, int $rightB, int $botB, int $leftB): array
     {
-        $size = $this->blockSize;
-        $r = $this->radius;
-        $s = $this->s;
-        $w = $this->maskW;
-        $h = $this->maskH;
+        $padL = $leftB === 1 ? ($s + $r) : 0;
+        $padR = $rightB === 1 ? ($s + $r) : 0;
+        $padT = $topB === 1 ? ($s + $r) : 0;
+        $padBot = $botB === 1 ? ($s + $r) : 0;
+        $w = $size + $padL + $padR;
+        $h = $size + $padT + $padBot;
         $r2 = $r * $r;
 
         $mask = array_fill(0, $h, array_fill(0, $w, 0));
@@ -161,21 +206,21 @@ class SlideCaptcha
         $leftCavCy = $s + $r;
 
         for ($maskY = 0; $maskY < $h; $maskY++) {
-            $localY = $maskY - $this->padTop;
+            $localY = $maskY - $padT;
             for ($maskX = 0; $maskX < $w; $maskX++) {
-                $localX = $maskX - $this->padLeft;
+                $localX = $maskX - $padL;
 
                 $inRect = ($localX >= 0 && $localX < $size && $localY >= 0 && $localY < $size);
 
-                $inTopBulge = $this->topBulge === 1 ? $this->inCircle($localX, $localY, $topCx, $topCy, $r2) : false;
-                $inBotBulge = $this->bottomBulge === 1 ? $this->inCircle($localX, $localY, $botCx, $botCy, $r2) : false;
-                $inRightBulge = $this->rightBulge === 1 ? $this->inCircle($localX, $localY, $rightCx, $rightCy, $r2) : false;
-                $inLeftBulge = $this->leftBulge === 1 ? $this->inCircle($localX, $localY, $leftCx, $leftCy, $r2) : false;
+                $inTopBulge = $topB === 1 ? $this->inCircle($localX, $localY, $topCx, $topCy, $r2) : false;
+                $inBotBulge = $botB === 1 ? $this->inCircle($localX, $localY, $botCx, $botCy, $r2) : false;
+                $inRightBulge = $rightB === 1 ? $this->inCircle($localX, $localY, $rightCx, $rightCy, $r2) : false;
+                $inLeftBulge = $leftB === 1 ? $this->inCircle($localX, $localY, $leftCx, $leftCy, $r2) : false;
 
-                $inTopCav = $this->topBulge === -1 ? $this->inCircle($localX, $localY, $topCavCx, $topCavCy, $r2) : false;
-                $inBotCav = $this->bottomBulge === -1 ? $this->inCircle($localX, $localY, $botCavCx, $botCavCy, $r2) : false;
-                $inRightCav = $this->rightBulge === -1 ? $this->inCircle($localX, $localY, $rightCavCx, $rightCavCy, $r2) : false;
-                $inLeftCav = $this->leftBulge === -1 ? $this->inCircle($localX, $localY, $leftCavCx, $leftCavCy, $r2) : false;
+                $inTopCav = $topB === -1 ? $this->inCircle($localX, $localY, $topCavCx, $topCavCy, $r2) : false;
+                $inBotCav = $botB === -1 ? $this->inCircle($localX, $localY, $botCavCx, $botCavCy, $r2) : false;
+                $inRightCav = $rightB === -1 ? $this->inCircle($localX, $localY, $rightCavCx, $rightCavCy, $r2) : false;
+                $inLeftCav = $leftB === -1 ? $this->inCircle($localX, $localY, $leftCavCx, $leftCavCy, $r2) : false;
 
                 $in = ($inRect || $inTopBulge || $inBotBulge || $inRightBulge || $inLeftBulge)
                     && !$inTopCav && !$inBotCav && !$inRightCav && !$inLeftCav;
@@ -183,38 +228,28 @@ class SlideCaptcha
                 $mask[$maskY][$maskX] = $in ? 1 : 0;
             }
         }
-        return $mask;
+        return ['mask' => $mask, 'w' => $w, 'h' => $h, 'padL' => $padL, 'padR' => $padR, 'padT' => $padT, 'padBot' => $padBot];
     }
 
-    protected function inCircle($x, $y, $cx, $cy, $r2): bool
+    // 绘制任意形状的空洞到背景上
+    protected function drawCustomHole($bg, array $maskData, int $x, int $y): void
     {
-        $dx = $x - $cx;
-        $dy = $y - $cy;
-        return $dx * $dx + $dy * $dy <= $r2;
-    }
+        $mask = $maskData['mask'];
+        $w = $maskData['w'];
+        $h = $maskData['h'];
+        $padL = $maskData['padL'];
+        $padT = $maskData['padT'];
 
-    protected function punchHole($bg): void
-    {
-        $w = $this->maskW;
-        $h = $this->maskH;
-        $mask = $this->getShapeMask();
-
-        $startX = $this->x - $this->padLeft;
-        $startY = $this->y - $this->padTop;
+        $startX = $x - $padL;
+        $startY = $y - $padT;
 
         for ($maskY = 0; $maskY < $h; $maskY++) {
             $by = $startY + $maskY;
-            if ($by < 0 || $by >= $this->bgHeight) {
-                continue;
-            }
+            if ($by < 0 || $by >= $this->bgHeight) continue;
             for ($maskX = 0; $maskX < $w; $maskX++) {
-                if (empty($mask[$maskY][$maskX])) {
-                    continue;
-                }
+                if (empty($mask[$maskY][$maskX])) continue;
                 $bx = $startX + $maskX;
-                if ($bx < 0 || $bx >= $this->bgWidth) {
-                    continue;
-                }
+                if ($bx < 0 || $bx >= $this->bgWidth) continue;
                 imagesetpixel($bg, $bx, $by, imagecolorallocatealpha($bg, 0, 0, 0, 127));
             }
         }
@@ -222,17 +257,11 @@ class SlideCaptcha
 
         for ($maskY = 0; $maskY < $h; $maskY++) {
             $by = $startY + $maskY;
-            if ($by < 0 || $by >= $this->bgHeight) {
-                continue;
-            }
+            if ($by < 0 || $by >= $this->bgHeight) continue;
             for ($maskX = 0; $maskX < $w; $maskX++) {
-                if (empty($mask[$maskY][$maskX])) {
-                    continue;
-                }
+                if (empty($mask[$maskY][$maskX])) continue;
                 $bx = $startX + $maskX;
-                if ($bx < 0 || $bx >= $this->bgWidth) {
-                    continue;
-                }
+                if ($bx < 0 || $bx >= $this->bgWidth) continue;
                 $isEdge = false;
                 foreach ([-1, 1] as $dy) {
                     $nmy = $maskY + $dy;
@@ -257,33 +286,43 @@ class SlideCaptcha
         }
     }
 
+    protected function inCircle($x, $y, $cx, $cy, $r2): bool
+    {
+        $dx = $x - $cx;
+        $dy = $y - $cy;
+        return $dx * $dx + $dy * $dy <= $r2;
+    }
+
+    protected function punchHole($bg): void
+    {
+        $maskData = $this->getShapeMask($this->blockSize, $this->radius, $this->s, $this->topBulge, $this->rightBulge, $this->bottomBulge, $this->leftBulge);
+        $this->drawCustomHole($bg, $maskData, $this->x, $this->y);
+    }
+
     protected function createBlock($bg)
     {
-        $w = $this->maskW;
-        $h = $this->maskH;
-        $mask = $this->getShapeMask();
+        $maskData = $this->getShapeMask($this->blockSize, $this->radius, $this->s, $this->topBulge, $this->rightBulge, $this->bottomBulge, $this->leftBulge);
+        $mask = $maskData['mask'];
+        $w = $maskData['w'];
+        $h = $maskData['h'];
+        $padL = $maskData['padL'];
+        $padT = $maskData['padT'];
 
         $block = imagecreatetruecolor($w, $h);
         imagesavealpha($block, true);
         $transparent = imagecolorallocatealpha($block, 0, 0, 0, 127);
         imagefill($block, 0, 0, $transparent);
 
-        $startX = $this->x - $this->padLeft;
-        $startY = $this->y - $this->padTop;
+        $startX = $this->x - $padL;
+        $startY = $this->y - $padT;
 
         for ($maskY = 0; $maskY < $h; $maskY++) {
             $by = $startY + $maskY;
-            if ($by < 0 || $by >= $this->bgHeight) {
-                continue;
-            }
+            if ($by < 0 || $by >= $this->bgHeight) continue;
             for ($maskX = 0; $maskX < $w; $maskX++) {
-                if (empty($mask[$maskY][$maskX])) {
-                    continue;
-                }
+                if (empty($mask[$maskY][$maskX])) continue;
                 $bx = $startX + $maskX;
-                if ($bx < 0 || $bx >= $this->bgWidth) {
-                    continue;
-                }
+                if ($bx < 0 || $bx >= $this->bgWidth) continue;
                 $color = imagecolorat($bg, $bx, $by);
                 imagesetpixel($block, $maskX, $maskY, $color);
             }
@@ -291,9 +330,7 @@ class SlideCaptcha
 
         for ($maskY = 0; $maskY < $h; $maskY++) {
             for ($maskX = 0; $maskX < $w; $maskX++) {
-                if (empty($mask[$maskY][$maskX])) {
-                    continue;
-                }
+                if (empty($mask[$maskY][$maskX])) continue;
                 $isEdge = false;
                 foreach ([-1, 1] as $dy) {
                     $nmy = $maskY + $dy;
