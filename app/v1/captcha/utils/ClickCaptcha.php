@@ -39,24 +39,78 @@ class ClickCaptcha
 
     protected function detectFont(): string
     {
+        $projectFont = public_path() . 'static/captcha/font.ttf';
+
+        // 1. 检查项目内置字体
+        if (@file_exists($projectFont)) {
+            return $projectFont;
+        }
+
+        // 2. 检查系统常见字体路径
         $candidates = [
-            // Linux
             '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
             '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf',
             '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
             '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
             '/usr/share/fonts/truetype/arphic/uming.ttc',
-            // macOS
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
             '/System/Library/Fonts/STHeiti Medium.ttc',
             '/System/Library/Fonts/PingFang.ttc',
             '/System/Library/Fonts/Supplemental/Songti.ttc',
         ];
         foreach ($candidates as $path) {
-            if (file_exists($path)) {
+            if (@file_exists($path)) {
                 return $path;
             }
         }
-        throw new \RuntimeException('No Chinese font found on this system');
+
+        // 3. 尝试自动下载字体到项目目录
+        if ($this->tryDownloadFont($projectFont)) {
+            return $projectFont;
+        }
+
+        throw new \RuntimeException(
+            'No Chinese font found. Please install fonts on your server:' . "\n" .
+            '  Ubuntu/Debian: sudo apt install fonts-wqy-microhei -y' . "\n" .
+            '  CentOS/RHEL:   sudo yum install wqy-microhei-fonts -y' . "\n" .
+            'Or manually download a .ttf font to: ' . $projectFont
+        );
+    }
+
+    protected function tryDownloadFont(string $targetPath): bool
+    {
+        $fontUrls = [
+            'https://github.com/google/fonts/raw/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf',
+            'https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf',
+        ];
+
+        $dir = dirname($targetPath);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+
+        $ctx = stream_context_create([
+            'http' => [
+                'timeout' => 15,
+                'follow_location' => true,
+            ],
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ],
+        ]);
+
+        foreach ($fontUrls as $url) {
+            $data = @file_get_contents($url, false, $ctx);
+            if ($data && strlen($data) > 50000) {
+                @file_put_contents($targetPath, $data);
+                if (@file_exists($targetPath) && filesize($targetPath) > 50000) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public function generate(): array
@@ -66,7 +120,6 @@ class ClickCaptcha
         // 随机选择 5-6 个显示字符（含 2-3 个目标字符）
         $numTargets = random_int(2, 3);
         $numDistractors = random_int(3, 4);
-        $totalChars = $numTargets + $numDistractors;
 
         // 从字库中随机选字
         $shuffled = $this->charPool;
@@ -78,7 +131,7 @@ class ClickCaptcha
 
         // 在画布上放置文字，记录位置
         $this->targets = [];
-        $charPositions = $this->placeCharacters($bg, $allChars, $targetChars);
+        $this->placeCharacters($bg, $allChars, $targetChars);
 
         // 绘制干扰元素
         $this->addNoise($bg);
@@ -174,7 +227,7 @@ class ClickCaptcha
                     $color = $this->randomDarkColor($im);
 
                     // 使用 TrueType 字体绘制文字
-                    $bbox = imagettftext($im, $this->fontSize, $angle, $cx, $cy, $color, $this->fontPath, $char);
+                    imagettftext($im, $this->fontSize, $angle, $cx, $cy, $color, $this->fontPath, $char);
 
                     // 记录文字的实际中心位置
                     $posX = $cx;
