@@ -6,7 +6,6 @@ use app\v2\project\model\ProjectModel;
 use BaseController\CommonController;
 use Input;
 use Ret;
-use think\facade\View;
 
 class asset extends CommonController
 {
@@ -34,15 +33,13 @@ class asset extends CommonController
     {
         $apiPath = $this->getApiPath();
         $token = htmlspecialchars($this->token, ENT_QUOTES, 'UTF-8');
+        $jsUrl = $apiPath . '/asset/get?file=slide.js&token=' . $token;
+        $cssUrl = $apiPath . '/asset/get?file=slide.css&token=' . $token;
 
-        View::assign([
-            'token' => $token,
-            'apiPath' => $apiPath,
-            'jsUrl' => $apiPath . '/asset/get?file=slide.js&token=' . $token,
-            'cssUrl' => $apiPath . '/asset/get?file=slide.css&token=' . $token,
-        ]);
-
-        $content = View::fetch('asset@slide');
+        // 用原生 PHP 输出缓冲来渲染模板，避免依赖模板引擎
+        ob_start();
+        include app_path() . 'v1/captcha/view/asset/slide.html';
+        $content = ob_get_clean();
 
         return response($content, 200, [
             'Content-Type' => 'text/html; charset=utf-8',

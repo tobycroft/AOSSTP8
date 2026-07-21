@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>滑动验证码</title>
-    <link rel="stylesheet" href="{$cssUrl}">
+    <link rel="stylesheet" href="<?= $cssUrl ?>">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -136,14 +136,14 @@
         <div class="status">请拖动滑块完成拼图</div>
         <button class="reload-btn" style="display: none;">点击重新加载</button>
     </div>
-    <script src="{$jsUrl}"></script>
+    <script src="<?= $jsUrl ?>"></script>
     <script>
         const statusEl = document.querySelector(".status");
         const reloadBtn = document.querySelector(".reload-btn");
 
         initSlideCaptacle({
-            token: "{$token}",
-            apiUrl: "{$apiPath}",
+            token: "<?= $token ?>",
+            apiUrl: "<?= $apiPath ?>",
             onSuccess: function() {
                 statusEl.textContent = "✅ 验证成功！";
                 statusEl.className = "status success";
