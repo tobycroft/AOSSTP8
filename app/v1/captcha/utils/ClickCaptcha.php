@@ -194,11 +194,33 @@ class ClickCaptcha
     {
         $im = imagecreatetruecolor($this->bgWidth, $this->bgHeight);
 
-        $r = random_int(220, 250);
-        $g = random_int(220, 250);
-        $b = random_int(220, 250);
-        $bgColor = imagecolorallocate($im, $r, $g, $b);
-        imagefill($im, 0, 0, $bgColor);
+        // 1. 随机选一个颜色作为渐变背景
+        $baseR = random_int(200, 240);
+        $baseG = random_int(200, 240);
+        $baseB = random_int(200, 240);
+
+        // 2. 绘制渐变背景（从浅到稍深一点的横向或纵向渐变）
+        for ($y = 0; $y < $this->bgHeight; $y++) {
+            $factor = $y / $this->bgHeight;
+            $r = (int)($baseR - $factor * 25);
+            $g = (int)($baseG - $factor * 25);
+            $b = (int)($baseB - $factor * 25);
+            imageline($im, 0, $y, $this->bgWidth, $y, imagecolorallocate($im, $r, $g, $b));
+        }
+
+        // 3. 添加彩色条纹（干扰识别）
+        for ($i = 0; $i < 8; $i++) {
+            $color = imagecolorallocate($im,
+                random_int(150, 220),
+                random_int(150, 220),
+                random_int(150, 220)
+            );
+            $startX = random_int(0, $this->bgWidth);
+            $startY = random_int(0, $this->bgHeight);
+            $endX = $startX + random_int(-100, 100);
+            $endY = $startY + random_int(-50, 50);
+            imageline($im, $startX, $startY, $endX, $endY, $color);
+        }
 
         return $im;
     }
@@ -289,30 +311,73 @@ class ClickCaptcha
 
     protected function addNoise($im): void
     {
-        for ($i = 0; $i < 15; $i++) {
-            $color = imagecolorallocate($im, random_int(180, 230), random_int(180, 230), random_int(180, 230));
+        // 随机色小点
+        for ($i = 0; $i < 40; $i++) {
+            $color = imagecolorallocate($im,
+                random_int(150, 220),
+                random_int(150, 220),
+                random_int(150, 220)
+            );
             $cx = random_int(0, $this->bgWidth);
             $cy = random_int(0, $this->bgHeight);
-            $size = random_int(2, 8);
+            $size = random_int(1, 4);
             imagefilledellipse($im, $cx, $cy, $size, $size, $color);
         }
 
-        for ($i = 0; $i < 5; $i++) {
-            $color = imagecolorallocate($im, random_int(200, 240), random_int(200, 240), random_int(200, 240));
-            imageline($im,
-                random_int(0, $this->bgWidth), random_int(0, $this->bgHeight),
-                random_int(0, $this->bgWidth), random_int(0, $this->bgHeight),
-                $color
+        // 随机曲线 / 波浪线
+        for ($i = 0; $i < 4; $i++) {
+            $color = imagecolorallocate($im,
+                random_int(120, 200),
+                random_int(120, 200),
+                random_int(120, 200)
             );
+            $startX = random_int(0, (int)($this->bgWidth / 2));
+            $startY = random_int(0, $this->bgHeight);
+            $midX = $startX + random_int(20, 80);
+            $midY = $startY + random_int(-30, 30);
+            $endX = $midX + random_int(20, 80);
+            $endY = $midY + random_int(-30, 30);
+
+            // 用短线段模拟曲线
+            $steps = 20;
+            $prevX = $startX;
+            $prevY = $startY;
+            for ($s = 1; $s <= $steps; $s++) {
+                $t = $s / $steps;
+                $x = (int)($startX * (1 - $t) * (1 - $t) + $midX * 2 * (1 - $t) * $t + $endX * $t * $t);
+                $y = (int)($startY * (1 - $t) * (1 - $t) + $midY * 2 * (1 - $t) * $t + $endY * $t * $t);
+                imageline($im, $prevX, $prevY, $x, $y, $color);
+                $prevX = $x;
+                $prevY = $y;
+            }
         }
 
-        for ($i = 0; $i < 3; $i++) {
-            $color = imagecolorallocate($im, random_int(200, 250), random_int(200, 250), random_int(200, 250));
-            $x1 = random_int(0, $this->bgWidth - 60);
-            $y1 = random_int(0, $this->bgHeight - 40);
-            $x2 = $x1 + random_int(20, 60);
-            $y2 = $y1 + random_int(10, 40);
+        // 小方块 / 矩形
+        for ($i = 0; $i < 5; $i++) {
+            $color = imagecolorallocate($im,
+                random_int(180, 230),
+                random_int(180, 230),
+                random_int(180, 230)
+            );
+            $x1 = random_int(0, $this->bgWidth - 30);
+            $y1 = random_int(0, $this->bgHeight - 20);
+            $x2 = $x1 + random_int(8, 25);
+            $y2 = $y1 + random_int(6, 18);
             imagefilledrectangle($im, $x1, $y1, $x2, $y2, $color);
+        }
+
+        // 像素噪点（更细腻）
+        for ($i = 0; $i < 200; $i++) {
+            $color = imagecolorallocate($im,
+                random_int(160, 230),
+                random_int(160, 230),
+                random_int(160, 230)
+            );
+            imagesetpixel($im,
+                random_int(0, $this->bgWidth - 1),
+                random_int(0, $this->bgHeight - 1),
+                $color
+            );
         }
     }
 
