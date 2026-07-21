@@ -40,7 +40,7 @@ class ClickCaptcha
     protected function detectFont(): string
     {
         // 1. 项目内置 MiSans 字体（优先）
-        $projectFont = public_path() . 'static/MiSans/MiSans VF.ttf';
+        $projectFont = public_path() . 'static/misans/misans.ttf';
         if (@file_exists($projectFont)) {
             return $projectFont;
         }
