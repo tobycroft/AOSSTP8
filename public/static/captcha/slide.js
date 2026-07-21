@@ -101,13 +101,18 @@ function initSlideCaptacle(options) {
                 captchaData = data.data;
                 captchaData.pad_top = captchaData.pad_top || 0;
                 captchaData.pad_left = captchaData.pad_left || 0;
+                captchaData.block_width = captchaData.block_width || captchaData.block_size;
+                captchaData.block_height = captchaData.block_height || captchaData.block_size;
 
                 bgImg.src = captchaData.bg;
 
+                // 立即设置定位和尺寸（不依赖 onload 时序）
+                blockImg.style.width = captchaData.block_width + 'px';
+                blockImg.style.height = captchaData.block_height + 'px';
+                blockImg.style.top = (captchaData.y - captchaData.pad_top) + 'px';
+                blockImg.style.left = (-captchaData.pad_left) + 'px';
+
                 blockImg.onload = function() {
-                    if (!captchaData) return;
-                    blockImg.style.top = (captchaData.y - captchaData.pad_top) + 'px';
-                    blockImg.style.left = (-captchaData.pad_left) + 'px';
                     blockImg.style.display = 'block';
                 };
                 blockImg.src = captchaData.block;
