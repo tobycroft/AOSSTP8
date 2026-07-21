@@ -103,64 +103,6 @@ class asset extends CommonController
     }
 
     /**
-     * 下载单个文件
-     * GET /v1/captcha/asset/download?token=xxx&file=slide.js
-     */
-    public function download()
-    {
-        $file = Input::Get('file', true);
-        $allowedFiles = [
-            'slide.js',
-            'slide.css',
-            'slide.html',
-            'README.md'
-        ];
-
-        if (!in_array($file, $allowedFiles)) {
-            Ret::Fail(403, null, '文件不存在');
-        }
-
-        $filePath = public_path() . 'static/captcha/' . $file;
-        if (!file_exists($filePath)) {
-            Ret::Fail(404, null, '文件不存在');
-        }
-
-        return download($filePath, $file);
-    }
-
-    /**
-     * 下载完整资源包
-     * GET /v1/captcha/asset/package?token=xxx
-     */
-    public function package()
-    {
-        $zipPath = sys_get_temp_dir() . '/captcha-package-' . time() . '.zip';
-        $zip = new \ZipArchive();
-
-        if ($zip->open($zipPath, \ZipArchive::CREATE) !== true) {
-            Ret::Fail(500, null, '创建压缩包失败');
-        }
-
-        $files = [
-            'slide.js',
-            'slide.css',
-            'slide.html',
-            'README.md'
-        ];
-
-        foreach ($files as $file) {
-            $filePath = public_path() . 'static/captcha/' . $file;
-            if (file_exists($filePath)) {
-                $zip->addFile($filePath, $file);
-            }
-        }
-
-        $zip->close();
-
-        return download($zipPath, 'captcha-package.zip');
-    }
-
-    /**
      * 获取当前 API 的基础 URL
      */
     private function getApiBase()
