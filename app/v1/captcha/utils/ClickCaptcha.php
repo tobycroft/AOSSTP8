@@ -39,11 +39,16 @@ class ClickCaptcha
 
     protected function detectFont(): string
     {
-        $projectFont = public_path() . 'static/captcha/font.ttf';
-
-        // 1. 检查项目内置字体
+        // 1. 项目内置 MiSans 字体（优先）
+        $projectFont = public_path() . 'static/MiSans/MiSans VF.ttf';
         if (@file_exists($projectFont)) {
             return $projectFont;
+        }
+
+        // 2. 备用：captcha 目录下的字体
+        $fallbackFont = public_path() . 'static/captcha/font.ttf';
+        if (@file_exists($fallbackFont)) {
+            return $fallbackFont;
         }
 
         // 2. 检查系统常见字体路径
