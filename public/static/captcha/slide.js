@@ -82,14 +82,12 @@ function initSlideCaptacle(options) {
     }
 
     function generateCaptcha() {
-        // 每次生成新验证码时，使用新的 ident，确保完全独立
         opts.ident = 'captcha_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
         const formData = new FormData();
         formData.append('token', opts.token);
         formData.append('ident', opts.ident);
 
-        // 添加时间戳参数防止浏览器缓存
         const url = opts.apiUrl + '/slide/create?t=' + Date.now();
 
         fetch(url, {
@@ -101,21 +99,22 @@ function initSlideCaptacle(options) {
         .then(data => {
             if (data.code === 0) {
                 captchaData = data.data;
-                // 确保 pad_top/pad_left 有默认值（兼容旧版本 API）
                 captchaData.pad_top = captchaData.pad_top || 0;
                 captchaData.pad_left = captchaData.pad_left || 0;
-                // ✅ 直接使用 base64 内容即可，不需要添加时间戳
-                // 因为每次 generateCaptcha 都会请求新的验证码，图片内容本身就是新的
+
                 bgImg.src = captchaData.bg;
+
+                blockImg.onload = function() {
+                    if (!captchaData) return;
+                    blockImg.style.top = (captchaData.y - captchaData.pad_top) + 'px';
+                    blockImg.style.left = (-captchaData.pad_left) + 'px';
+                    blockImg.style.display = 'block';
+                };
                 blockImg.src = captchaData.block;
-                // 图片定位：考虑形状凸起/凹陷
-                // 让图片中的正方形区域对齐到视觉上正确的 (x, y) 位置
-                blockImg.style.top = (captchaData.y - captchaData.pad_top) + 'px';
-                blockImg.style.left = (-captchaData.pad_left) + 'px';
-                blockImg.style.display = 'block';
+
                 sliderHandle.style.left = '0px';
                 reloadBtn.style.display = 'inline-block';
-                isVerified = false; // 新验证码，重置验证状态
+                isVerified = false;
             } else {
                 opts.onError(data.echo || '生成验证码失败');
             }
@@ -153,16 +152,12 @@ function initSlideCaptacle(options) {
         isDragging = false;
         sliderHandle.style.background = '#409eff';
 
-        // finalX 是正方形区域的左边位置（即滑块位置）
         const finalX = parseInt(sliderHandle.style.left) || 0;
-        // Y 位置是固定的（用户不能上下拖），即初始生成时的 y
-        const finalY = parseInt(captchaData.y) || 0;
 
         const formData = new FormData();
         formData.append('token', opts.token);
         formData.append('ident', opts.ident);
         formData.append('x', finalX);
-        formData.append('y', finalY);
 
         fetch(opts.apiUrl + '/slide/check', {
             method: 'POST',

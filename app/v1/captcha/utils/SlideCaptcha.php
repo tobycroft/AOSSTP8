@@ -140,22 +140,15 @@ class SlideCaptcha
 
         $mask = array_fill(0, $h, array_fill(0, $w, 0));
 
-        // 圆形中心位置（在矩形坐标系统中）
-        // 顶部凸起：在矩形上边外部，向上延伸
         $topCx = $s + $r;
         $topCy = -$r;
-        // 底部凸起：在矩形下边外部，向下延伸
         $botCx = $size / 2;
         $botCy = $size + $r;
-        // 右侧凸起：在矩形右边外部，向右延伸
         $rightCx = $size + $r;
         $rightCy = $s + $r;
-        // 左侧凸起：在矩形左边外部，向左延伸
         $leftCx = -$r;
         $leftCy = $s + $r;
 
-        // 对于凹陷，圆形中心在矩形内部，这样圆形区域就会被挖掉
-        // 顶部凹陷：在矩形上边内部，向下凹陷
         $topCavCx = $s + $r;
         $topCavCy = $r;
         $botCavCx = $size / 2;
@@ -166,15 +159,12 @@ class SlideCaptcha
         $leftCavCy = $s + $r;
 
         for ($maskY = 0; $maskY < $h; $maskY++) {
-            // 转换为矩形局部坐标（左上角为 0,0）
             $localY = $maskY - $this->padTop;
             for ($maskX = 0; $maskX < $w; $maskX++) {
                 $localX = $maskX - $this->padLeft;
 
-                // 先判断是否在基本矩形内
-                $inRect = ($localX >= 0 && $localX <= $size && $localY >= 0 && $localY <= $size);
+                $inRect = ($localX >= 0 && $localX < $size && $localY >= 0 && $localY < $size);
 
-                // 再判断是否在各个凸起/凹陷圆形区域内
                 $inTopBulge = $this->topBulge === 1 ? $this->inCircle($localX, $localY, $topCx, $topCy, $r2) : false;
                 $inBotBulge = $this->bottomBulge === 1 ? $this->inCircle($localX, $localY, $botCx, $botCy, $r2) : false;
                 $inRightBulge = $this->rightBulge === 1 ? $this->inCircle($localX, $localY, $rightCx, $rightCy, $r2) : false;
@@ -185,7 +175,6 @@ class SlideCaptcha
                 $inRightCav = $this->rightBulge === -1 ? $this->inCircle($localX, $localY, $rightCavCx, $rightCavCy, $r2) : false;
                 $inLeftCav = $this->leftBulge === -1 ? $this->inCircle($localX, $localY, $leftCavCx, $leftCavCy, $r2) : false;
 
-                // 组合逻辑：在矩形内 或 在任意凸起内，但不在凹陷内
                 $in = ($inRect || $inTopBulge || $inBotBulge || $inRightBulge || $inLeftBulge)
                     && !$inTopCav && !$inBotCav && !$inRightCav && !$inLeftCav;
 
