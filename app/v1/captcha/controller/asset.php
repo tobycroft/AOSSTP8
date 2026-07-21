@@ -6,6 +6,7 @@ use app\v2\project\model\ProjectModel;
 use BaseController\CommonController;
 use Input;
 use Ret;
+use think\facade\View;
 
 class asset extends CommonController
 {
@@ -34,16 +35,19 @@ class asset extends CommonController
         $apiPath = $this->getApiPath();
         $token = htmlspecialchars($this->token, ENT_QUOTES, 'UTF-8');
 
-        return response()
-            ->view('asset@slide', [
-                'token' => $token,
-                'apiPath' => $apiPath,
-                'jsUrl' => $apiPath . '/asset/get?file=slide.js&token=' . $token,
-                'cssUrl' => $apiPath . '/asset/get?file=slide.css&token=' . $token,
-            ])
-            ->code(200)
-            ->header('Content-Type', 'text/html; charset=utf-8')
-            ->header('Cache-Control', 'no-store');
+        View::assign([
+            'token' => $token,
+            'apiPath' => $apiPath,
+            'jsUrl' => $apiPath . '/asset/get?file=slide.js&token=' . $token,
+            'cssUrl' => $apiPath . '/asset/get?file=slide.css&token=' . $token,
+        ]);
+
+        $content = View::fetch('asset@slide');
+
+        return response($content, 200, [
+            'Content-Type' => 'text/html; charset=utf-8',
+            'Cache-Control' => 'no-store',
+        ]);
     }
 
     /**
