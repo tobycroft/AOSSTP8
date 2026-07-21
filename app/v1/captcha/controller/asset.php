@@ -103,15 +103,30 @@ class asset extends CommonController
     }
 
     /**
-     * 获取当前 API 的基础 URL
+     * 获取当前 API 的基础 URL，使用浏览器访问的完整 URL
      */
     private function getApiBase()
     {
+        // scheme
         $scheme = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+
+        // HTTP_HOST 已经包含端口号（如 localhost:8080）
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+        // 如果 HTTP_HOST 没有端口，从 SERVER_PORT 补充
+        if (strpos($host, ':') === false) {
+            $port = $_SERVER['SERVER_PORT'] ?? '80';
+            $standardPort = ($scheme === 'http' && $port == '80') || ($scheme === 'https' && $port == '443');
+            if (!$standardPort) {
+                $host .= ':' . $port;
+            }
+        }
+
+        // 获取请求路径
         $requestUri = $_SERVER['REQUEST_URI'] ?? '/v1/captcha/asset/html';
         $path = parse_url($requestUri, PHP_URL_PATH);
         $apiPath = preg_replace('#/asset/.*$#', '', $path);
+
         return $scheme . '://' . $host . rtrim($apiPath, '/');
     }
 
