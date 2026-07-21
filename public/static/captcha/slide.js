@@ -101,12 +101,17 @@ function initSlideCaptacle(options) {
         .then(data => {
             if (data.code === 0) {
                 captchaData = data.data;
+                // 确保 pad_top/pad_left 有默认值（兼容旧版本 API）
+                captchaData.pad_top = captchaData.pad_top || 0;
+                captchaData.pad_left = captchaData.pad_left || 0;
                 // ✅ 直接使用 base64 内容即可，不需要添加时间戳
                 // 因为每次 generateCaptcha 都会请求新的验证码，图片内容本身就是新的
                 bgImg.src = captchaData.bg;
                 blockImg.src = captchaData.block;
-                blockImg.style.top = captchaData.y + 'px';
-                blockImg.style.left = '0px';
+                // 图片定位：考虑形状凸起/凹陷
+                // 让图片中的正方形区域对齐到视觉上正确的 (x, y) 位置
+                blockImg.style.top = (captchaData.y - captchaData.pad_top) + 'px';
+                blockImg.style.left = (-captchaData.pad_left) + 'px';
                 blockImg.style.display = 'block';
                 sliderHandle.style.left = '0px';
                 reloadBtn.style.display = 'inline-block';
@@ -133,10 +138,13 @@ function initSlideCaptacle(options) {
 
         const clientX = e.clientX || e.touches[0].clientX;
         const deltaX = clientX - startX;
+        // newLeft 是正方形区域的左边位置（用户期望对齐到 x）
         const newLeft = Math.max(0, Math.min(startLeft + deltaX, captchaData.bg_width - captchaData.block_size));
 
+        // 滑块把手位置 = newLeft
         sliderHandle.style.left = newLeft + 'px';
-        blockImg.style.left = newLeft + 'px';
+        // 拼图块图片位置 = newLeft - pad_left（图片左边有凸起时，向左偏移让正方形对齐）
+        blockImg.style.left = (newLeft - captchaData.pad_left) + 'px';
     }
 
     function endDrag(e) {
@@ -145,7 +153,8 @@ function initSlideCaptacle(options) {
         isDragging = false;
         sliderHandle.style.background = '#409eff';
 
-        const finalX = parseInt(blockImg.style.left) || 0;
+        // finalX 是正方形区域的左边位置（即滑块位置）
+        const finalX = parseInt(sliderHandle.style.left) || 0;
 
         const formData = new FormData();
         formData.append('token', opts.token);
@@ -169,7 +178,7 @@ function initSlideCaptacle(options) {
                 blockImg.style.pointerEvents = 'none'; // 禁用拼图块
                 sliderHandle.style.pointerEvents = 'none'; // 禁用滑块
                 opts.onError(data.echo || '验证失败');
-                
+
                 // 验证失败，自动重新加载新的验证码
                 setTimeout(() => {
                     generateCaptcha();
