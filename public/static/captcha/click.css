@@ -9,7 +9,7 @@
     border: 1px solid #ccc;
     background: white;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    cursor: crosshair;
+    cursor: default;
     display: inline-block;
     user-select: none;
     -webkit-user-select: none;

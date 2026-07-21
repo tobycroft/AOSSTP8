@@ -394,7 +394,7 @@ class ClickCaptcha
                 $baseX + random_int(-25, -5), $baseY + random_int(5, 25),
                 $baseX + random_int(5, 25), $baseY + random_int(5, 25),
             ];
-            imagefilledpolygon($im, $points, 3, $color);
+            imagefilledpolygon($im, $points, $color);
         }
 
         // 像素噪点（更细腻）
