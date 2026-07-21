@@ -44,7 +44,7 @@ class slide extends CommonController
 
         CaptchaModel::create([
             'ident' => $this->ident,
-            'code' => $capt->x . '|' . $capt->y,
+            'code' => (string) $capt->x,
             'hash' => $capt->hash,
             'type' => 'slide',
         ]);
@@ -55,22 +55,14 @@ class slide extends CommonController
     public function check()
     {
         $x = Input::PostInt('x');
-        $y = Input::PostInt('y');
         $capt = CaptchaModel::where('ident', $this->ident)->where('type', 'slide')->find();
         if (!$capt) {
             Ret::Fail(403, null, '验证码不存在');
         }
 
-        // 解析存储的答案，格式为 x|y（兼容旧版本只存 x 的情况）
-        $parts = explode('|', $capt['code']);
-        $answerX = intval($parts[0]);
-        $answerY = isset($parts[1]) ? intval($parts[1]) : null;
+        $answer = intval($capt['code']);
         $tolerance = 4;
-
-        $xPass = abs($x - $answerX) <= $tolerance;
-        $yPass = ($answerY === null) || abs($y - $answerY) <= $tolerance;
-
-        if ($xPass && $yPass) {
+        if (abs($x - $answer) <= $tolerance) {
             CaptchaModel::where('ident', $this->ident)->delete();
             Ret::Success(0, null, '验证成功');
         } else {
