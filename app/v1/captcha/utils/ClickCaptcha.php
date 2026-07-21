@@ -7,7 +7,7 @@ class ClickCaptcha
     public int $bgWidth = 300;
     public int $bgHeight = 200;
     public int $fontSize = 28;
-    public int $tolerance = 30;
+    public int $tolerance = 60;
 
     public array $targets = [];
     public string $hash;
@@ -136,7 +136,18 @@ class ClickCaptcha
 
         // 在画布上放置文字，记录位置
         $this->targets = [];
-        $this->placeCharacters($bg, $allChars, $targetChars);
+        $positions = $this->placeCharacters($bg, $allChars, $targetChars);
+        
+        // 按提示文字的顺序重新排列目标位置
+        $this->targets = [];
+        foreach ($targetChars as $char) {
+            foreach ($positions as $pos) {
+                if ($pos['char'] === $char) {
+                    $this->targets[] = ['char' => $pos['char'], 'x' => $pos['x'], 'y' => $pos['y']];
+                    break;
+                }
+            }
+        }
 
         // 绘制干扰元素
         $this->addNoise($bg);
@@ -196,24 +207,24 @@ class ClickCaptcha
     {
         $positions = [];
         $usedRects = [];
-        $margin = 10;
-        $charSize = $this->fontSize;
+        $margin = 20;
+        $charSize = $this->fontSize * 1.5;
 
         foreach ($allChars as $char) {
             $isTarget = in_array($char, $targetChars, true);
 
-            // 尝试找不重叠的位置
             $maxAttempts = 50;
             $placed = false;
             for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
-                $cx = random_int($margin + $charSize, $this->bgWidth - $margin - $charSize);
-                $cy = random_int($margin + $charSize, $this->bgHeight - $margin - $charSize);
+                // centerX, centerY 是字符中心点
+                $centerX = random_int($margin + (int)$charSize / 2, $this->bgWidth - $margin - (int)$charSize / 2);
+                $centerY = random_int($margin + (int)$charSize / 2, $this->bgHeight - $margin - (int)$charSize / 2);
 
                 $rect = [
-                    'x1' => $cx - $charSize,
-                    'y1' => $cy - $charSize,
-                    'x2' => $cx + $charSize,
-                    'y2' => $cy + $charSize,
+                    'x1' => $centerX - (int)$charSize / 2,
+                    'y1' => $centerY - (int)$charSize / 2,
+                    'x2' => $centerX + (int)$charSize / 2,
+                    'y2' => $centerY + (int)$charSize / 2,
                 ];
 
                 $overlap = false;
@@ -227,21 +238,23 @@ class ClickCaptcha
 
                 if (!$overlap) {
                     $usedRects[] = $rect;
-                    $angle = random_int(-30, 30);
+                    $angle = random_int(-15, 15);
                     $color = $this->randomDarkColor($im);
 
-                    // 使用 TrueType 字体绘制文字
+                    // 关键：imagettftext 的 x,y 是文字的左下角（基线位置）
+                    // 我们需要根据 centerX, centerY 反推正确的绘制位置
+                    // 对于汉字，字符宽度约等于 fontSize，字符高度也约等于 fontSize
+                    // 字符的中心在 (x + fontSize/2, y - fontSize/2) 的位置
+                    // 所以反推：x = centerX - fontSize/2, y = centerY + fontSize/2
+                    $cx = $centerX - (int)($this->fontSize / 2);
+                    $cy = $centerY + (int)($this->fontSize / 2);
+
                     imagettftext($im, $this->fontSize, $angle, $cx, $cy, $color, $this->fontPath, $char);
 
-                    // 记录文字的实际中心位置
-                    $posX = $cx;
-                    $posY = $cy - ($this->fontSize / 2);
+                    $posX = $centerX;
+                    $posY = $centerY;
 
                     $positions[] = ['char' => $char, 'x' => $posX, 'y' => $posY, 'is_target' => $isTarget];
-
-                    if ($isTarget) {
-                        $this->targets[] = ['char' => $char, 'x' => $posX, 'y' => $posY];
-                    }
 
                     $placed = true;
                     break;
@@ -249,17 +262,20 @@ class ClickCaptcha
             }
 
             if (!$placed) {
-                $cx = random_int($margin + $charSize, $this->bgWidth - $margin - $charSize);
-                $cy = random_int($margin + $charSize, $this->bgHeight - $margin - $charSize);
-                $angle = random_int(-30, 30);
+                $centerX = random_int($margin + (int)$charSize / 2, $this->bgWidth - $margin - (int)$charSize / 2);
+                $centerY = random_int($margin + (int)$charSize / 2, $this->bgHeight - $margin - (int)$charSize / 2);
+                
+                $angle = random_int(-15, 15);
                 $color = $this->randomDarkColor($im);
+                $cx = $centerX - (int)($this->fontSize / 2);
+                $cy = $centerY + (int)($this->fontSize / 2);
+                
                 imagettftext($im, $this->fontSize, $angle, $cx, $cy, $color, $this->fontPath, $char);
-                $posX = $cx;
-                $posY = $cy - ($this->fontSize / 2);
+                
+                $posX = $centerX;
+                $posY = $centerY;
+                
                 $positions[] = ['char' => $char, 'x' => $posX, 'y' => $posY, 'is_target' => $isTarget];
-                if ($isTarget) {
-                    $this->targets[] = ['char' => $char, 'x' => $posX, 'y' => $posY];
-                }
             }
         }
 
