@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>点击验证码演示</title>
+    <link rel="stylesheet" href="click.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .click-captcha-wrapper {
+            text-align: center;
+        }
+        .click-status {
+            margin-top: 12px;
+            text-align: center;
+            color: #666;
+            height: 24px;
+            transition: all 0.3s ease;
+        }
+        .click-status.success {
+            color: #67c23a;
+            font-weight: bold;
+        }
+        .click-status.error {
+            color: #f56c6c;
+            font-weight: bold;
+        }
+        .click-reload-btn {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="click-captcha-wrapper">
+        <div class="click-captcha-container">
+            <img class="click-captcha-bg" src="" alt="验证码背景">
+        </div>
+        <div class="click-tip"></div>
+        <div class="click-count"></div>
+        <div class="click-status"></div>
+        <button class="click-reload-btn">刷新验证码</button>
+    </div>
+
+    <script src="click.js"></script>
+    <script>
+        const statusEl = document.querySelector('.click-status');
+        const reloadBtn = document.querySelector('.click-reload-btn');
+
+        initClickCaptcha({
+            token: 'your-project-token',
+            onSuccess: function() {
+                statusEl.textContent = '✅ 验证成功！';
+                statusEl.className = 'click-status success';
+                reloadBtn.disabled = false;
+            },
+            onError: function(msg) {
+                statusEl.className = 'click-status error';
+                statusEl.textContent = '❌ ' + (msg || '验证失败') + '，正在自动刷新...';
+                reloadBtn.disabled = true;
+
+                setTimeout(() => {
+                    statusEl.className = 'click-status';
+                    statusEl.textContent = '';
+                    reloadBtn.disabled = false;
+                }, 1500);
+            }
+        });
+    </script>
+</body>
+</html>
