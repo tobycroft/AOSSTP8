@@ -1,10 +1,6 @@
 # AOSS 验证码 · 前端集成文档
 
-本目录包含 **滑动拼图验证码** 和 **点击验证码** 的前端实现。
-
-两种集成方式任选：
-- [方式一：直接在 HTML 中引入（零依赖）](#方式一直接在-html-中引入零依赖)
-- [方式二：通过 npm 包集成（工程化项目推荐）](#方式二通过-npm-包集成工程化项目推荐)
+本目录包含 **滑动拼图验证码** 和 **点击验证码** 的前端实现。前端开发者通过下面的方式即可集成到自己的页面中。
 
 ---
 
@@ -17,9 +13,7 @@
 
 ---
 
-## 方式一：直接在 HTML 中引入（零依赖）
-
-### 滑动拼图验证码
+## 方式一：滑动拼图验证码
 
 ```html
 <!DOCTYPE html>
@@ -49,19 +43,17 @@
             token: 'your-project-token',
             apiUrl: '/v1/captcha',               // 可选，默认 /v1/captcha
             ident: 'user-unique-identifier',      // 可选，不传则自动生成
-            onSuccess: function() {
-                console.log('验证成功');
-            },
-            onError: function(msg) {
-                console.error('验证失败:', msg);
-            }
+            onSuccess: function() { console.log('验证成功'); },
+            onError: function(msg) { console.error('验证失败:', msg); }
         });
     </script>
 </body>
 </html>
 ```
 
-### 点击验证码
+---
+
+## 方式二：点击验证码
 
 ```html
 <!DOCTYPE html>
@@ -91,19 +83,17 @@
             token: 'your-project-token',
             apiUrl: '/v1/captcha',               // 可选，默认 /v1/captcha
             ident: 'user-unique-identifier',      // 可选，不传则自动生成
-            onSuccess: function() {
-                console.log('验证成功');
-            },
-            onError: function(msg) {
-                console.error('验证失败:', msg);
-            }
+            onSuccess: function() { console.log('验证成功'); },
+            onError: function(msg) { console.error('验证失败:', msg); }
         });
     </script>
 </body>
 </html>
 ```
 
-### 参数说明（公共）
+---
+
+## 参数说明（公共）
 
 | 参数 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -117,50 +107,11 @@
 
 ---
 
-## 方式二：通过 npm 包集成（工程化项目推荐）
+## 在 Vue / React 等工程中使用
 
-### 包结构（本地开发）
+目前 JS/CSS 以纯静态文件形式提供，在工程化项目中可按如下方式使用：
 
-项目根目录下的 `package/captcha/` 已准备好一个可发布的 npm 包结构。
-
-```
-package/captcha/
-├── package.json          # 包声明
-├── README.md             # npm 包文档
-├── index.js              # ESM 入口
-├── src/
-│   ├── slide.js          # 滑动验证码
-│   ├── click.js          # 点击验证码
-│   ├── slide.css
-│   └── click.css
-└── dist/                 # 构建产物（执行 build 后生成）
-```
-
-### 在工程中使用
-
-**安装**
-```bash
-# 方式 A：从本地目录链接（开发调试）
-npm link /path/to/AOSSTP8/package/captcha
-
-# 方式 B：发布到 npm 后
-npm install @aoss/captcha
-```
-
-**Vite / Webpack 项目**
-```javascript
-import { initSlideCaptacle, initClickCaptcha } from '@aoss/captcha';
-import '@aoss/captcha/dist/slide.css';
-import '@aoss/captcha/dist/click.css';
-
-initSlideCaptacle({
-    token: 'your-project-token',
-    onSuccess: () => console.log('ok'),
-    onError: (msg) => console.error(msg)
-});
-```
-
-**Vue 组件示例**
+**Vue 3 示例**
 ```vue
 <template>
   <div class="captcha-container">
@@ -172,32 +123,31 @@ initSlideCaptacle({
 
 <script setup>
 import { onMounted } from 'vue';
-import { initSlideCaptacle } from '@aoss/captcha';
-import '@aoss/captcha/dist/slide.css';
+// 把 public/static/captcha/slide.js 和 slide.css 拷贝到你的项目中，
+// 或直接把 slide.js 作为一个模块引入。
+import '/path/to/slide.css';
 
 onMounted(() => {
-    initSlideCaptacle({
+    // slide.js 会把 initSlideCaptacle 挂到 window 上
+    window.initSlideCaptacle({
         token: 'your-project-token',
-        onSuccess: () => console.log('验证成功'),
+        onSuccess: () => console.log('ok'),
         onError: (msg) => console.error(msg)
     });
 });
 </script>
 ```
 
-**React 组件示例**
+**React 示例**
 ```jsx
-import { useEffect, useRef } from 'react';
-import { initSlideCaptacle } from '@aoss/captcha';
-import '@aoss/captcha/dist/slide.css';
+import { useEffect } from 'react';
+import '/path/to/slide.css';
 
 function Captcha() {
-    const containerRef = useRef(null);
-
     useEffect(() => {
-        initSlideCaptacle({
+        window.initSlideCaptacle({
             token: 'your-project-token',
-            onSuccess: () => console.log('验证成功'),
+            onSuccess: () => console.log('ok'),
             onError: (msg) => console.error(msg)
         });
     }, []);
@@ -211,16 +161,6 @@ function Captcha() {
     );
 }
 ```
-
-### 构建 & 发布
-
-```bash
-cd package/captcha
-npm run build          # 构建到 dist/
-npm publish --access public   # 发布到 npm
-```
-
-> 注意：发布前请将 `package.json` 中的 `name` 改为你的 npm 用户名（如 `@yourname/aoss-captcha`），或直接发布私有包。
 
 ---
 
