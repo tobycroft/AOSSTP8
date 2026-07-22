@@ -1,0 +1,50 @@
+{
+  "name": "@aoss/captcha",
+  "version": "1.0.0",
+  "description": "AOSS 滑动拼图 / 点击验证码前端 SDK",
+  "main": "dist/aoss-captcha.umd.js",
+  "module": "dist/aoss-captcha.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/aoss-captcha.esm.js",
+      "require": "./dist/aoss-captcha.umd.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./slide.css": "./dist/slide.css",
+    "./click.css": "./dist/click.css",
+    "./dist/slide.css": "./dist/slide.css",
+    "./dist/click.css": "./dist/click.css"
+  },
+  "scripts": {
+    "build": "node scripts/build.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "captcha",
+    "slide",
+    "puzzle",
+    "aoss",
+    "前端验证码",
+    "行为验证"
+  ],
+  "author": "tobycroft",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tobycroft/AOSSTP8.git",
+    "directory": "package/captcha"
+  },
+  "homepage": "https://github.com/tobycroft/AOSSTP8/tree/master/package/captcha#readme",
+  "bugs": {
+    "url": "https://github.com/tobycroft/AOSSTP8/issues"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}
