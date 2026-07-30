@@ -226,6 +226,10 @@ class index extends search
                 Ret::Success(0, $file_exists);
                 break;
 
+            case "hash":
+                Ret::Success(0, $file_exists['md5']);
+                break;
+
             default:
                 Ret::Success(0, $sav);
                 break;
