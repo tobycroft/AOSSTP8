@@ -10,7 +10,7 @@ use getID3;
 use OSS\AliyunOSS;
 use OSS\Core\OssException;
 use Ret;
-use SendFile\SendFile;
+use Net;
 use think\Request;
 use Throwable;
 
@@ -153,8 +153,7 @@ class index extends search
             }
         }
         if ($proc["type"] == "dp") {
-            $sf = new SendFile();
-            $ret = $sf->send('http://' . $proc["endpoint"] . '/up?token=' . $proc["bucket"], realpath('./upload/' . $fileName), $file->getFileInfo('type'), $file->getFileInfo('name'));
+            $ret = Net::PostFile('http://' . $proc["endpoint"] . '/up?token=' . $proc["bucket"], realpath('./upload/' . $fileName), $file->getFileInfo('type'), $file->getFileInfo('name'));
             $json = json_decode($ret, 1);
             $sav = ($full ? $proc['url'] . '/' : '') . $json["data"];
         }

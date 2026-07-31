@@ -11,7 +11,6 @@ use OSS\AliyunOSS;
 use OSS\Core\OssException;
 use PHPImageWorkshop\ImageWorkshop;
 use Ret;
-use SendFile\SendFile;
 use think\Exception;
 use think\Request;
 

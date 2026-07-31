@@ -11,8 +11,8 @@ use Input;
 use OSS\AliyunOSS;
 use OSS\Core\OssException;
 use PHPImageWorkshop\ImageWorkshop;
+use Net;
 use Ret;
-use SendFile\SendFile;
 use think\Exception;
 use think\facade\Response;
 use think\Request;
@@ -120,8 +120,7 @@ class create extends CommonController
             }
         }
         if ($this->proc["type"] == "dp" || $this->proc["type"] == "all") {
-            $sf = new SendFile();
-            $ret = $sf->send('http://' . $this->proc["endpoint"] . '/up?token=' . $this->proc["bucket"], realpath('./upload/' . $fileName), "image/jpg", $md5 . "jpg");
+            $ret = Net::PostFile('http://' . $this->proc["endpoint"] . '/up?token=' . $this->proc["bucket"], realpath('./upload/' . $fileName), "image/jpg", $md5 . "jpg");
             $json = json_decode($ret, 1);
             $sav = $this->proc['url'] . '/' . $json["data"];
         }

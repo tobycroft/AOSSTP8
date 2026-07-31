@@ -11,8 +11,8 @@ use getID3;
 use Input;
 use OSS\AliyunOSS;
 use OSS\Core\OssException;
+use Net;
 use Ret;
-use SendFile\SendFile;
 
 class dp extends CommonController
 {
@@ -248,8 +248,7 @@ class dp extends CommonController
             }
         }
         if ($proc["type"] == "dp" || $proc["type"] == "all") {
-            $sf = new SendFile();
-            $ret = $sf->send('http://' . $proc["endpoint"] . '/up?token=' . $proc["bucket"], realpath('./upload/' . $fileName), $file->getFileInfo('type'), $file->getFileInfo('name'));
+            $ret = Net::PostFile('http://' . $proc["endpoint"] . '/up?token=' . $proc["bucket"], realpath('./upload/' . $fileName), $file->getFileInfo('type'), $file->getFileInfo('name'));
             $json = json_decode($ret, 1);
             $sav = $proc['url'] . '/' . $json["data"];
         }

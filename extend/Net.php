@@ -57,16 +57,16 @@ class Net
 
     /**
      * @send("文件地址","文件类型","文件名称")
+     * @param $send_url
      * @param $real_path
      * @param $mime_type
      * @param $file_name
-     * @param $send_url
      * @return bool|string
      */
-    public static function PostFile($send_url, $real_path): string|bool
+    public static function PostFile($send_url, $real_path, $mime_type = null, $file_name = null): string|bool
     {
         $postData = [
-            'file' => new CURLFile(realpath($real_path))
+            'file' => new CURLFile(realpath($real_path), $mime_type, $file_name)
         ];
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
