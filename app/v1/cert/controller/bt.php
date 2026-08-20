@@ -11,6 +11,7 @@ use app\v1\cert\model\CertWebsiteModel;
 use BaseController\CommonController;
 use Exception;
 use Input;
+use tobycroft\Bt\Base;
 use tobycroft\Bt\Site;
 
 class bt extends CommonController
@@ -141,11 +142,15 @@ class bt extends CommonController
                     'recv' => json_encode($ret, 320),
                 ]);
                 $rets['fail']++;
+                $error = $bt_site->getError() ?: '未知错误';
+                if (!$this->isNetworkError($error)) {
+                    CertWebsiteModel::where('id', $site['id'])->update(['status' => 0]);
+                }
                 $rets['detail'][] = [
                     'type' => $site['type'],
                     'website' => $site['website'],
                     'success' => false,
-                    'error' => $bt_site->getError() ?: '未知错误',
+                    'error' => $error,
                 ];
             }
         }
@@ -153,7 +158,11 @@ class bt extends CommonController
 
         $panelSites = CertWebsiteModel::where('type', 'panel')->where('cert_name', $name)->where('status', 1)->select();
         foreach ($panelSites as $site) {
-            $ret = ConfigAction::savePanelSSL($site['api'], $site['key'], $ssl['key'], $ssl['crt']);
+            $bt_base = new Base($site['api'], $site['key'], './');
+            $ret = $bt_base->httpPostCookie(ConfigAction::setPanelSSL, [
+                'privateKey' => $ssl['key'],
+                'certPem' => $ssl['crt'],
+            ], 15);
             if ($ret) {
                 CertLogModel::create([
                     'appname' => $this->cert['appname'],
@@ -177,16 +186,39 @@ class bt extends CommonController
                     'recv' => json_encode($ret, 320),
                 ]);
                 $rets['fail']++;
+                $error = $bt_base->getError() ?: '面板SSL部署失败';
+                if (!$this->isNetworkError($error)) {
+                    CertWebsiteModel::where('id', $site['id'])->update(['status' => 0]);
+                }
                 $rets['detail'][] = [
                     'type' => $site['type'],
                     'website' => $site['website'],
                     'success' => false,
-                    'error' => '面板SSL部署失败',
+                    'error' => $error,
                 ];
             }
         }
 
         \Ret::Success(0, $rets);
+    }
+
+    private function isNetworkError(string $error): bool
+    {
+        $patterns = [
+            'cURL error',
+            'Connection refused',
+            'Connection timed out',
+            'Could not resolve host',
+            'Failed to connect',
+            'timeout',
+            'resolve',
+        ];
+        foreach ($patterns as $pattern) {
+            if (stripos($error, $pattern) !== false) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function savepanelssl()
