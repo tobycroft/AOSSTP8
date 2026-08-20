@@ -146,6 +146,9 @@ class bt extends CommonController
                 ]);
                 $rets['fail']++;
                 $error = $bt_site->getError() ?: '未知错误';
+                if ($ret === null) {
+                    CertWebsiteModel::where('id', $site['id'])->update(['status' => 0]);
+                }
                 $rets['detail'][] = [
                     'type' => $site['type'],
                     'website' => $site['website'],
@@ -193,6 +196,9 @@ class bt extends CommonController
                 ]);
                 $rets['fail']++;
                 $error = $catchError ?? $bt_base->getError() ?: '面板SSL部署失败';
+                if ($ret === null) {
+                    CertWebsiteModel::where('id', $site['id'])->update(['status' => 0]);
+                }
                 $rets['detail'][] = [
                     'type' => $site['type'],
                     'website' => $site['website'],
