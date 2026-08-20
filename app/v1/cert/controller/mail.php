@@ -8,6 +8,7 @@ use app\v1\cert\model\CertUrlModel;
 use app\v1\cert\model\CertWebsiteModel;
 use Input;
 use think\Exception;
+use tobycroft\Bt\Base;
 
 class mail extends bt
 {
@@ -58,6 +59,9 @@ class mail extends bt
         }
         try {
             MailAction::updateMailListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
+        } catch (Exception $e) {
+        }
+        try {
             $ssl = MailAction::updatessl($name);
         } catch (Exception $e) {
             \Ret::Fail('500', null, $e->getMessage());
@@ -66,10 +70,23 @@ class mail extends bt
         $sites = CertWebsiteModel::where('type', 'mail')->where('cert_name', $name)->where('status', 1)->select();
         $rets = [
             'success' => 0,
-            'fail' => 0
+            'fail' => 0,
+            'detail' => [],
         ];
         foreach ($sites as $site) {
-            $ret = MailAction::updateMailSSL($site['api'], $site['key'], $site['website'], $ssl['csr'], $ssl['key']);
+            $catchError = null;
+            try {
+                $bt_base = new Base($site['api'], $site['key'], './');
+                $ret = $bt_base->httpPostCookie(MailAction::setCert, [
+                    'domain' => $site['website'],
+                    'csr' => $ssl['csr'],
+                    'key' => $ssl['key'],
+                    'act' => 'add',
+                ], 15);
+            } catch (Exception $e) {
+                $ret = false;
+                $catchError = $e->getMessage();
+            }
             if ($ret) {
                 CertLogModel::create([
                     'appname' => $this->cert['appname'],
@@ -79,6 +96,11 @@ class mail extends bt
                     'recv' => json_encode($ret, 320),
                 ]);
                 $rets['success']++;
+                $rets['detail'][] = [
+                    'type' => $site['type'],
+                    'website' => $site['website'],
+                    'success' => true,
+                ];
             } else {
                 CertLogModel::create([
                     'appname' => $this->cert['appname'],
@@ -88,6 +110,16 @@ class mail extends bt
                     'recv' => json_encode($ret, 320),
                 ]);
                 $rets['fail']++;
+                $error = $catchError ?? $bt_base->getError() ?: '邮件SSL部署失败';
+                if ($ret === null) {
+                    CertWebsiteModel::where('id', $site['id'])->update(['status' => 0]);
+                }
+                $rets['detail'][] = [
+                    'type' => $site['type'],
+                    'website' => $site['website'],
+                    'success' => false,
+                    'error' => $error,
+                ];
             }
         }
         \Ret::Success(0, $rets);
