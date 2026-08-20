@@ -161,11 +161,17 @@ class bt extends CommonController
 
         $panelSites = CertWebsiteModel::where('type', 'panel')->where('cert_name', $name)->where('status', 1)->select();
         foreach ($panelSites as $site) {
-            $bt_base = new Base($site['api'], $site['key'], './');
-            $ret = $bt_base->httpPostCookie(ConfigAction::setPanelSSL, [
-                'privateKey' => $ssl['key'],
-                'certPem' => $ssl['crt'],
-            ], 15);
+            $catchError = null;
+            try {
+                $bt_base = new Base($site['api'], $site['key'], './');
+                $ret = $bt_base->httpPostCookie(ConfigAction::setPanelSSL, [
+                    'privateKey' => $ssl['key'],
+                    'certPem' => $ssl['crt'],
+                ], 15);
+            } catch (Exception $e) {
+                $ret = false;
+                $catchError = $e->getMessage();
+            }
             if ($ret) {
                 CertLogModel::create([
                     'appname' => $this->cert['appname'],
@@ -189,7 +195,7 @@ class bt extends CommonController
                     'recv' => json_encode($ret, 320),
                 ]);
                 $rets['fail']++;
-                $error = $bt_base->getError() ?: '面板SSL部署失败';
+                $error = $catchError ?? $bt_base->getError() ?: '面板SSL部署失败';
                 if (!$this->isNetworkError($error)) {
                     CertWebsiteModel::where('id', $site['id'])->update(['status' => 0]);
                 }
