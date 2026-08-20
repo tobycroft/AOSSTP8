@@ -112,7 +112,8 @@ class bt extends CommonController
         $sites = CertWebsiteModel::where('type', 'web')->where('cert_name', $name)->where('status', 1)->select();
         $rets = [
             'success' => 0,
-            'fail' => 0
+            'fail' => 0,
+            'detail' => [],
         ];
         foreach ($sites as $site) {
             $bt_site = new Site($site['api'], $site['key'], './');
@@ -126,6 +127,11 @@ class bt extends CommonController
                     'recv' => json_encode($ret, 320),
                 ]);
                 $rets['success']++;
+                $rets['detail'][] = [
+                    'type' => $site['type'],
+                    'website' => $site['website'],
+                    'success' => true,
+                ];
             } else {
                 CertLogModel::create([
                     'appname' => $this->cert['appname'],
@@ -135,6 +141,12 @@ class bt extends CommonController
                     'recv' => json_encode($ret, 320),
                 ]);
                 $rets['fail']++;
+                $rets['detail'][] = [
+                    'type' => $site['type'],
+                    'website' => $site['website'],
+                    'success' => false,
+                    'error' => $bt_site->getError() ?: '未知错误',
+                ];
             }
         }
 
@@ -151,6 +163,11 @@ class bt extends CommonController
                     'recv' => json_encode($ret, 320),
                 ]);
                 $rets['success']++;
+                $rets['detail'][] = [
+                    'type' => $site['type'],
+                    'website' => $site['website'],
+                    'success' => true,
+                ];
             } else {
                 CertLogModel::create([
                     'appname' => $this->cert['appname'],
@@ -160,6 +177,12 @@ class bt extends CommonController
                     'recv' => json_encode($ret, 320),
                 ]);
                 $rets['fail']++;
+                $rets['detail'][] = [
+                    'type' => $site['type'],
+                    'website' => $site['website'],
+                    'success' => false,
+                    'error' => '面板SSL部署失败',
+                ];
             }
         }
 
