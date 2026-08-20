@@ -139,24 +139,24 @@ class bt extends CommonController
         }
 
 
-        $btCertDomain = $this->cert['bt_cert_domain'] ?? '';
-        if (!empty($btCertDomain) && $name === $btCertDomain) {
-            $ret = ConfigAction::savePanelSSL($this->cert['bt_api'], $this->cert['bt_key'], $ssl['key'], $ssl['crt']);
+        $panelSites = CertWebsiteModel::where('type', 'panel')->where('cert_name', $name)->where('status', 1)->select();
+        foreach ($panelSites as $site) {
+            $ret = ConfigAction::savePanelSSL($site['api'], $site['key'], $ssl['key'], $ssl['crt']);
             if ($ret) {
                 CertLogModel::create([
                     'appname' => $this->cert['appname'],
-                    'type' => 'panel',
+                    'type' => $site['type'],
                     'success' => 1,
-                    'website' => 'panel',
+                    'website' => $site['website'],
                     'recv' => json_encode($ret, 320),
                 ]);
                 $rets['success']++;
             } else {
                 CertLogModel::create([
                     'appname' => $this->cert['appname'],
-                    'type' => 'panel',
+                    'type' => $site['type'],
                     'success' => 0,
-                    'website' => 'panel',
+                    'website' => $site['website'],
                     'recv' => json_encode($ret, 320),
                 ]);
                 $rets['fail']++;
