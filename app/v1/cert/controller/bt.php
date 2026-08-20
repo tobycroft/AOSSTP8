@@ -107,7 +107,10 @@ class bt extends CommonController
         if ($cert['auto'] != 1) {
             \Ret::Fail(401, null, '本证书自动下发功能不可用');
         }
-        SiteAction::updateSiteListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
+        try {
+            SiteAction::updateSiteListWhichHadSSL($this->cert['bt_api'], $this->cert['bt_key']);
+        } catch (Exception $e) {
+        }
         $ssl = SiteAction::updatessl($name);
 
         $sites = CertWebsiteModel::where('type', 'web')->where('cert_name', $name)->where('status', 1)->select();
