@@ -61,7 +61,6 @@ class Captcha
         ob_start();
         imagegif($im);
         $content = ob_get_clean();
-        imagedestroy($im);
 
         return response($content, 200, ['Content-Length' => strlen($content)])->contentType('image/gif');
     }
