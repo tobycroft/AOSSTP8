@@ -47,6 +47,7 @@
 \think\facade\Route::any('admin/menu/create', '\app\admin\controller\Menu@create');
 \think\facade\Route::any('admin/menu/update', '\app\admin\controller\Menu@update');
 \think\facade\Route::any('admin/menu/delete', '\app\admin\controller\Menu@delete');
+\think\facade\Route::any('admin', '\app\admin\controller\Index@index');
 
 \think\facade\Route::any('up', '\app\v1\file\controller\index@up');
 

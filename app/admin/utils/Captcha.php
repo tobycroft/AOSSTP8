@@ -99,6 +99,9 @@ class Captcha extends TobycroftCaptcha
             imagettftext($this->im, (int) $this->fontSize, $angle, (int) $x, (int) $y, $this->color, $fontttf, $char);
         }
 
+        // 验证码 hash 存入 session
+        $this->session->set('admin_captcha', $this->hash);
+
         ob_start();
         imagegif($this->im);
         $content = ob_get_clean();
