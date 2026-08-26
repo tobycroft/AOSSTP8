@@ -71,21 +71,8 @@ class Captcha extends TobycroftCaptcha
         imagecolorallocatealpha($this->im, $this->bg[0], $this->bg[1], $this->bg[2], $this->alpha);
         $this->color = imagecolorallocate($this->im, random_int(1, 150), random_int(1, 150), random_int(1, 150));
 
-        $ttfPath = __DIR__ . '/../../vendor/tobycroft/think-captcha/assets/' . ($this->useZh ? 'zhttfs' : 'ttfs') . '/';
-
-        if (empty($this->fontttf)) {
-            $dir = dir($ttfPath);
-            $ttfs = [];
-            while (false !== ($file = $dir->read())) {
-                if (substr($file, -4) === '.ttf' || substr($file, -4) === '.otf') {
-                    $ttfs[] = $file;
-                }
-            }
-            $dir->close();
-            $this->fontttf = $ttfs[array_rand($ttfs)];
-        }
-
-        $fontttf = $ttfPath . $this->fontttf;
+        // 使用项目自带字体，避免 vendor 目录缺失问题
+        $fontttf = public_path() . 'static/misans/misans.ttf';
 
         // 干扰项
         if ($this->useCurve) {
