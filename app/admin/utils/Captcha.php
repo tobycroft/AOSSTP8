@@ -10,6 +10,9 @@ class Captcha extends TobycroftCaptcha
     public $hash;
     public $question;
 
+    protected $im = null;
+    protected $color = null;
+
     protected function generate(): array
     {
         $bag = '';
@@ -84,10 +87,15 @@ class Captcha extends TobycroftCaptcha
 
         $fontttf = $ttfPath . $this->fontttf;
 
-        foreach ($this->interfere as $type => $method) {
-            if ($this->$type) {
-                $this->$method();
-            }
+        // 干扰项
+        if ($this->useCurve) {
+            $this->writeCurve();
+        }
+        if ($this->useNoise) {
+            $this->writeNoise();
+        }
+        if ($this->useImgBg) {
+            $this->background();
         }
 
         $text = $this->useZh ? preg_split('/(?<!^)(?!$)/u', $generator['value']) : str_split($generator['value']);
@@ -99,8 +107,12 @@ class Captcha extends TobycroftCaptcha
             imagettftext($this->im, (int) $this->fontSize, $angle, (int) $x, (int) $y, $this->color, $fontttf, $char);
         }
 
-        // 验证码 hash 存入 session
-        $this->session->set('admin_captcha', $this->hash);
+        // 验证码 hash 存入 session（使用反射访问父类私有属性）
+        $ref = new \ReflectionClass(parent::class);
+        $sessionProp = $ref->getProperty('session');
+        $sessionProp->setAccessible(true);
+        $session = $sessionProp->getValue($this);
+        $session->set('admin_captcha', $this->hash);
 
         ob_start();
         imagegif($this->im);
