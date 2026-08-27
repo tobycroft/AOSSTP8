@@ -239,7 +239,8 @@ function showKeys(id) {
     document.getElementById('keyModal').classList.add('show');
 
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', '/admin/cert_url/getKey?id=' + id, true);
+    xhr.open('POST', '/admin/cert_url/getKey', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4) {
@@ -253,7 +254,7 @@ function showKeys(id) {
             }
         }
     };
-    xhr.send();
+    xhr.send('id=' + id);
 }
 function closeKeyModal() {
     document.getElementById('keyModal').classList.remove('show');
@@ -378,7 +379,7 @@ HTML;
 
     public function getKey()
     {
-        $id = intval(input('get.id'));
+        $id = Input::PostInt('id');
 
         if (!$id) {
             Ret::Fail(400, null, '缺少参数[id]');
