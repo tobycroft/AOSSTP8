@@ -2,7 +2,8 @@
 
 namespace app\admin\utils;
 
-use think\facade\Session;
+use think\App;
+use think\Session;
 
 class Captcha
 {
@@ -18,9 +19,11 @@ class Captcha
     protected int $imageH = 0;
     protected bool $useNoise = true;
     protected bool $useCurve = true;
+    protected Session $session;
 
-    public function __construct(array $config = [])
+    public function __construct(App $app, array $config = [])
     {
+        $this->session = new Session($app);
         foreach ($config as $key => $val) {
             if (property_exists($this, $key)) {
                 $this->{$key} = $val;
@@ -56,7 +59,7 @@ class Captcha
             imagettftext($im, $this->fontSize, $angle, $x, $y, $color, $fontttf, $char);
         }
 
-        Session::set('admin_captcha', $this->hash);
+        $this->session->set('admin_captcha', $this->hash);
 
         ob_start();
         imagegif($im);
