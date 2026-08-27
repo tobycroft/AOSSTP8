@@ -63,6 +63,27 @@ class User extends CommonController
         $totalPages = max(1, (int)ceil($total / $limit));
 
         $html = Layout::begin('用户管理', 'admin', 'user');
+        $html .= <<<HTML
+    <div class="toolbar">
+        <h2>用户管理</h2>
+        <button class="btn btn-primary" onclick="openCreate()">新增用户</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>用户名</th>
+                <th>昵称</th>
+                <th>邮箱</th>
+                <th>手机</th>
+                <th>状态</th>
+                <th>超级管理员</th>
+                <th>最后登录</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+HTML;
         foreach ($items as $item) {
             $statusBadge = $item['status'] == 1
                 ? '<span class="status-badge active">启用</span>'
@@ -85,7 +106,126 @@ class User extends CommonController
             </tr>
 ROW;
         }
+        $html .= <<<HTML
+        </tbody>
+    </table>
+HTML;
         $html .= Layout::pagination($currentPage, $totalPages, '/admin/user');
+        $html .= <<<HTML
+<div class="modal" id="userModal">
+    <div class="modal-box">
+        <h3 id="modalTitle">新增用户</h3>
+        <input type="hidden" id="editId" value="">
+        <div class="form-group">
+            <label>用户名</label>
+            <input type="text" id="formUsername" placeholder="请输入用户名">
+        </div>
+        <div class="form-group">
+            <label>密码</label>
+            <input type="password" id="formPassword" placeholder="留空则不修改">
+        </div>
+        <div class="form-group">
+            <label>昵称</label>
+            <input type="text" id="formNickname" placeholder="请输入昵称">
+        </div>
+        <div class="form-group">
+            <label>邮箱</label>
+            <input type="text" id="formEmail" placeholder="请输入邮箱">
+        </div>
+        <div class="form-group">
+            <label>手机</label>
+            <input type="text" id="formPhone" placeholder="请输入手机">
+        </div>
+        <div class="form-group">
+            <label>状态</label>
+            <select id="formStatus">
+                <option value="1">启用</option>
+                <option value="0">禁用</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn btn-primary" id="modalSubmit" onclick="submitForm()">确定</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function closeModal() {
+    document.getElementById('userModal').classList.remove('show');
+}
+function openCreate() {
+    document.getElementById('modalTitle').textContent = '新增用户';
+    document.getElementById('editId').value = '';
+    document.getElementById('formUsername').value = '';
+    document.getElementById('formPassword').value = '';
+    document.getElementById('formNickname').value = '';
+    document.getElementById('formEmail').value = '';
+    document.getElementById('formPhone').value = '';
+    document.getElementById('formStatus').value = '1';
+    document.getElementById('userModal').classList.add('show');
+}
+function openEdit(id, username, nickname, email, phone, status) {
+    document.getElementById('modalTitle').textContent = '编辑用户';
+    document.getElementById('editId').value = id;
+    document.getElementById('formUsername').value = username;
+    document.getElementById('formPassword').value = '';
+    document.getElementById('formNickname').value = nickname;
+    document.getElementById('formEmail').value = email;
+    document.getElementById('formPhone').value = phone;
+    document.getElementById('formStatus').value = status;
+    document.getElementById('userModal').classList.add('show');
+}
+function submitForm() {
+    var id = document.getElementById('editId').value;
+    var username = document.getElementById('formUsername').value;
+    var password = document.getElementById('formPassword').value;
+    var nickname = document.getElementById('formNickname').value;
+    var email = document.getElementById('formEmail').value;
+    var phone = document.getElementById('formPhone').value;
+    var status = document.getElementById('formStatus').value;
+    if (!username) { alert('用户名不能为空'); return; }
+
+    var xhr = new XMLHttpRequest();
+    var method = id ? 'POST' : 'PUT';
+    xhr.open(method, '/admin/user', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    var params = 'username=' + encodeURIComponent(username) + '&nickname=' + encodeURIComponent(nickname) + '&email=' + encodeURIComponent(email) + '&phone=' + encodeURIComponent(phone) + '&status=' + status;
+    if (password) params += '&password=' + encodeURIComponent(password);
+    if (id) params += '&id=' + id;
+    xhr.send(params);
+}
+function doDelete(id) {
+    if (!confirm('确定要删除该用户吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/user', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+</script>
+HTML;
         $html .= Layout::end();
         return response($html)->contentType('text/html');
     }
