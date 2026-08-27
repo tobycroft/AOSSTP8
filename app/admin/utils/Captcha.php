@@ -2,9 +2,6 @@
 
 namespace app\admin\utils;
 
-use think\App;
-use think\Session;
-
 class Captcha
 {
     public $key;
@@ -19,11 +16,9 @@ class Captcha
     protected int $imageH = 0;
     protected bool $useNoise = true;
     protected bool $useCurve = true;
-    protected Session $session;
 
-    public function __construct(App $app, array $config = [])
+    public function __construct(array $config = [])
     {
-        $this->session = new Session($app);
         foreach ($config as $key => $val) {
             if (property_exists($this, $key)) {
                 $this->{$key} = $val;
@@ -59,7 +54,13 @@ class Captcha
             imagettftext($im, $this->fontSize, $angle, $x, $y, $color, $fontttf, $char);
         }
 
-        $this->session->set('admin_captcha', $this->hash);
+        // 验证码 hash 存入 cookie，替代 session（项目未开启 session 中间件）
+        setcookie('admin_captcha', $this->hash, [
+            'expires' => time() + 300,
+            'path' => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
 
         ob_start();
         imagegif($im);

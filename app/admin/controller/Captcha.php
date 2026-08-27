@@ -18,7 +18,7 @@ class Captcha extends CommonController
             'bg' => [243, 251, 254],
         ];
 
-        $capt = new AdminCaptcha($this->app, $config);
+        $capt = new AdminCaptcha($config);
         return $capt->create();
     }
 }

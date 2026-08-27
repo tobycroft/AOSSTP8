@@ -7,7 +7,6 @@ use app\admin\utils\AdminAuth;
 use BaseController\CommonController;
 use Input;
 use Ret;
-use think\Session;
 
 class Login extends CommonController
 {
@@ -17,18 +16,17 @@ class Login extends CommonController
         $password = Input::Post('password');
         $code = Input::Post('code');
 
-        // 验证验证码
-        $session = new Session($this->app);
-        $captchaHash = $session->get('admin_captcha');
+        // 验证验证码（从 cookie 读取 hash）
+        $captchaHash = $_COOKIE['admin_captcha'] ?? null;
         if (empty($captchaHash)) {
             Ret::Fail(400, null, '请先获取验证码');
         }
         $code = mb_strtolower($code, 'UTF-8');
         if (!password_verify($code, $captchaHash)) {
-            $session->delete('admin_captcha');
+            setcookie('admin_captcha', '', time() - 3600, '/');
             Ret::Fail(400, null, '验证码错误');
         }
-        $session->delete('admin_captcha');
+        setcookie('admin_captcha', '', time() - 3600, '/');
 
         $model = new AdminUserModel();
         $user = $model->api_find_username($username);
