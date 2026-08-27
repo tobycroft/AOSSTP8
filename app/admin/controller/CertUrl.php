@@ -255,11 +255,11 @@ function doAutoSSL(id, cert) {
         if (xhr.readyState == 4) {
             var res = JSON.parse(xhr.responseText);
             if (res.code == 0) {
-                var msg = '自动下发完成\n成功: ' + res.data.success + ' | 失败: ' + res.data.fail;
+                var msg = '自动下发完成\\n成功: ' + res.data.success + ' | 失败: ' + res.data.fail;
                 var detail = res.data.detail || [];
                 for (var i = 0; i < detail.length; i++) {
                     var d = detail[i];
-                    msg += '\n  [' + (d.success ? 'OK' : 'XX') + '] ' + d.website;
+                    msg += '\\n  [' + (d.success ? 'OK' : 'XX') + '] ' + d.website;
                     if (d.error) msg += ' - ' + d.error;
                 }
                 alert(msg);
