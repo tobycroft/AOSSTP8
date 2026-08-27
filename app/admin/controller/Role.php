@@ -76,6 +76,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 .sidebar .menu-item { padding: 12px 24px; cursor: pointer; color: #333; font-size: 14px; display: block; text-decoration: none; }
 .sidebar .menu-item:hover { background: #f0f5ff; color: #1677ff; }
 .sidebar .menu-item.active { background: #e6f4ff; color: #1677ff; border-right: 3px solid #1677ff; }
+.sidebar .menu-group { }
+.sidebar .menu-group-title { padding: 12px 24px; cursor: pointer; color: #333; font-size: 14px; display: flex; align-items: center; justify-content: space-between; user-select: none; }
+.sidebar .menu-group-title:hover { background: #f0f5ff; color: #1677ff; }
+.sidebar .menu-group-title .arrow { transition: transform 0.2s; font-size: 10px; }
+.sidebar .menu-group-title.open .arrow { transform: rotate(90deg); }
+.sidebar .menu-group-items { display: none; }
+.sidebar .menu-group-items.open { display: block; }
+.sidebar .menu-group-items .menu-item { padding-left: 44px; }
 .main { margin-left: 220px; padding: 24px; }
 .toolbar { margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
 .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
@@ -122,9 +130,29 @@ tr:hover { background: #fafafa; }
 </div>
 <div class="sidebar">
     <a class="menu-item" href="/admin/console">控制台</a>
-    <a class="menu-item" href="/admin/user">用户管理</a>
-    <a class="menu-item active" href="/admin/role">角色管理</a>
-    <a class="menu-item" href="/admin/menu">菜单管理</a>
+    <div class="menu-group">
+        <div class="menu-group-title open" onclick="toggleGroup(this)">
+            <span>管理员</span>
+            <span class="arrow">></span>
+        </div>
+        <div class="menu-group-items open">
+            <a class="menu-item" href="/admin/user">用户管理</a>
+            <a class="menu-item active" href="/admin/role">角色管理</a>
+            <a class="menu-item" href="/admin/menu">菜单管理</a>
+        </div>
+    </div>
+    <div class="menu-group">
+        <div class="menu-group-title" onclick="toggleGroup(this)">
+            <span>证书管理</span>
+            <span class="arrow">></span>
+        </div>
+        <div class="menu-group-items">
+            <a class="menu-item" href="/admin/cert">证书项目</a>
+            <a class="menu-item" href="/admin/cert_url">证书URL</a>
+            <a class="menu-item" href="/admin/cert_website">证书站点</a>
+            <a class="menu-item" href="/admin/cert_log">操作日志</a>
+        </div>
+    </div>
 </div>
 <div class="main">
     <div class="toolbar">
@@ -202,6 +230,10 @@ HTML;
 </div>
 
 <script>
+function toggleGroup(el) {
+    el.classList.toggle('open');
+    el.nextElementSibling.classList.toggle('open');
+}
 function closeModal() {
     document.getElementById('roleModal').classList.remove('show');
 }

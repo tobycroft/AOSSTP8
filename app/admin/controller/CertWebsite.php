@@ -2,14 +2,13 @@
 
 namespace app\admin\controller;
 
-use app\admin\model\AdminUserModel;
-use app\admin\model\AdminRoleUserModel;
+use app\admin\model\AdminCertWebsiteModel;
 use app\admin\utils\AdminAuth;
 use BaseController\CommonController;
 use Input;
 use Ret;
 
-class User extends CommonController
+class CertWebsite extends CommonController
 {
     public function initialize()
     {
@@ -38,24 +37,8 @@ class User extends CommonController
         $page = input('get.page', 1, 'intval');
         $limit = 15;
 
-        $model = new AdminUserModel();
-        $list = $model->api_list($page, $limit);
-
-        $items = [];
-        foreach ($list as $item) {
-            $items[] = [
-                'id' => $item['id'],
-                'username' => $item['username'],
-                'nickname' => $item['nickname'],
-                'email' => $item['email'],
-                'phone' => $item['phone'],
-                'status' => $item['status'],
-                'is_super' => $item['is_super'],
-                'login_ip' => $item['login_ip'],
-                'login_time' => $item['login_time'],
-                'date' => $item['date'],
-            ];
-        }
+        $model = new AdminCertWebsiteModel();
+        $list = $model->order('id', 'desc')->paginate($limit, false, ['page' => $page]);
 
         $currentPage = (int)$list->currentPage();
         $total = $list->total();
@@ -67,7 +50,7 @@ class User extends CommonController
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AOSS 用户管理</title>
+<title>AOSS 证书站点</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; }
@@ -94,8 +77,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
 .btn-primary { background: #1677ff; color: #fff; }
 .btn-primary:hover { background: #4096ff; }
-.btn-danger { background: #ff4d4f; color: #fff; }
-.btn-danger:hover { background: #ff7875; }
 .btn-sm { padding: 4px 10px; font-size: 12px; }
 .btn-edit { background: #1677ff; color: #fff; margin-right: 4px; }
 .btn-edit:hover { background: #4096ff; }
@@ -112,7 +93,7 @@ tr:hover { background: #fafafa; }
 .pagination a.active { background: #1677ff; color: #fff; border-color: #1677ff; }
 .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; }
 .modal.show { display: flex; align-items: center; justify-content: center; }
-.modal-box { background: #fff; border-radius: 8px; padding: 24px; width: 480px; max-width: 90%; }
+.modal-box { background: #fff; border-radius: 8px; padding: 24px; width: 520px; max-width: 90%; }
 .modal-box h3 { margin-bottom: 20px; color: #333; }
 .form-group { margin-bottom: 14px; }
 .form-group label { display: block; margin-bottom: 4px; color: #555; font-size: 13px; }
@@ -138,67 +119,62 @@ tr:hover { background: #fafafa; }
 <div class="sidebar">
     <a class="menu-item" href="/admin/console">控制台</a>
     <div class="menu-group">
-        <div class="menu-group-title open" onclick="toggleGroup(this)">
+        <div class="menu-group-title" onclick="toggleGroup(this)">
             <span>管理员</span>
             <span class="arrow">></span>
         </div>
-        <div class="menu-group-items open">
-            <a class="menu-item active" href="/admin/user">用户管理</a>
+        <div class="menu-group-items">
+            <a class="menu-item" href="/admin/user">用户管理</a>
             <a class="menu-item" href="/admin/role">角色管理</a>
             <a class="menu-item" href="/admin/menu">菜单管理</a>
         </div>
     </div>
     <div class="menu-group">
-        <div class="menu-group-title" onclick="toggleGroup(this)">
+        <div class="menu-group-title open" onclick="toggleGroup(this)">
             <span>证书管理</span>
             <span class="arrow">></span>
         </div>
-        <div class="menu-group-items">
+        <div class="menu-group-items open">
             <a class="menu-item" href="/admin/cert">证书项目</a>
             <a class="menu-item" href="/admin/cert_url">证书URL</a>
-            <a class="menu-item" href="/admin/cert_website">证书站点</a>
+            <a class="menu-item active" href="/admin/cert_website">证书站点</a>
             <a class="menu-item" href="/admin/cert_log">操作日志</a>
         </div>
     </div>
 </div>
 <div class="main">
     <div class="toolbar">
-        <h2>用户管理</h2>
-        <button class="btn btn-primary" onclick="openCreate()">新增用户</button>
+        <h2>证书站点</h2>
+        <button class="btn btn-primary" onclick="openCreate()">新增站点</button>
     </div>
     <table>
         <thead>
             <tr>
                 <th>ID</th>
-                <th>用户名</th>
-                <th>昵称</th>
-                <th>邮箱</th>
-                <th>手机</th>
+                <th>证书名称</th>
+                <th>站点</th>
+                <th>类型</th>
+                <th>API</th>
                 <th>状态</th>
-                <th>超级管理员</th>
-                <th>最后登录</th>
                 <th>操作</th>
             </tr>
         </thead>
         <tbody>
 HTML;
-        foreach ($items as $item) {
+        foreach ($list as $item) {
             $statusBadge = $item['status'] == 1
                 ? '<span class="status-badge active">启用</span>'
                 : '<span class="status-badge inactive">禁用</span>';
-            $superText = $item['is_super'] ? '是' : '否';
             $html .= <<<ROW
             <tr>
                 <td>{$item['id']}</td>
-                <td>{$item['username']}</td>
-                <td>{$item['nickname']}</td>
-                <td>{$item['email']}</td>
-                <td>{$item['phone']}</td>
+                <td>{$item['cert_name']}</td>
+                <td>{$item['website']}</td>
+                <td>{$item['type']}</td>
+                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item['api']}</td>
                 <td>{$statusBadge}</td>
-                <td>{$superText}</td>
-                <td>{$item['login_time']}</td>
                 <td>
-                    <button class="btn btn-sm btn-edit" onclick="openEdit({$item['id']}, '{$item['username']}', '{$item['nickname']}', '{$item['email']}', '{$item['phone']}', {$item['status']})">编辑</button>
+                    <button class="btn btn-sm btn-edit" onclick="openEdit({$item['id']}, '{$item['cert_name']}', '{$item['website']}', '{$item['type']}', '{$item['api']}', '{$item['key']}', {$item['status']})">编辑</button>
                     <button class="btn btn-sm btn-del" onclick="doDelete({$item['id']})">删除</button>
                 </td>
             </tr>
@@ -211,35 +187,39 @@ ROW;
 HTML;
         for ($i = 1; $i <= $totalPages; $i++) {
             $active = $i == $currentPage ? ' class="active"' : '';
-            $html .= "<a href=\"/admin/user?page={$i}\"{$active}>{$i}</a>";
+            $html .= "<a href=\"/admin/cert_website?page={$i}\"{$active}>{$i}</a>";
         }
         $html .= <<<HTML
     </div>
 </div>
 
-<div class="modal" id="userModal">
+<div class="modal" id="websiteModal">
     <div class="modal-box">
-        <h3 id="modalTitle">新增用户</h3>
+        <h3 id="modalTitle">新增站点</h3>
         <input type="hidden" id="editId" value="">
         <div class="form-group">
-            <label>用户名</label>
-            <input type="text" id="formUsername" placeholder="请输入用户名">
+            <label>证书名称</label>
+            <input type="text" id="formCertName" placeholder="请输入证书名称">
         </div>
         <div class="form-group">
-            <label>密码</label>
-            <input type="password" id="formPassword" placeholder="留空则不修改">
+            <label>站点</label>
+            <input type="text" id="formWebsite" placeholder="example.com">
         </div>
         <div class="form-group">
-            <label>昵称</label>
-            <input type="text" id="formNickname" placeholder="请输入昵称">
+            <label>类型</label>
+            <select id="formType">
+                <option value="web">web</option>
+                <option value="mail">mail</option>
+                <option value="panel">panel</option>
+            </select>
         </div>
         <div class="form-group">
-            <label>邮箱</label>
-            <input type="text" id="formEmail" placeholder="请输入邮箱">
+            <label>API</label>
+            <input type="text" id="formApi" placeholder="BT API 地址">
         </div>
         <div class="form-group">
-            <label>手机</label>
-            <input type="text" id="formPhone" placeholder="请输入手机">
+            <label>Key</label>
+            <input type="text" id="formKey" placeholder="BT Key">
         </div>
         <div class="form-group">
             <label>状态</label>
@@ -250,7 +230,7 @@ HTML;
         </div>
         <div class="modal-actions">
             <button class="btn btn-cancel" onclick="closeModal()">取消</button>
-            <button class="btn btn-primary" id="modalSubmit" onclick="submitForm()">确定</button>
+            <button class="btn btn-primary" onclick="submitForm()">确定</button>
         </div>
     </div>
 </div>
@@ -261,43 +241,43 @@ function toggleGroup(el) {
     el.nextElementSibling.classList.toggle('open');
 }
 function closeModal() {
-    document.getElementById('userModal').classList.remove('show');
+    document.getElementById('websiteModal').classList.remove('show');
 }
 function openCreate() {
-    document.getElementById('modalTitle').textContent = '新增用户';
+    document.getElementById('modalTitle').textContent = '新增站点';
     document.getElementById('editId').value = '';
-    document.getElementById('formUsername').value = '';
-    document.getElementById('formPassword').value = '';
-    document.getElementById('formNickname').value = '';
-    document.getElementById('formEmail').value = '';
-    document.getElementById('formPhone').value = '';
+    document.getElementById('formCertName').value = '';
+    document.getElementById('formWebsite').value = '';
+    document.getElementById('formType').value = 'web';
+    document.getElementById('formApi').value = '';
+    document.getElementById('formKey').value = '';
     document.getElementById('formStatus').value = '1';
-    document.getElementById('userModal').classList.add('show');
+    document.getElementById('websiteModal').classList.add('show');
 }
-function openEdit(id, username, nickname, email, phone, status) {
-    document.getElementById('modalTitle').textContent = '编辑用户';
+function openEdit(id, certName, website, type, api, key, status) {
+    document.getElementById('modalTitle').textContent = '编辑站点';
     document.getElementById('editId').value = id;
-    document.getElementById('formUsername').value = username;
-    document.getElementById('formPassword').value = '';
-    document.getElementById('formNickname').value = nickname;
-    document.getElementById('formEmail').value = email;
-    document.getElementById('formPhone').value = phone;
+    document.getElementById('formCertName').value = certName;
+    document.getElementById('formWebsite').value = website;
+    document.getElementById('formType').value = type;
+    document.getElementById('formApi').value = api;
+    document.getElementById('formKey').value = key;
     document.getElementById('formStatus').value = status;
-    document.getElementById('userModal').classList.add('show');
+    document.getElementById('websiteModal').classList.add('show');
 }
 function submitForm() {
     var id = document.getElementById('editId').value;
-    var username = document.getElementById('formUsername').value;
-    var password = document.getElementById('formPassword').value;
-    var nickname = document.getElementById('formNickname').value;
-    var email = document.getElementById('formEmail').value;
-    var phone = document.getElementById('formPhone').value;
+    var cert_name = document.getElementById('formCertName').value;
+    var website = document.getElementById('formWebsite').value;
+    var type = document.getElementById('formType').value;
+    var api = document.getElementById('formApi').value;
+    var key = document.getElementById('formKey').value;
     var status = document.getElementById('formStatus').value;
-    if (!username) { alert('用户名不能为空'); return; }
+    if (!cert_name) { alert('证书名称不能为空'); return; }
 
     var xhr = new XMLHttpRequest();
     var method = id ? 'POST' : 'PUT';
-    xhr.open(method, '/admin/user', true);
+    xhr.open(method, '/admin/cert_website', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
     xhr.onreadystatechange = function() {
@@ -310,15 +290,14 @@ function submitForm() {
             }
         }
     };
-    var params = 'username=' + encodeURIComponent(username) + '&nickname=' + encodeURIComponent(nickname) + '&email=' + encodeURIComponent(email) + '&phone=' + encodeURIComponent(phone) + '&status=' + status;
-    if (password) params += '&password=' + encodeURIComponent(password);
+    var params = 'cert_name=' + encodeURIComponent(cert_name) + '&website=' + encodeURIComponent(website) + '&type=' + encodeURIComponent(type) + '&api=' + encodeURIComponent(api) + '&key=' + encodeURIComponent(key) + '&status=' + status;
     if (id) params += '&id=' + id;
     xhr.send(params);
 }
 function doDelete(id) {
-    if (!confirm('确定要删除该用户吗？')) return;
+    if (!confirm('确定要删除该站点吗？')) return;
     var xhr = new XMLHttpRequest();
-    xhr.open('DELETE', '/admin/user', true);
+    xhr.open('DELETE', '/admin/cert_website', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
     xhr.onreadystatechange = function() {
@@ -342,66 +321,60 @@ HTML;
 
     private function create()
     {
-        $username = request()->put('username');
-        $password = request()->put('password');
-        $nickname = request()->put('nickname', '') ?: $username;
-        $email = request()->put('email', '');
-        $phone = request()->put('phone', '');
+        $cert_name = request()->put('cert_name');
+        $website = request()->put('website', '');
+        $type = request()->put('type', 'web');
+        $api = request()->put('api', '');
+        $key = request()->put('key', '');
         $status = intval(request()->put('status', '1')) ?: 1;
 
-        if (empty($username)) {
-            Ret::Fail(400, null, '用户名不能为空');
-        }
-        if (empty($password)) {
-            Ret::Fail(400, null, '密码不能为空');
+        if (empty($cert_name)) {
+            Ret::Fail(400, null, '证书名称不能为空');
         }
 
-        $model = new AdminUserModel();
-        $exist = $model->api_find_username($username);
-        if (!$exist->isEmpty()) {
-            Ret::Fail(406, null, '用户名已存在');
-        }
-
-        $user = AdminUserModel::create([
-            'username' => $username,
-            'password' => password_hash($password, PASSWORD_BCRYPT, ['cost' => 10]),
-            'nickname' => $nickname,
-            'email' => $email,
-            'phone' => $phone,
+        $model = AdminCertWebsiteModel::create([
+            'cert_name' => $cert_name,
+            'website' => $website,
+            'type' => $type,
+            'api' => $api,
+            'key' => $key,
             'status' => $status,
         ]);
 
-        Ret::Success(0, ['id' => $user['id']], '创建成功');
+        Ret::Success(0, ['id' => $model['id']], '创建成功');
     }
 
     private function update()
     {
         $id = Input::PostInt('id');
-        $model = new AdminUserModel();
-        $user = $model->api_find_id($id);
+        $model = new AdminCertWebsiteModel();
+        $item = $model->findOrEmpty($id);
 
-        if ($user->isEmpty()) {
-            Ret::Fail(404, null, '用户不存在');
+        if ($item->isEmpty()) {
+            Ret::Fail(404, null, '记录不存在');
         }
 
         $data = [];
-        if (request()->has('nickname', 'post')) {
-            $data['nickname'] = Input::Post('nickname');
+        if (request()->has('cert_name', 'post')) {
+            $data['cert_name'] = Input::Post('cert_name');
         }
-        if (request()->has('email', 'post')) {
-            $data['email'] = Input::Post('email', false);
+        if (request()->has('website', 'post')) {
+            $data['website'] = Input::Post('website', false);
         }
-        if (request()->has('phone', 'post')) {
-            $data['phone'] = Input::Post('phone', false);
+        if (request()->has('type', 'post')) {
+            $data['type'] = Input::Post('type', false);
+        }
+        if (request()->has('api', 'post')) {
+            $data['api'] = Input::Post('api', false);
+        }
+        if (request()->has('key', 'post')) {
+            $data['key'] = Input::Post('key', false);
         }
         if (request()->has('status', 'post')) {
             $data['status'] = Input::PostInt('status');
         }
-        if (request()->has('password', 'post')) {
-            $data['password'] = password_hash(Input::Post('password'), PASSWORD_BCRYPT, ['cost' => 10]);
-        }
 
-        $user->save($data);
+        $item->save($data);
         Ret::Success(0, [], '更新成功');
     }
 
@@ -412,21 +385,14 @@ HTML;
             Ret::Fail(400, null, '缺少参数[id]');
         }
 
-        $current = AdminAuth::getLoginUser();
-        if ($current['id'] == $id) {
-            Ret::Fail(403, null, '不能删除自己');
+        $model = new AdminCertWebsiteModel();
+        $item = $model->findOrEmpty($id);
+
+        if ($item->isEmpty()) {
+            Ret::Fail(404, null, '记录不存在');
         }
 
-        $model = new AdminUserModel();
-        $user = $model->api_find_id($id);
-
-        if ($user->isEmpty()) {
-            Ret::Fail(404, null, '用户不存在');
-        }
-
-        $user->delete();
-        (new AdminRoleUserModel())->api_delete_by_user($id);
-
+        $item->delete();
         Ret::Success(0, [], '删除成功');
     }
 }
