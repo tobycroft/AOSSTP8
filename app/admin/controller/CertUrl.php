@@ -10,6 +10,7 @@ use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
 use app\v1\cert\action\SiteAction;
 use app\v1\cert\action\ConfigAction;
+use app\v1\cert\action\MailAction;
 use BaseController\CommonController;
 use Input;
 use Ret;
@@ -87,6 +88,7 @@ ROW;
             if ($item['auto'] == 1) {
                 $html .= <<<BTN
                     <button class="btn btn-sm btn-success" onclick="doAutoSSL({$item['id']}, '{$item['cert']}')">自动下发</button>
+                    <button class="btn btn-sm btn-primary" onclick="doAutoMailSSL({$item['id']}, '{$item['cert']}')">更新邮箱</button>
 BTN;
             }
             $html .= <<<ROWEND
@@ -256,6 +258,32 @@ function doAutoSSL(id, cert) {
             var res = JSON.parse(xhr.responseText);
             if (res.code == 0) {
                 var msg = '自动下发完成\\n成功: ' + res.data.success + ' | 失败: ' + res.data.fail;
+                var detail = res.data.detail || [];
+                for (var i = 0; i < detail.length; i++) {
+                    var d = detail[i];
+                    msg += '\\n  [' + (d.success ? 'OK' : 'XX') + '] ' + d.website;
+                    if (d.error) msg += ' - ' + d.error;
+                }
+                alert(msg);
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function doAutoMailSSL(id, cert) {
+    if (!confirm('确定要更新证书「' + cert + '」的邮箱SSL吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert_url/autoMailSSL', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                var msg = '邮箱更新完成\\n成功: ' + res.data.success + ' | 失败: ' + res.data.fail;
                 var detail = res.data.detail || [];
                 for (var i = 0; i < detail.length; i++) {
                     var d = detail[i];
@@ -571,5 +599,105 @@ HTML;
         }
 
         Ret::Success(0, $rets, '自动下发完成');
+    }
+
+    public function autoMailSSL()
+    {
+        $id = Input::PostInt('id');
+        if (!$id) {
+            Ret::Fail(400, null, '缺少参数[id]');
+        }
+
+        $urlModel = new AdminCertUrlModel();
+        $item = $urlModel->findOrEmpty($id);
+        if ($item->isEmpty()) {
+            Ret::Fail(404, null, '记录不存在');
+        }
+        if ($item['auto'] != 1) {
+            Ret::Fail(401, null, '本证书自动下发功能不可用');
+        }
+
+        $name = $item['cert'];
+
+        $certModel = new AdminCertModel();
+        $cert = $certModel->where('appname', $name)->where('status', 1)->find();
+
+        if ($cert) {
+            try {
+                MailAction::updateMailListWhichHadSSL($cert['bt_api'], $cert['bt_key']);
+            } catch (Exception $e) {
+            }
+        }
+
+        $ssl = null;
+        try {
+            $ssl = MailAction::updatessl($name);
+        } catch (Exception $e) {
+            Ret::Fail(500, null, $e->getMessage());
+        }
+
+        $sites = AdminCertWebsiteModel::where('type', 'mail')
+            ->where('cert_name', $name)
+            ->where('status', 1)
+            ->select();
+
+        $rets = [
+            'success' => 0,
+            'fail' => 0,
+            'detail' => [],
+        ];
+
+        foreach ($sites as $site) {
+            $catchError = null;
+            $bt_base = null;
+            try {
+                $bt_base = new Base($site['api'], $site['key'], './');
+                $ret = $bt_base->httpPostCookie(MailAction::setCert, [
+                    'domain' => $site['website'],
+                    'csr' => $ssl['csr'],
+                    'key' => $ssl['key'],
+                    'act' => 'add',
+                ], 15);
+            } catch (Exception $e) {
+                $ret = false;
+                $catchError = $e->getMessage();
+            }
+            if ($ret) {
+                AdminCertLogModel::create([
+                    'appname' => $name,
+                    'type' => $site['type'],
+                    'success' => 1,
+                    'website' => $site['website'],
+                    'recv' => json_encode($ret, 320),
+                ]);
+                $rets['success']++;
+                $rets['detail'][] = [
+                    'type' => $site['type'],
+                    'website' => $site['website'],
+                    'success' => true,
+                ];
+            } else {
+                AdminCertLogModel::create([
+                    'appname' => $name,
+                    'type' => $site['type'],
+                    'success' => 0,
+                    'website' => $site['website'],
+                    'recv' => json_encode($ret, 320),
+                ]);
+                $rets['fail']++;
+                $error = $catchError ?? $bt_base->getError() ?: '邮件SSL部署失败';
+                if ($ret === null) {
+                    AdminCertWebsiteModel::where('id', $site['id'])->update(['status' => 0]);
+                }
+                $rets['detail'][] = [
+                    'type' => $site['type'],
+                    'website' => $site['website'],
+                    'success' => false,
+                    'error' => $error,
+                ];
+            }
+        }
+
+        Ret::Success(0, $rets, '邮箱更新完成');
     }
 }
