@@ -74,8 +74,8 @@ function doLogin() {
         if (xhr.readyState == 4) {
             var res = JSON.parse(xhr.responseText);
             if (res.code == 0) {
-                document.getElementById('successMsg').style.display = 'block';
-                document.getElementById('successMsg').textContent = '登录成功！token: ' + res.data.token;
+                localStorage.setItem('admin_token', res.data.token);
+                window.location.href = '/admin/console';
             } else {
                 document.getElementById('errorMsg').style.display = 'block';
                 document.getElementById('errorMsg').textContent = res.echo;
