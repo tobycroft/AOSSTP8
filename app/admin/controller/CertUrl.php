@@ -456,13 +456,12 @@ HTML;
 
         $certModel = new AdminCertModel();
         $cert = $certModel->where('appname', $name)->where('status', 1)->find();
-        if (!$cert) {
-            Ret::Fail(404, null, '未找到证书项目配置');
-        }
 
-        try {
-            SiteAction::updateSiteListWhichHadSSL($cert['bt_api'], $cert['bt_key']);
-        } catch (Exception $e) {
+        if ($cert) {
+            try {
+                SiteAction::updateSiteListWhichHadSSL($cert['bt_api'], $cert['bt_key']);
+            } catch (Exception $e) {
+            }
         }
 
         $ssl = SiteAction::updatessl($name);
@@ -483,7 +482,7 @@ HTML;
             $ret = $bt_site->setSSL(1, $site['website'], $ssl['key'], $ssl['crt']);
             if ($ret) {
                 AdminCertLogModel::create([
-                    'appname' => $cert['appname'],
+                    'appname' => $name,
                     'type' => $site['type'],
                     'success' => 1,
                     'website' => $site['website'],
@@ -497,7 +496,7 @@ HTML;
                 ];
             } else {
                 AdminCertLogModel::create([
-                    'appname' => $cert['appname'],
+                    'appname' => $name,
                     'type' => $site['type'],
                     'success' => 0,
                     'website' => $site['website'],
@@ -537,7 +536,7 @@ HTML;
             }
             if ($ret) {
                 AdminCertLogModel::create([
-                    'appname' => $cert['appname'],
+                    'appname' => $name,
                     'type' => $site['type'],
                     'success' => 1,
                     'website' => $site['website'],
@@ -551,7 +550,7 @@ HTML;
                 ];
             } else {
                 AdminCertLogModel::create([
-                    'appname' => $cert['appname'],
+                    'appname' => $name,
                     'type' => $site['type'],
                     'success' => 0,
                     'website' => $site['website'],
