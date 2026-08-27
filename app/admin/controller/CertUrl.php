@@ -57,8 +57,6 @@ class CertUrl extends CommonController
             <tr>
                 <th>ID</th>
                 <th>证书名称</th>
-                <th>CRT URL</th>
-                <th>KEY URL</th>
                 <th>备注</th>
                 <th>自动</th>
                 <th>操作</th>
@@ -72,8 +70,6 @@ HTML;
             <tr>
                 <td>{$item['id']}</td>
                 <td>{$item['cert']}</td>
-                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item['url_crt']}</td>
-                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item['url_key']}</td>
                 <td>{$item['remark']}</td>
                 <td>{$autoText}</td>
                 <td>
