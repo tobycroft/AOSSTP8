@@ -246,7 +246,7 @@ function doUpdateSSL(id, cert) {
     xhr.send('id=' + id);
 }
 function doAutoSSL(id, cert) {
-    if (!confirm('确定要对证书「' + cert + '」执行自动下发吗？将更新所有关联站点的SSL证书。')) return;
+    if (!confirm('确定要对证书「' + cert + '」执行自动下发吗？')) return;
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/admin/cert_url/autoSSL', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -256,12 +256,11 @@ function doAutoSSL(id, cert) {
             var res = JSON.parse(xhr.responseText);
             if (res.code == 0) {
                 var msg = '自动下发完成\n成功: ' + res.data.success + ' | 失败: ' + res.data.fail;
-                if (res.data.detail && res.data.detail.length > 0) {
-                    msg += '\n\n详情:\n';
-                    for (var i = 0; i < res.data.detail.length; i++) {
-                        var d = res.data.detail[i];
-                        msg += '  [' + (d.success ? '✓' : '✗') + '] ' + d.website + (d.error ? ' - ' + d.error : '') + '\n';
-                    }
+                var detail = res.data.detail || [];
+                for (var i = 0; i < detail.length; i++) {
+                    var d = detail[i];
+                    msg += '\n  [' + (d.success ? 'OK' : 'XX') + '] ' + d.website;
+                    if (d.error) msg += ' - ' + d.error;
                 }
                 alert(msg);
                 location.reload();
