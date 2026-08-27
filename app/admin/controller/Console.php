@@ -59,9 +59,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 </div>
 <div class="sidebar">
     <a class="menu-item active" href="/admin/console">控制台</a>
-    <a class="menu-item" href="/admin/user/list">用户管理</a>
-    <a class="menu-item" href="/admin/role/list">角色管理</a>
-    <a class="menu-item" href="/admin/menu/list">菜单管理</a>
+    <a class="menu-item" href="/admin/user">用户管理</a>
+    <a class="menu-item" href="/admin/role">角色管理</a>
+    <a class="menu-item" href="/admin/menu">菜单管理</a>
 </div>
 <div class="main">
     <div class="welcome">欢迎回来，{$user['nickname']}</div>

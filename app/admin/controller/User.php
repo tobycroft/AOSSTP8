@@ -17,10 +17,26 @@ class User extends CommonController
         AdminAuth::requireLogin();
     }
 
-    public function list()
+    public function index()
     {
-        $page = Input::PostInt('page', false) ?: 1;
-        $limit = Input::PostInt('limit', false) ?: 20;
+        $method = request()->method();
+        switch ($method) {
+            case 'GET':
+                return $this->page();
+            case 'POST':
+                return $this->update();
+            case 'PUT':
+                return $this->create();
+            case 'DELETE':
+                return $this->delete();
+        }
+        Ret::Fail(405, null, '不支持的请求方法');
+    }
+
+    private function page()
+    {
+        $page = input('get.page', 1, 'intval');
+        $limit = 15;
 
         $model = new AdminUserModel();
         $list = $model->api_list($page, $limit);
@@ -31,7 +47,6 @@ class User extends CommonController
                 'id' => $item['id'],
                 'username' => $item['username'],
                 'nickname' => $item['nickname'],
-                'avatar' => $item['avatar'],
                 'email' => $item['email'],
                 'phone' => $item['phone'],
                 'status' => $item['status'],
@@ -42,22 +57,272 @@ class User extends CommonController
             ];
         }
 
-        Ret::Success(0, [
-            'items' => $items,
-            'total' => $list->total(),
-            'page' => (int)$list->currentPage(),
-            'limit' => (int)$list->listRows(),
-        ]);
+        $currentPage = (int)$list->currentPage();
+        $total = $list->total();
+        $totalPages = max(1, (int)ceil($total / $limit));
+
+        $html = <<<HTML
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AOSS 用户管理</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; }
+.header { background: #001529; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; color: #fff; }
+.header h1 { font-size: 20px; font-weight: 500; }
+.header .user-info { display: flex; align-items: center; gap: 16px; }
+.header .user-info span { font-size: 14px; }
+.header .btn-logout { padding: 6px 16px; background: #ff4d4f; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+.header .btn-logout:hover { background: #ff7875; }
+.sidebar { width: 220px; background: #fff; min-height: calc(100vh - 64px); border-right: 1px solid #e8e8e8; padding: 16px 0; position: fixed; }
+.sidebar .menu-item { padding: 12px 24px; cursor: pointer; color: #333; font-size: 14px; display: block; text-decoration: none; }
+.sidebar .menu-item:hover { background: #f0f5ff; color: #1677ff; }
+.sidebar .menu-item.active { background: #e6f4ff; color: #1677ff; border-right: 3px solid #1677ff; }
+.main { margin-left: 220px; padding: 24px; }
+.toolbar { margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+.btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+.btn-primary { background: #1677ff; color: #fff; }
+.btn-primary:hover { background: #4096ff; }
+.btn-danger { background: #ff4d4f; color: #fff; }
+.btn-danger:hover { background: #ff7875; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-edit { background: #1677ff; color: #fff; margin-right: 4px; }
+.btn-edit:hover { background: #4096ff; }
+.btn-del { background: #ff4d4f; color: #fff; }
+.btn-del:hover { background: #ff7875; }
+table { width: 100%; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.05); border-collapse: collapse; }
+th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+th { background: #fafafa; color: #666; font-weight: 500; }
+td { color: #333; }
+tr:hover { background: #fafafa; }
+.pagination { margin-top: 16px; display: flex; justify-content: center; gap: 8px; }
+.pagination a { padding: 6px 12px; border: 1px solid #d9d9d9; border-radius: 4px; color: #333; text-decoration: none; font-size: 14px; }
+.pagination a:hover { border-color: #1677ff; color: #1677ff; }
+.pagination a.active { background: #1677ff; color: #fff; border-color: #1677ff; }
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; }
+.modal.show { display: flex; align-items: center; justify-content: center; }
+.modal-box { background: #fff; border-radius: 8px; padding: 24px; width: 480px; max-width: 90%; }
+.modal-box h3 { margin-bottom: 20px; color: #333; }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; margin-bottom: 4px; color: #555; font-size: 13px; }
+.form-group input, .form-group select { width: 100%; padding: 8px 10px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px; outline: none; }
+.form-group input:focus, .form-group select:focus { border-color: #4096ff; }
+.modal-actions { text-align: right; margin-top: 20px; }
+.modal-actions .btn { margin-left: 8px; }
+.btn-cancel { background: #fff; color: #333; border: 1px solid #d9d9d9; }
+.btn-cancel:hover { border-color: #1677ff; color: #1677ff; }
+.status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.status-badge.active { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+.status-badge.inactive { background: #fff2f0; color: #ff4d4f; border: 1px solid #ffccc7; }
+</style>
+</head>
+<body>
+<div class="header">
+    <h1>AOSS 后台管理</h1>
+    <div class="user-info">
+        <span>欢迎，{AdminAuth::getLoginUser()['nickname']}</span>
+        <button class="btn-logout" onclick="location.href='/admin/console'">返回控制台</button>
+    </div>
+</div>
+<div class="sidebar">
+    <a class="menu-item" href="/admin/console">控制台</a>
+    <a class="menu-item active" href="/admin/user">用户管理</a>
+    <a class="menu-item" href="/admin/role">角色管理</a>
+    <a class="menu-item" href="/admin/menu">菜单管理</a>
+</div>
+<div class="main">
+    <div class="toolbar">
+        <h2>用户管理</h2>
+        <button class="btn btn-primary" onclick="openCreate()">新增用户</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>用户名</th>
+                <th>昵称</th>
+                <th>邮箱</th>
+                <th>手机</th>
+                <th>状态</th>
+                <th>超级管理员</th>
+                <th>最后登录</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+HTML;
+        foreach ($items as $item) {
+            $statusBadge = $item['status'] == 1
+                ? '<span class="status-badge active">启用</span>'
+                : '<span class="status-badge inactive">禁用</span>';
+            $superText = $item['is_super'] ? '是' : '否';
+            $html .= <<<ROW
+            <tr>
+                <td>{$item['id']}</td>
+                <td>{$item['username']}</td>
+                <td>{$item['nickname']}</td>
+                <td>{$item['email']}</td>
+                <td>{$item['phone']}</td>
+                <td>{$statusBadge}</td>
+                <td>{$superText}</td>
+                <td>{$item['login_time']}</td>
+                <td>
+                    <button class="btn btn-sm btn-edit" onclick="openEdit({$item['id']}, '{$item['username']}', '{$item['nickname']}', '{$item['email']}', '{$item['phone']}', {$item['status']})">编辑</button>
+                    <button class="btn btn-sm btn-del" onclick="doDelete({$item['id']})">删除</button>
+                </td>
+            </tr>
+ROW;
+        }
+        $html .= <<<HTML
+        </tbody>
+    </table>
+    <div class="pagination">
+HTML;
+        for ($i = 1; $i <= $totalPages; $i++) {
+            $active = $i == $currentPage ? ' class="active"' : '';
+            $html .= "<a href=\"/admin/user?page={$i}\"{$active}>{$i}</a>";
+        }
+        $html .= <<<HTML
+    </div>
+</div>
+
+<div class="modal" id="userModal">
+    <div class="modal-box">
+        <h3 id="modalTitle">新增用户</h3>
+        <input type="hidden" id="editId" value="">
+        <div class="form-group">
+            <label>用户名</label>
+            <input type="text" id="formUsername" placeholder="请输入用户名">
+        </div>
+        <div class="form-group">
+            <label>密码</label>
+            <input type="password" id="formPassword" placeholder="留空则不修改">
+        </div>
+        <div class="form-group">
+            <label>昵称</label>
+            <input type="text" id="formNickname" placeholder="请输入昵称">
+        </div>
+        <div class="form-group">
+            <label>邮箱</label>
+            <input type="text" id="formEmail" placeholder="请输入邮箱">
+        </div>
+        <div class="form-group">
+            <label>手机</label>
+            <input type="text" id="formPhone" placeholder="请输入手机">
+        </div>
+        <div class="form-group">
+            <label>状态</label>
+            <select id="formStatus">
+                <option value="1">启用</option>
+                <option value="0">禁用</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn btn-primary" id="modalSubmit" onclick="submitForm()">确定</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function closeModal() {
+    document.getElementById('userModal').classList.remove('show');
+}
+function openCreate() {
+    document.getElementById('modalTitle').textContent = '新增用户';
+    document.getElementById('editId').value = '';
+    document.getElementById('formUsername').value = '';
+    document.getElementById('formPassword').value = '';
+    document.getElementById('formNickname').value = '';
+    document.getElementById('formEmail').value = '';
+    document.getElementById('formPhone').value = '';
+    document.getElementById('formStatus').value = '1';
+    document.getElementById('userModal').classList.add('show');
+}
+function openEdit(id, username, nickname, email, phone, status) {
+    document.getElementById('modalTitle').textContent = '编辑用户';
+    document.getElementById('editId').value = id;
+    document.getElementById('formUsername').value = username;
+    document.getElementById('formPassword').value = '';
+    document.getElementById('formNickname').value = nickname;
+    document.getElementById('formEmail').value = email;
+    document.getElementById('formPhone').value = phone;
+    document.getElementById('formStatus').value = status;
+    document.getElementById('userModal').classList.add('show');
+}
+function submitForm() {
+    var id = document.getElementById('editId').value;
+    var username = document.getElementById('formUsername').value;
+    var password = document.getElementById('formPassword').value;
+    var nickname = document.getElementById('formNickname').value;
+    var email = document.getElementById('formEmail').value;
+    var phone = document.getElementById('formPhone').value;
+    var status = document.getElementById('formStatus').value;
+    if (!username) { alert('用户名不能为空'); return; }
+
+    var xhr = new XMLHttpRequest();
+    var method = id ? 'POST' : 'PUT';
+    xhr.open(method, '/admin/user', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    var params = 'username=' + encodeURIComponent(username) + '&nickname=' + encodeURIComponent(nickname) + '&email=' + encodeURIComponent(email) + '&phone=' + encodeURIComponent(phone) + '&status=' + status;
+    if (password) params += '&password=' + encodeURIComponent(password);
+    if (id) params += '&id=' + id;
+    xhr.send(params);
+}
+function doDelete(id) {
+    if (!confirm('确定要删除该用户吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/user', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+</script>
+</body>
+</html>
+HTML;
+        return response($html)->contentType('text/html');
     }
 
-    public function create()
+    private function create()
     {
-        $username = Input::Post('username');
-        $password = Input::Post('password');
-        $nickname = Input::Post('nickname', false) ?: $username;
-        $email = Input::Post('email', false);
-        $phone = Input::Post('phone', false);
-        $status = Input::PostInt('status', false) ?: 1;
+        $username = request()->put('username');
+        $password = request()->put('password');
+        $nickname = request()->put('nickname', '') ?: $username;
+        $email = request()->put('email', '');
+        $phone = request()->put('phone', '');
+        $status = intval(request()->put('status', '1')) ?: 1;
+
+        if (empty($username)) {
+            Ret::Fail(400, null, '用户名不能为空');
+        }
+        if (empty($password)) {
+            Ret::Fail(400, null, '密码不能为空');
+        }
 
         $model = new AdminUserModel();
         $exist = $model->api_find_username($username);
@@ -77,7 +342,7 @@ class User extends CommonController
         Ret::Success(0, ['id' => $user['id']], '创建成功');
     }
 
-    public function update()
+    private function update()
     {
         $id = Input::PostInt('id');
         $model = new AdminUserModel();
@@ -108,9 +373,12 @@ class User extends CommonController
         Ret::Success(0, [], '更新成功');
     }
 
-    public function delete()
+    private function delete()
     {
-        $id = Input::PostInt('id');
+        $id = intval(request()->delete('id'));
+        if (!$id) {
+            Ret::Fail(400, null, '缺少参数[id]');
+        }
 
         $current = AdminAuth::getLoginUser();
         if ($current['id'] == $id) {

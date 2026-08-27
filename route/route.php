@@ -32,21 +32,12 @@
 \think\facade\Route::any('admin/login/index', '\app\admin\controller\Login@index');
 \think\facade\Route::any('admin/login/logout', '\app\admin\controller\Login@logout');
 \think\facade\Route::any('admin/login/info', '\app\admin\controller\Login@info');
-\think\facade\Route::any('admin/user/list', '\app\admin\controller\User@list');
-\think\facade\Route::any('admin/user/create', '\app\admin\controller\User@create');
-\think\facade\Route::any('admin/user/update', '\app\admin\controller\User@update');
-\think\facade\Route::any('admin/user/delete', '\app\admin\controller\User@delete');
-\think\facade\Route::any('admin/role/list', '\app\admin\controller\Role@list');
-\think\facade\Route::any('admin/role/create', '\app\admin\controller\Role@create');
-\think\facade\Route::any('admin/role/update', '\app\admin\controller\Role@update');
-\think\facade\Route::any('admin/role/delete', '\app\admin\controller\Role@delete');
+\think\facade\Route::any('admin/user', '\app\admin\controller\User@index');
+\think\facade\Route::any('admin/role', '\app\admin\controller\Role@index');
 \think\facade\Route::any('admin/role/all', '\app\admin\controller\Role@all');
 \think\facade\Route::any('admin/role/bind', '\app\admin\controller\Role@bind');
 \think\facade\Route::any('admin/role/getUserRoles', '\app\admin\controller\Role@getUserRoles');
-\think\facade\Route::any('admin/menu/list', '\app\admin\controller\Menu@list');
-\think\facade\Route::any('admin/menu/create', '\app\admin\controller\Menu@create');
-\think\facade\Route::any('admin/menu/update', '\app\admin\controller\Menu@update');
-\think\facade\Route::any('admin/menu/delete', '\app\admin\controller\Menu@delete');
+\think\facade\Route::any('admin/menu', '\app\admin\controller\Menu@index');
 \think\facade\Route::any('admin/console', '\app\admin\controller\Console@index');
 \think\facade\Route::any('admin', '\app\admin\controller\Index@index');
 
