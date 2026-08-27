@@ -3,12 +3,19 @@
 namespace app\admin\controller;
 
 use app\admin\model\AdminCertUrlModel;
+use app\admin\model\AdminCertModel;
+use app\admin\model\AdminCertWebsiteModel;
+use app\admin\model\AdminCertLogModel;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
+use app\v1\cert\action\SiteAction;
+use app\v1\cert\action\ConfigAction;
 use BaseController\CommonController;
 use Input;
 use Ret;
 use think\Exception;
+use tobycroft\Bt\Site;
+use tobycroft\Bt\Base;
 
 class CertUrl extends CommonController
 {
@@ -76,10 +83,17 @@ HTML;
                     <button class="btn btn-sm btn-edit" onclick="openEdit({$item['id']}, '{$item['cert']}', '{$item['url_crt']}', '{$item['url_key']}', '{$item['remark']}', {$item['auto']})">编辑</button>
                     <button class="btn btn-sm btn-primary" onclick="doUpdateSSL({$item['id']}, '{$item['cert']}')">更新</button>
                     <button class="btn btn-sm btn-edit" onclick="showKeys({$item['id']})">查看</button>
+ROW;
+            if ($item['auto'] == 1) {
+                $html .= <<<BTN
+                    <button class="btn btn-sm btn-success" onclick="doAutoSSL({$item['id']}, '{$item['cert']}')">自动下发</button>
+BTN;
+            }
+            $html .= <<<ROWEND
                     <button class="btn btn-sm btn-del" onclick="doDelete({$item['id']})">删除</button>
                 </td>
             </tr>
-ROW;
+ROWEND;
         }
         $html .= <<<HTML
         </tbody>
@@ -138,6 +152,8 @@ HTML;
 .modal-box-wide { width: 720px; max-width: 95%; }
 .btn-primary { background: #1677ff; color: #fff; }
 .btn-primary:hover { background: #4096ff; }
+.btn-success { background: #52c41a; color: #fff; }
+.btn-success:hover { background: #73d13d; }
 </style>
 
 <script>
@@ -221,6 +237,33 @@ function doUpdateSSL(id, cert) {
             var res = JSON.parse(xhr.responseText);
             if (res.code == 0) {
                 alert('更新成功');
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function doAutoSSL(id, cert) {
+    if (!confirm('确定要对证书「' + cert + '」执行自动下发吗？将更新所有关联站点的SSL证书。')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert_url/autoSSL', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                var msg = '自动下发完成\n成功: ' + res.data.success + ' | 失败: ' + res.data.fail;
+                if (res.data.detail && res.data.detail.length > 0) {
+                    msg += '\n\n详情:\n';
+                    for (var i = 0; i < res.data.detail.length; i++) {
+                        var d = res.data.detail[i];
+                        msg += '  [' + (d.success ? '✓' : '✗') + '] ' + d.website + (d.error ? ' - ' + d.error : '') + '\n';
+                    }
+                }
+                alert(msg);
                 location.reload();
             } else {
                 alert(res.echo);
@@ -392,5 +435,143 @@ HTML;
             'publickey' => $item['publickey'] ?: '',
             'privatekey' => $item['privatekey'] ?: '',
         ]);
+    }
+
+    public function autoSSL()
+    {
+        $id = Input::PostInt('id');
+        if (!$id) {
+            Ret::Fail(400, null, '缺少参数[id]');
+        }
+
+        $urlModel = new AdminCertUrlModel();
+        $item = $urlModel->findOrEmpty($id);
+        if ($item->isEmpty()) {
+            Ret::Fail(404, null, '记录不存在');
+        }
+        if ($item['auto'] != 1) {
+            Ret::Fail(401, null, '本证书自动下发功能不可用');
+        }
+
+        $name = $item['cert'];
+
+        $certModel = new AdminCertModel();
+        $cert = $certModel->where('appname', $name)->where('status', 1)->find();
+        if (!$cert) {
+            Ret::Fail(404, null, '未找到证书项目配置');
+        }
+
+        try {
+            SiteAction::updateSiteListWhichHadSSL($cert['bt_api'], $cert['bt_key']);
+        } catch (Exception $e) {
+        }
+
+        $ssl = SiteAction::updatessl($name);
+
+        $rets = [
+            'success' => 0,
+            'fail' => 0,
+            'detail' => [],
+        ];
+
+        $sites = AdminCertWebsiteModel::where('type', 'web')
+            ->where('cert_name', $name)
+            ->where('status', 1)
+            ->select();
+
+        foreach ($sites as $site) {
+            $bt_site = new Site($site['api'], $site['key'], './');
+            $ret = $bt_site->setSSL(1, $site['website'], $ssl['key'], $ssl['crt']);
+            if ($ret) {
+                AdminCertLogModel::create([
+                    'appname' => $cert['appname'],
+                    'type' => $site['type'],
+                    'success' => 1,
+                    'website' => $site['website'],
+                    'recv' => json_encode($ret, 320),
+                ]);
+                $rets['success']++;
+                $rets['detail'][] = [
+                    'type' => $site['type'],
+                    'website' => $site['website'],
+                    'success' => true,
+                ];
+            } else {
+                AdminCertLogModel::create([
+                    'appname' => $cert['appname'],
+                    'type' => $site['type'],
+                    'success' => 0,
+                    'website' => $site['website'],
+                    'recv' => json_encode($ret, 320),
+                ]);
+                $rets['fail']++;
+                $error = $bt_site->getError() ?: '未知错误';
+                if ($ret === null) {
+                    AdminCertWebsiteModel::where('id', $site['id'])->update(['status' => 0]);
+                }
+                $rets['detail'][] = [
+                    'type' => $site['type'],
+                    'website' => $site['website'],
+                    'success' => false,
+                    'error' => $error,
+                ];
+            }
+        }
+
+        $panelSites = AdminCertWebsiteModel::where('type', 'panel')
+            ->where('cert_name', $name)
+            ->where('status', 1)
+            ->select();
+
+        foreach ($panelSites as $site) {
+            $catchError = null;
+            $bt_base = null;
+            try {
+                $bt_base = new Base($site['api'], $site['key'], './');
+                $ret = $bt_base->httpPostCookie(ConfigAction::setPanelSSL, [
+                    'privateKey' => $ssl['key'],
+                    'certPem' => $ssl['crt'],
+                ], 15);
+            } catch (Exception $e) {
+                $ret = false;
+                $catchError = $e->getMessage();
+            }
+            if ($ret) {
+                AdminCertLogModel::create([
+                    'appname' => $cert['appname'],
+                    'type' => $site['type'],
+                    'success' => 1,
+                    'website' => $site['website'],
+                    'recv' => json_encode($ret, 320),
+                ]);
+                $rets['success']++;
+                $rets['detail'][] = [
+                    'type' => $site['type'],
+                    'website' => $site['website'],
+                    'success' => true,
+                ];
+            } else {
+                AdminCertLogModel::create([
+                    'appname' => $cert['appname'],
+                    'type' => $site['type'],
+                    'success' => 0,
+                    'website' => $site['website'],
+                    'recv' => json_encode($ret, 320),
+                ]);
+                $rets['fail']++;
+                $error = $catchError ?? $bt_base->getError() ?: '面板SSL部署失败';
+                if ($ret === null) {
+                    AdminCertWebsiteModel::where('id', $site['id'])->update(['status' => 0]);
+                }
+                $rets['detail'][] = [
+                    'type' => $site['type'],
+                    'website' => $site['website'],
+                    'success' => false,
+                    'error' => $error,
+                ];
+            }
+        }
+
+        Ret::Success(0, $rets, '自动下发完成');
     }
 }
