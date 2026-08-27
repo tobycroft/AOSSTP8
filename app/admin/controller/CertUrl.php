@@ -79,8 +79,7 @@ HTML;
                 <td>
                     <button class="btn btn-sm btn-edit" onclick="openEdit({$item['id']}, '{$item['cert']}', '{$item['url_crt']}', '{$item['url_key']}', '{$item['remark']}', {$item['auto']})">编辑</button>
                     <button class="btn btn-sm btn-primary" onclick="doUpdateSSL({$item['id']}, '{$item['cert']}')">更新</button>
-                    <button class="btn btn-sm btn-edit" onclick="showKey({$item['id']}, 'public')">公钥</button>
-                    <button class="btn btn-sm btn-edit" onclick="showKey({$item['id']}, 'private')">私钥</button>
+                    <button class="btn btn-sm btn-edit" onclick="showKeys({$item['id']})">查看</button>
                     <button class="btn btn-sm btn-del" onclick="doDelete({$item['id']})">删除</button>
                 </td>
             </tr>
@@ -128,8 +127,11 @@ HTML;
 
 <div class="modal" id="keyModal">
     <div class="modal-box modal-box-wide">
-        <h3 id="keyModalTitle">公钥</h3>
-        <pre id="keyContent" style="background:#f5f5f5;padding:12px;border-radius:4px;font-size:12px;line-height:1.6;max-height:400px;overflow:auto;white-space:pre-wrap;word-break:break-all;"></pre>
+        <h3>证书密钥</h3>
+        <div style="margin-bottom:8px;font-size:13px;color:#555;">公钥</div>
+        <pre id="keyPublic" style="background:#f5f5f5;padding:12px;border-radius:4px;font-size:12px;line-height:1.6;max-height:200px;overflow:auto;white-space:pre-wrap;word-break:break-all;margin-bottom:16px;"></pre>
+        <div style="margin-bottom:8px;font-size:13px;color:#555;">私钥</div>
+        <pre id="keyPrivate" style="background:#f5f5f5;padding:12px;border-radius:4px;font-size:12px;line-height:1.6;max-height:200px;overflow:auto;white-space:pre-wrap;word-break:break-all;margin-bottom:16px;"></pre>
         <div class="modal-actions">
             <button class="btn btn-cancel" onclick="closeKeyModal()">关闭</button>
         </div>
@@ -231,22 +233,23 @@ function doUpdateSSL(id, cert) {
     };
     xhr.send('id=' + id);
 }
-function showKey(id, type) {
-    var title = type == 'public' ? '公钥' : '私钥';
-    document.getElementById('keyModalTitle').textContent = title;
-    document.getElementById('keyContent').textContent = '加载中...';
+function showKeys(id) {
+    document.getElementById('keyPublic').textContent = '加载中...';
+    document.getElementById('keyPrivate').textContent = '加载中...';
     document.getElementById('keyModal').classList.add('show');
 
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', '/admin/cert_url/getKey?id=' + id + '&type=' + type, true);
+    xhr.open('GET', '/admin/cert_url/getKey?id=' + id, true);
     xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4) {
             var res = JSON.parse(xhr.responseText);
             if (res.code == 0) {
-                document.getElementById('keyContent').textContent = res.data.content || '(空)';
+                document.getElementById('keyPublic').textContent = res.data.publickey || '(空)';
+                document.getElementById('keyPrivate').textContent = res.data.privatekey || '(空)';
             } else {
-                document.getElementById('keyContent').textContent = '获取失败: ' + (res.echo || '未知错误');
+                document.getElementById('keyPublic').textContent = '获取失败: ' + (res.echo || '未知错误');
+                document.getElementById('keyPrivate').textContent = '获取失败: ' + (res.echo || '未知错误');
             }
         }
     };
@@ -376,7 +379,6 @@ HTML;
     public function getKey()
     {
         $id = intval(input('get.id'));
-        $type = input('get.type', 'public');
 
         if (!$id) {
             Ret::Fail(400, null, '缺少参数[id]');
@@ -389,8 +391,9 @@ HTML;
             Ret::Fail(404, null, '记录不存在');
         }
 
-        $content = $type == 'public' ? $item['publickey'] : $item['privatekey'];
-
-        Ret::Success(0, ['content' => $content ?: '']);
+        Ret::Success(0, [
+            'publickey' => $item['publickey'] ?: '',
+            'privatekey' => $item['privatekey'] ?: '',
+        ]);
     }
 }
