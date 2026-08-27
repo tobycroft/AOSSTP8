@@ -51,6 +51,8 @@ class Login extends CommonController
             'login_time' => date('Y-m-d H:i:s'),
         ]);
 
+        setcookie('admin_token', $token, time() + 86400, '/');
+
         Ret::Success(0, [
             'token' => $token,
             'user' => [
@@ -68,6 +70,7 @@ class Login extends CommonController
         $user = AdminAuth::requireLogin();
         $model = new AdminUserModel();
         $model->api_find_id($user['id'])->save(['token' => '']);
+        setcookie('admin_token', '', time() - 3600, '/');
         Ret::Success(0, [], '已退出登录');
     }
 

@@ -24,9 +24,12 @@ class AdminAuth
         $token = Input::Combi('admin_token', false);
         if (empty($token)) {
             $token = request()->header('admin-token');
-            if (empty($token)) {
-                return [];
-            }
+        }
+        if (empty($token)) {
+            $token = $_COOKIE['admin_token'] ?? '';
+        }
+        if (empty($token)) {
+            return [];
         }
 
         $model = new AdminUserModel();
