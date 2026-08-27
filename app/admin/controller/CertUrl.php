@@ -8,6 +8,7 @@ use app\admin\utils\Layout;
 use BaseController\CommonController;
 use Input;
 use Ret;
+use think\Exception;
 
 class CertUrl extends CommonController
 {
@@ -77,6 +78,9 @@ HTML;
                 <td>{$autoText}</td>
                 <td>
                     <button class="btn btn-sm btn-edit" onclick="openEdit({$item['id']}, '{$item['cert']}', '{$item['url_crt']}', '{$item['url_key']}', '{$item['remark']}', {$item['auto']})">编辑</button>
+                    <button class="btn btn-sm btn-primary" onclick="doUpdateSSL({$item['id']}, '{$item['cert']}')">更新</button>
+                    <button class="btn btn-sm btn-edit" onclick="showKey({$item['id']}, 'public')">公钥</button>
+                    <button class="btn btn-sm btn-edit" onclick="showKey({$item['id']}, 'private')">私钥</button>
                     <button class="btn btn-sm btn-del" onclick="doDelete({$item['id']})">删除</button>
                 </td>
             </tr>
@@ -121,6 +125,22 @@ HTML;
         </div>
     </div>
 </div>
+
+<div class="modal" id="keyModal">
+    <div class="modal-box modal-box-wide">
+        <h3 id="keyModalTitle">公钥</h3>
+        <pre id="keyContent" style="background:#f5f5f5;padding:12px;border-radius:4px;font-size:12px;line-height:1.6;max-height:400px;overflow:auto;white-space:pre-wrap;word-break:break-all;"></pre>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeKeyModal()">关闭</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal-box-wide { width: 720px; max-width: 95%; }
+.btn-primary { background: #1677ff; color: #fff; }
+.btn-primary:hover { background: #4096ff; }
+</style>
 
 <script>
 function closeModal() {
@@ -191,6 +211,49 @@ function doDelete(id) {
         }
     };
     xhr.send('id=' + id);
+}
+function doUpdateSSL(id, cert) {
+    if (!confirm('确定要更新证书「' + cert + '」的SSL吗？将从URL拉取最新证书。')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert_url/updateSSL', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                alert('更新成功');
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function showKey(id, type) {
+    var title = type == 'public' ? '公钥' : '私钥';
+    document.getElementById('keyModalTitle').textContent = title;
+    document.getElementById('keyContent').textContent = '加载中...';
+    document.getElementById('keyModal').classList.add('show');
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/admin/cert_url/getKey?id=' + id + '&type=' + type, true);
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                document.getElementById('keyContent').textContent = res.data.content || '(空)';
+            } else {
+                document.getElementById('keyContent').textContent = '获取失败: ' + (res.echo || '未知错误');
+            }
+        }
+    };
+    xhr.send();
+}
+function closeKeyModal() {
+    document.getElementById('keyModal').classList.remove('show');
 }
 </script>
 HTML;
@@ -268,5 +331,66 @@ HTML;
 
         $item->delete();
         Ret::Success(0, [], '删除成功');
+    }
+
+    public function updateSSL()
+    {
+        $id = intval(request()->post('id'));
+        if (!$id) {
+            Ret::Fail(400, null, '缺少参数[id]');
+        }
+
+        $model = new AdminCertUrlModel();
+        $item = $model->findOrEmpty($id);
+
+        if ($item->isEmpty()) {
+            Ret::Fail(404, null, '记录不存在');
+        }
+
+        try {
+            $url_crt = $item['url_crt'];
+            $url_key = $item['url_key'];
+
+            if (empty($url_crt) || empty($url_key)) {
+                Ret::Fail(400, null, 'CRT URL 或 KEY URL 为空');
+            }
+
+            $publickey = file_get_contents($url_crt);
+            $privatekey = file_get_contents($url_key);
+
+            if (empty($publickey) || empty($privatekey)) {
+                Ret::Fail(500, null, '证书获取失败');
+            }
+
+            $item->save([
+                'publickey' => $publickey,
+                'privatekey' => $privatekey,
+            ]);
+
+            Ret::Success(0, [], '更新成功');
+        } catch (Exception $e) {
+            Ret::Fail(500, null, '证书获取失败: ' . $e->getMessage());
+        }
+    }
+
+    public function getKey()
+    {
+        $id = intval(input('get.id'));
+        $type = input('get.type', 'public');
+
+        if (!$id) {
+            Ret::Fail(400, null, '缺少参数[id]');
+        }
+
+        $model = new AdminCertUrlModel();
+        $item = $model->findOrEmpty($id);
+
+        if ($item->isEmpty()) {
+            Ret::Fail(404, null, '记录不存在');
+        }
+
+        $content = $type == 'public' ? $item['publickey'] : $item['privatekey'];
+
+        Ret::Success(0, ['content' => $content ?: '']);
     }
 }
