@@ -113,7 +113,7 @@ CSS;
         // Header
         $html .= '<div class="header"><h1>AOSS 后台管理</h1>';
         $html .= '<div class="user-info"><span>欢迎，' . $nickname . '</span>';
-        $html .= '<button class="btn-logout" onclick="location.href=\'/admin/console\'">返回控制台</button>';
+        $html .= '<button class="btn-logout" onclick="doLogout()">登出</button>';
         $html .= '</div></div>';
 
         // Sidebar
@@ -145,7 +145,7 @@ CSS;
      */
     public static function end(): string
     {
-        return '</div><script>function toggleGroup(el){el.classList.toggle("open");el.nextElementSibling.classList.toggle("open");}</script></body></html>';
+        return '</div><script>function toggleGroup(el){el.classList.toggle("open");el.nextElementSibling.classList.toggle("open");}function doLogout(){if(!confirm(\'确定要退出登录吗？\')) return;var xhr=new XMLHttpRequest();xhr.open(\'POST\',\'/admin/login/logout\',true);xhr.setRequestHeader(\'Content-Type\',\'application/x-www-form-urlencoded\');xhr.setRequestHeader(\'admin-token\',localStorage.getItem(\'admin_token\'));xhr.onreadystatechange=function(){if(xhr.readyState==4){localStorage.removeItem(\'admin_token\');document.cookie=\'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/\';window.location.href=\'/admin/login\';}};xhr.send();}</script></body></html>';
     }
 
     /**
