@@ -74,6 +74,13 @@ tr:hover { background: #fafafa; }
 .pagination a { padding: 6px 12px; border: 1px solid #d9d9d9; border-radius: 4px; color: #333; text-decoration: none; font-size: 14px; }
 .pagination a:hover { border-color: #1677ff; color: #1677ff; }
 .pagination a.active { background: #1677ff; color: #fff; border-color: #1677ff; }
+.pagination a.disabled { color: #d9d9d9; cursor: not-allowed; pointer-events: none; }
+.pagination span.ellipsis { padding: 6px 8px; color: #999; font-size: 14px; }
+.pagination .goto-page { display: inline-flex; align-items: center; gap: 4px; margin-left: 12px; }
+.pagination .goto-page input { width: 60px; padding: 4px 6px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 13px; text-align: center; outline: none; }
+.pagination .goto-page input:focus { border-color: #4096ff; }
+.pagination .goto-page .page-info { color: #999; font-size: 13px; margin-left: 4px; }
+.pagination .goto-page .btn-sm { padding: 4px 8px; font-size: 12px; }
 .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; }
 .modal.show { display: flex; align-items: center; justify-content: center; }
 .modal-box { background: #fff; border-radius: 8px; padding: 24px; width: 480px; max-width: 90%; }
@@ -151,23 +158,88 @@ CSS;
      */
     public static function end(): string
     {
-        return '</div><script>function toggleGroup(el){el.classList.toggle("open");el.nextElementSibling.classList.toggle("open");}function doLogout(){if(!confirm(\'确定要退出登录吗？\')) return;var xhr=new XMLHttpRequest();xhr.open(\'POST\',\'/admin/login/logout\',true);xhr.setRequestHeader(\'Content-Type\',\'application/x-www-form-urlencoded\');xhr.setRequestHeader(\'admin-token\',localStorage.getItem(\'admin_token\'));xhr.onreadystatechange=function(){if(xhr.readyState==4){localStorage.removeItem(\'admin_token\');document.cookie=\'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/\';window.location.href=\'/admin/login\';}};xhr.send();}</script></body></html>';
+        return '</div><script>function toggleGroup(el){el.classList.toggle("open");el.nextElementSibling.classList.toggle("open");}function doLogout(){if(!confirm(\'确定要退出登录吗？\')) return;var xhr=new XMLHttpRequest();xhr.open(\'POST\',\'/admin/login/logout\',true);xhr.setRequestHeader(\'Content-Type\',\'application/x-www-form-urlencoded\');xhr.setRequestHeader(\'admin-token\',localStorage.getItem(\'admin_token\'));xhr.onreadystatechange=function(){if(xhr.readyState==4){localStorage.removeItem(\'admin_token\');document.cookie=\'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/\';window.location.href=\'/admin/login\';}};xhr.send();}function gotoPage(baseUrl, extraQuery){var page=document.getElementById("gotoPageInput").value;if(!page) return;window.location.href=baseUrl + "?page=" + page + extraQuery;}</script></body></html>';
     }
 
     /**
-     * 生成分页 HTML
+     * 生成分页 HTML（带省略号、跳转输入框、每页数量选择器）
+     * @param array $extraParams 额外查询参数（如 md5, limit），会追加到所有分页链接中
+     * @param int $limit 当前每页数量
      */
-    public static function pagination(int $currentPage, int $totalPages, string $baseUrl): string
+    public static function pagination(int $currentPage, int $totalPages, string $baseUrl, array $extraParams = [], int $limit = 15): string
     {
         if ($totalPages <= 1) {
             return '';
         }
-        $html = '<div class="pagination">';
-        for ($i = 1; $i <= $totalPages; $i++) {
-            $active = $i == $currentPage ? ' class="active"' : '';
-            $html .= '<a href="' . $baseUrl . '?page=' . $i . '"' . $active . '>' . $i . '</a>';
+
+        $queryStr = '';
+        if (!empty($extraParams)) {
+            $queryStr = '&' . http_build_query($extraParams);
         }
+
+        $html = '<div class="pagination">';
+
+        // 上一页
+        $prevDisabled = $currentPage <= 1 ? ' class="disabled"' : '';
+        $prevHref = $currentPage > 1 ? 'href="' . $baseUrl . '?page=' . ($currentPage - 1) . $queryStr . '"' : '';
+        $html .= '<a' . $prevDisabled . ' ' . $prevHref . '>&laquo; 上一页</a>';
+
+        // 页码列表（带省略号）
+        $pages = self::buildPageRange($currentPage, $totalPages);
+        foreach ($pages as $p) {
+            if ($p === '...') {
+                $html .= '<span class="ellipsis">...</span>';
+            } else {
+                $active = $p == $currentPage ? ' class="active"' : '';
+                $html .= '<a href="' . $baseUrl . '?page=' . $p . $queryStr . '"' . $active . '>' . $p . '</a>';
+            }
+        }
+
+        // 下一页
+        $nextDisabled = $currentPage >= $totalPages ? ' class="disabled"' : '';
+        $nextHref = $currentPage < $totalPages ? 'href="' . $baseUrl . '?page=' . ($currentPage + 1) . $queryStr . '"' : '';
+        $html .= '<a' . $nextDisabled . ' ' . $nextHref . '>下一页 &raquo;</a>';
+
+        // 跳转输入框
+        $html .= '<span class="goto-page">';
+        $html .= '<input type="number" id="gotoPageInput" min="1" max="' . $totalPages . '" placeholder="页码" onkeydown="if(event.key===\'Enter\')gotoPage(\'' . $baseUrl . '\',\'' . $queryStr . '\')">';
+        $html .= '<button class="btn btn-sm btn-primary" onclick="gotoPage(\'' . $baseUrl . '\',\'' . $queryStr . '\')">跳转</button>';
+        $html .= '<span class="page-info">' . $currentPage . '/' . $totalPages . '页</span>';
+        $html .= '</span>';
+
         $html .= '</div>';
         return $html;
+    }
+
+    /**
+     * 构建带省略号的页码范围
+     */
+    private static function buildPageRange(int $current, int $total): array
+    {
+        $range = [];
+        $window = 2; // 当前页前后各显示2页
+
+        $range[] = 1;
+
+        $leftStart = max(2, $current - $window);
+        $leftEnd = min($total - 1, $current + $window);
+
+        if ($leftStart > 2) {
+            $range[] = '...';
+        }
+
+        for ($i = $leftStart; $i <= $leftEnd; $i++) {
+            $range[] = $i;
+        }
+
+        if ($leftEnd < $total - 1) {
+            $range[] = '...';
+        }
+
+        if ($total > 1) {
+            $range[] = $total;
+        }
+
+        return $range;
     }
 }

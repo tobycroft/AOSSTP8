@@ -34,19 +34,50 @@ class Attachment extends CommonController
     private function page()
     {
         $page = input('get.page', 1, 'intval');
-        $limit = 15;
+        $limit = input('get.limit', 15, 'intval');
+        $md5 = input('get.md5', '', 'trim');
 
         $model = new AdminAttachmentModel();
-        $list = $model->order('id', 'desc')->paginate($limit, false, ['page' => $page]);
+        $query = $model->where('id', '>', 0);
+        if (!empty($md5)) {
+            $query->where('md5', 'like', "%{$md5}%");
+        }
+        $query->order('id', 'desc');
+        $list = $query->paginate($limit, false, ['page' => $page]);
 
         $currentPage = (int)$list->currentPage();
         $total = $list->total();
         $totalPages = max(1, (int)ceil($total / $limit));
 
+        $extraParams = [];
+        if (!empty($md5)) {
+            $extraParams['md5'] = $md5;
+        }
+        if ($limit != 15) {
+            $extraParams['limit'] = $limit;
+        }
+
+        $limitOptions = [15, 30, 50, 100];
+        $selectHtml = '';
+        foreach ($limitOptions as $opt) {
+            $selected = $opt == $limit ? 'selected' : '';
+            $selectHtml .= '<option value="' . $opt . '" ' . $selected . '>' . $opt . '</option>';
+        }
+
         $html = Layout::begin('附件管理', 'storage', 'attachment');
         $html .= <<<HTML
     <div class="toolbar">
-        <h2>附件管理</h2>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <h2>附件管理</h2>
+            <div class="search-box">
+                <input type="text" id="searchMd5" placeholder="输入 MD5 搜索" value="{$md5}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 200px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
+                <select id="limitSelect" onchange="doSearch()" style="padding: 8px 8px; margin-left: 8px; border: 1px solid #d9d9d9; border-radius: 4px; outline: none;">
+                    <option value="">每页行数</option>
+                    {$selectHtml}
+                </select>
+                <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
+            </div>
+        </div>
     </div>
     <table>
         <thead>
@@ -90,8 +121,18 @@ ROW;
         </tbody>
     </table>
 HTML;
-        $html .= Layout::pagination($currentPage, $totalPages, '/admin/attachment');
+        $html .= Layout::pagination($currentPage, $totalPages, '/admin/attachment', $extraParams, $limit);
         $html .= <<<HTML
+<script>
+function doSearch() {
+    var md5 = document.getElementById('searchMd5').value;
+    var limit = document.getElementById('limitSelect').value;
+    var url = '/admin/attachment?page=1';
+    if (md5) url += '&md5=' + encodeURIComponent(md5);
+    if (limit) url += '&limit=' + limit;
+    window.location.href = url;
+}
+</script>
 <div class="modal" id="attachModal">
     <div class="modal-box">
         <h3 id="modalTitle">编辑附件</h3>
