@@ -24,6 +24,9 @@ class Attachment extends CommonController
             case 'GET':
                 return $this->page();
             case 'POST':
+                if (request()->post('batch_delete')) {
+                    return $this->batchDelete();
+                }
                 return $this->update();
             case 'DELETE':
                 return $this->delete();
@@ -67,7 +70,7 @@ class Attachment extends CommonController
         $html = Layout::begin('附件管理', 'storage', 'attachment');
         $html .= <<<HTML
     <div class="toolbar">
-        <div style="display:flex;align-items:center;gap:12px;">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
             <h2>附件管理</h2>
             <div class="search-box">
                 <input type="text" id="searchMd5" placeholder="输入 MD5 搜索" value="{$md5}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 200px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
@@ -77,11 +80,14 @@ class Attachment extends CommonController
                 </select>
                 <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
             </div>
+            <button class="btn btn-danger" onclick="batchDelete()" style="display:none;" id="batchDelBtn">批量删除</button>
         </div>
     </div>
     <table>
         <thead>
             <tr>
+                <th style="width:36px;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
+                <th>ID</th>
                 <th>文件名</th>
                 <th>MIME</th>
                 <th>大小</th>
@@ -100,11 +106,13 @@ HTML;
             $ip = $item['ip'] ?: '-';
             $html .= <<<ROW
             <tr>
-                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['name']}">{$item['name']}</td>
-                <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['mime']}">{$item['mime']}</td>
+                <td><input type="checkbox" class="row-checkbox" value="{$item['id']}" onchange="updateBatchBtn()"></td>
+                <td>{$item['id']}</td>
+                <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['name']}">{$item['name']}</td>
+                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['mime']}">{$item['mime']}</td>
                 <td>{$size}</td>
-                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['md5']}">{$md5Short}</td>
-                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$ip}">{$ip}</td>
+                <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['md5']}">{$md5Short}</td>
+                <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$ip}">{$ip}</td>
                 <td>{$createTime}</td>
                 <td>
                     <button class="btn btn-sm btn-edit" onclick="openEdit({$item['id']}, '{$item['name']}', '{$item['token']}', '{$item['ip']}')">编辑</button>
@@ -127,6 +135,38 @@ function doSearch() {
     if (md5) url += '&md5=' + encodeURIComponent(md5);
     if (limit) url += '&limit=' + limit;
     window.location.href = url;
+}
+function toggleAll(source) {
+    var checkboxes = document.querySelectorAll('.row-checkbox');
+    checkboxes.forEach(function(cb) { cb.checked = source.checked; });
+    updateBatchBtn();
+}
+function updateBatchBtn() {
+    var checked = document.querySelectorAll('.row-checkbox:checked');
+    var btn = document.getElementById('batchDelBtn');
+    btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
+    if (checked.length > 0) btn.textContent = '批量删除(' + checked.length + ')';
+}
+function batchDelete() {
+    if (!confirm('确定要删除选中的附件吗？')) return;
+    var ids = [];
+    document.querySelectorAll('.row-checkbox:checked').forEach(function(cb) { ids.push(cb.value); });
+    if (ids.length === 0) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/attachment', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('batch_delete=1&ids=' + ids.join(','));
 }
 </script>
 <div class="modal" id="attachModal">
@@ -252,6 +292,23 @@ HTML;
 
         $item->delete();
         Ret::Success(0, [], '删除成功');
+    }
+
+    private function batchDelete()
+    {
+        $ids = Input::Post('ids', '');
+        if (empty($ids)) {
+            Ret::Fail(400, null, '未选择任何附件');
+        }
+
+        $idArr = array_filter(array_map('intval', explode(',', $ids)));
+        if (empty($idArr)) {
+            Ret::Fail(400, null, '无效的ID');
+        }
+
+        $model = new AdminAttachmentModel();
+        $model->whereIn('id', $idArr)->delete();
+        Ret::Success(0, [], '批量删除成功，共删除' . count($idArr) . '条');
     }
 
     private function formatSize($bytes): string
