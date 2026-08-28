@@ -95,8 +95,8 @@ HTML;
             $remarkShort = mb_strlen($item['remark'] ?? '') > 20 ? mb_substr($item['remark'], 0, 20) . '...' : ($item['remark'] ?: '-');
             $urlShort = mb_strlen($item['url'] ?? '') > 30 ? mb_substr($item['url'], 0, 30) . '...' : ($item['url'] ?: '-');
             $recv = $item['recv'] ?? '';
-            $recvEscaped = htmlspecialchars($recv, ENT_QUOTES, 'UTF-8');
             $recvShort = mb_strlen($recv) > 20 ? mb_substr($recv, 0, 20) . '...' : ($recv ?: '-');
+            $recvAttr = htmlspecialchars($recv, ENT_QUOTES, 'UTF-8');
             $html .= <<<ROW
             <tr>
                 <td>{$item['id']}</td>
@@ -104,7 +104,7 @@ HTML;
                 <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['remark']}">{$remarkShort}</td>
                 <td>{$statusBadge}</td>
                 <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['url']}">{$urlShort}</td>
-                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;position:relative;" class="recv-cell" onmouseenter="showTooltip(this, '{$recvEscaped}')" onmouseleave="hideTooltip(this)">{$recvShort}</td>
+                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;position:relative;" class="recv-cell" data-recv="{$recvAttr}" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)">{$recvShort}</td>
                 <td>{$item['date']}</td>
             </tr>
 ROW;
@@ -115,22 +115,11 @@ ROW;
 HTML;
         $html .= Layout::pagination($currentPage, $totalPages, '/admin/hook_log', $extraParams, $limit);
         $html .= <<<HTML
+<div id="tooltipBox" style="display:none;position:fixed;background:rgba(0, 0, 0, 0.85);color:#fff;padding:8px 12px;border-radius:4px;font-size:12px;white-space:pre-wrap;word-break:break-word;max-width:400px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.15);"></div>
 <style>
-.recv-cell:hover::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: 100%;
-    left: 0;
-    background: rgba(0, 0, 0, 0.85);
-    color: #fff;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    white-space: pre-wrap;
-    word-break: break-word;
-    max-width: 400px;
-    z-index: 999;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+.recv-cell {
+    cursor: pointer;
+    position: relative;
 }
 </style>
 <script>
@@ -142,11 +131,18 @@ function doSearch() {
     if (limit) url += '&limit=' + limit;
     window.location.href = url;
 }
-function showTooltip(el, content) {
-    el.setAttribute('data-tooltip', content);
+var tooltipBox = document.getElementById('tooltipBox');
+function showTooltip(el) {
+    var content = el.getAttribute('data-recv');
+    if (!content) return;
+    var rect = el.getBoundingClientRect();
+    tooltipBox.style.display = 'block';
+    tooltipBox.style.left = (rect.left) + 'px';
+    tooltipBox.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
+    tooltipBox.textContent = content;
 }
-function hideTooltip(el) {
-    el.removeAttribute('data-tooltip');
+function hideTooltip() {
+    tooltipBox.style.display = 'none';
 }
 </script>
 HTML;
