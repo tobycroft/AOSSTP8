@@ -93,7 +93,9 @@ HTML;
                 ? '<span class="status-badge" style="background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f;">成功</span>'
                 : '<span class="status-badge" style="background:#fff2f0;color:#ff4d4f;border:1px solid #ffccc7;">失败</span>';
             $remarkShort = mb_strlen($item['remark'] ?? '') > 20 ? mb_substr($item['remark'], 0, 20) . '...' : ($item['remark'] ?: '-');
-            $urlShort = mb_strlen($item['url'] ?? '') > 30 ? mb_substr($item['url'], 0, 30) . '...' : ($item['url'] ?: '-');
+            $url = $item['url'] ?? '';
+            $urlShort = mb_strlen($url) > 30 ? mb_substr($url, 0, 30) . '...' : ($url ?: '-');
+            $urlAttr = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
             $recv = $item['recv'] ?? '';
             $recvShort = mb_strlen($recv) > 20 ? mb_substr($recv, 0, 20) . '...' : ($recv ?: '-');
             $recvAttr = htmlspecialchars($recv, ENT_QUOTES, 'UTF-8');
@@ -103,7 +105,7 @@ HTML;
                 <td>{$item['tag']}</td>
                 <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['remark']}">{$remarkShort}</td>
                 <td>{$statusBadge}</td>
-                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['url']}">{$urlShort}</td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;position:relative;" class="recv-cell" data-url="{$urlAttr}" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)">{$urlShort}</td>
                 <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;position:relative;" class="recv-cell" data-recv="{$recvAttr}" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)">{$recvShort}</td>
                 <td>{$item['date']}</td>
             </tr>
@@ -133,7 +135,7 @@ function doSearch() {
 }
 var tooltipBox = document.getElementById('tooltipBox');
 function showTooltip(el) {
-    var content = el.getAttribute('data-recv');
+    var content = el.getAttribute('data-url') || el.getAttribute('data-recv');
     if (!content) return;
     var rect = el.getBoundingClientRect();
     tooltipBox.style.display = 'block';
