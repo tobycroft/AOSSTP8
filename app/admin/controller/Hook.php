@@ -102,9 +102,9 @@ class Hook extends CommonController
         <tbody>
 HTML;
         foreach ($list as $item) {
-            $statusBadge = $item['status'] == 1
-                ? '<span class="status-badge" style="background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f;">启用</span>'
-                : '<span class="status-badge" style="background:#fff2f0;color:#ff4d4f;border:1px solid #ffccc7;">禁用</span>';
+            $statusBtn = $item['status'] == 1
+                ? '<button class="btn btn-sm status-toggle" data-id="' . $item['id'] . '" data-status="1" onclick="toggleStatus(this)" style="background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:12px;">启用</button>'
+                : '<button class="btn btn-sm status-toggle" data-id="' . $item['id'] . '" data-status="0" onclick="toggleStatus(this)" style="background:#fff2f0;color:#ff4d4f;border:1px solid #ffccc7;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:12px;">禁用</button>';
             $modeText = $item['mode'] ?? '-';
             $methodText = $item['method'] ?? '-';
             $branchText = $item['branch'] ?: 'master';
@@ -119,7 +119,7 @@ HTML;
                 <td>{$modeText}</td>
                 <td>{$methodText}</td>
                 <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['domain']}">{$item['domain']}</td>
-                <td>{$statusBadge}</td>
+                <td>{$statusBtn}</td>
                 <td>{$item['date']}</td>
                 <td>
                     <button class="btn btn-sm btn-edit" data-id="{$item['id']}" data-tag="{$item['tag']}" data-branch="{$item['branch']}" data-remark="{$item['remark']}" data-mode="{$item['mode']}" data-method="{$item['method']}" data-domain="{$item['domain']}" data-key="{$item['key']}" data-param="{$item['param']}" data-full_url="{$item['full_url']}" data-status="{$item['status']}" onclick="openEdit(this)">编辑</button>
@@ -174,6 +174,26 @@ function batchDelete() {
         }
     };
     xhr.send('batch_delete=1&ids=' + ids.join(','));
+}
+function toggleStatus(btn) {
+    var id = btn.getAttribute('data-id');
+    var currentStatus = parseInt(btn.getAttribute('data-status'));
+    var newStatus = currentStatus === 1 ? 0 : 1;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/hook', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id + '&status=' + newStatus);
 }
 </script>
 <div class="modal" id="hookModal">
