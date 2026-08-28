@@ -34,6 +34,10 @@ class index extends V1Index
         }
 
         $file_token->is_used = 1;
+        $file_token->update_time = date('Y-m-d H:i:s');
+        // 获取客户端 IP，兼容 IPv6（长度 45）
+        $ip = request()->ip();
+        $file_token->ip = $ip;
         $file_token->save();
     }
 
