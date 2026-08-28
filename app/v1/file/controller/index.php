@@ -131,6 +131,8 @@ class index extends search
                 break;
         }
 
+        $ip = request()->ip();
+
         $file_info = [
             'token' => $token,
             'name' => $file_name,
@@ -145,6 +147,7 @@ class index extends search
             'duration' => $duration,
             'duration_str' => $duration_str,
             'bitrate' => $bitrate,
+            'ip' => $ip,
         ];
 
         if ($proc["type"] == "local" || $proc["type"] == "all") {

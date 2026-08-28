@@ -88,6 +88,7 @@ class Attachment extends CommonController
                 <th>大小</th>
                 <th>MD5</th>
                 <th>上传时间</th>
+                <th>IP</th>
                 <th>操作</th>
             </tr>
         </thead>
@@ -97,16 +98,18 @@ HTML;
             $size = $this->formatSize($item['size']);
             $md5Short = mb_strlen($item['md5']) > 32 ? mb_substr($item['md5'], 0, 32) . '...' : $item['md5'];
             $createTime = $item['create_time'] ?: '-';
+            $ip = $item['ip'] ?: '-';
             $html .= <<<ROW
             <tr>
                 <td>{$item['id']}</td>
-                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['name']}">{$item['name']}</td>
-                <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['mime']}">{$item['mime']}</td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['name']}">{$item['name']}</td>
+                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['mime']}">{$item['mime']}</td>
                 <td>{$size}</td>
-                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['md5']}">{$md5Short}</td>
+                <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['md5']}">{$md5Short}</td>
                 <td>{$createTime}</td>
+                <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$ip}">{$ip}</td>
                 <td>
-                    <button class="btn btn-sm btn-edit" onclick="openEdit({$item['id']}, '{$item['name']}', '{$item['token']}')">编辑</button>
+                    <button class="btn btn-sm btn-edit" onclick="openEdit({$item['id']}, '{$item['name']}', '{$item['token']}', '{$item['ip']}')">编辑</button>
                     <button class="btn btn-sm btn-del" onclick="doDelete({$item['id']})">删除</button>
                 </td>
             </tr>
@@ -140,6 +143,10 @@ function doSearch() {
             <label>Token</label>
             <input type="text" id="formToken" placeholder="请输入 Token">
         </div>
+        <div class="form-group">
+            <label>上传IP</label>
+            <input type="text" id="formIp" placeholder="请输入上传IP">
+        </div>
         <div class="modal-actions">
             <button class="btn btn-cancel" onclick="closeModal()">取消</button>
             <button class="btn btn-primary" onclick="submitForm()">确定</button>
@@ -151,17 +158,19 @@ function doSearch() {
 function closeModal() {
     document.getElementById('attachModal').classList.remove('show');
 }
-function openEdit(id, name, token) {
+function openEdit(id, name, token, ip) {
     document.getElementById('modalTitle').textContent = '编辑附件';
     document.getElementById('editId').value = id;
     document.getElementById('formName').value = name;
     document.getElementById('formToken').value = token;
+    document.getElementById('formIp').value = ip || '';
     document.getElementById('attachModal').classList.add('show');
 }
 function submitForm() {
     var id = document.getElementById('editId').value;
     var name = document.getElementById('formName').value;
     var token = document.getElementById('formToken').value;
+    var ip = document.getElementById('formIp').value;
 
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/admin/attachment', true);
@@ -177,7 +186,7 @@ function submitForm() {
             }
         }
     };
-    var params = 'id=' + id + '&name=' + encodeURIComponent(name) + '&token=' + encodeURIComponent(token);
+    var params = 'id=' + id + '&name=' + encodeURIComponent(name) + '&token=' + encodeURIComponent(token) + '&ip=' + encodeURIComponent(ip);
     xhr.send(params);
 }
 function doDelete(id) {
@@ -220,6 +229,9 @@ HTML;
         }
         if (request()->has('token', 'post')) {
             $data['token'] = Input::Post('token', false);
+        }
+        if (request()->has('ip', 'post')) {
+            $data['ip'] = Input::Post('ip', false);
         }
 
         $item->save($data);

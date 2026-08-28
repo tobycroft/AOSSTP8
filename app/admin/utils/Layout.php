@@ -26,6 +26,7 @@ class Layout
             'title' => '存储管理',
             'items' => [
                 'attachment' => ['label' => '附件管理', 'url' => '/admin/attachment'],
+                'attachment_token' => ['label' => '上传Token', 'url' => '/admin/attachment_token'],
             ],
         ],
     ];
