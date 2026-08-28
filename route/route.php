@@ -48,6 +48,8 @@
 \think\facade\Route::any('admin/cert_log', '\app\admin\controller\CertLog@index');
 \think\facade\Route::any('admin/attachment', '\app\admin\controller\Attachment@index');
 \think\facade\Route::any('admin/attachment_token', '\app\admin\controller\AttachmentToken@index');
+\think\facade\Route::any('admin/hook', '\app\admin\controller\Hook@index');
+\think\facade\Route::any('admin/hook_log', '\app\admin\controller\HookLog@index');
 \think\facade\Route::any('admin/console', '\app\admin\controller\Console@index');
 \think\facade\Route::any('admin', '\app\admin\controller\Index@index');
 

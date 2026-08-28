@@ -29,6 +29,13 @@ class Layout
                 'attachment_token' => ['label' => '上传Token', 'url' => '/admin/attachment_token'],
             ],
         ],
+        'hook' => [
+            'title' => 'Hook管理',
+            'items' => [
+                'hook' => ['label' => 'Hook配置', 'url' => '/admin/hook'],
+                'hook_log' => ['label' => 'Hook日志', 'url' => '/admin/hook_log'],
+            ],
+        ],
     ];
 
     private static function css(): string
