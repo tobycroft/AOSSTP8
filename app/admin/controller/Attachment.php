@@ -82,13 +82,12 @@ class Attachment extends CommonController
     <table>
         <thead>
             <tr>
-                <th>ID</th>
                 <th>文件名</th>
                 <th>MIME</th>
                 <th>大小</th>
                 <th>MD5</th>
+                <th>上传IP</th>
                 <th>上传时间</th>
-                <th>IP</th>
                 <th>操作</th>
             </tr>
         </thead>
@@ -101,13 +100,12 @@ HTML;
             $ip = $item['ip'] ?: '-';
             $html .= <<<ROW
             <tr>
-                <td>{$item['id']}</td>
-                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['name']}">{$item['name']}</td>
-                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['mime']}">{$item['mime']}</td>
+                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['name']}">{$item['name']}</td>
+                <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['mime']}">{$item['mime']}</td>
                 <td>{$size}</td>
-                <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['md5']}">{$md5Short}</td>
+                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['md5']}">{$md5Short}</td>
+                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$ip}">{$ip}</td>
                 <td>{$createTime}</td>
-                <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$ip}">{$ip}</td>
                 <td>
                     <button class="btn btn-sm btn-edit" onclick="openEdit({$item['id']}, '{$item['name']}', '{$item['token']}', '{$item['ip']}')">编辑</button>
                     <button class="btn btn-sm btn-del" onclick="doDelete({$item['id']})">删除</button>
