@@ -86,10 +86,8 @@ class Attachment extends CommonController
                 <th>文件名</th>
                 <th>MIME</th>
                 <th>大小</th>
-                <th>扩展名</th>
                 <th>MD5</th>
-                <th>宽x高</th>
-                <th>时长</th>
+                <th>上传时间</th>
                 <th>操作</th>
             </tr>
         </thead>
@@ -97,19 +95,16 @@ class Attachment extends CommonController
 HTML;
         foreach ($list as $item) {
             $size = $this->formatSize($item['size']);
-            $wh = ($item['width'] > 0 && $item['height'] > 0) ? $item['width'] . 'x' . $item['height'] : '-';
-            $duration = $item['duration_str'] ?: '-';
-            $md5Short = mb_strlen($item['md5']) > 16 ? mb_substr($item['md5'], 0, 16) . '...' : $item['md5'];
+            $md5Short = mb_strlen($item['md5']) > 32 ? mb_substr($item['md5'], 0, 32) . '...' : $item['md5'];
+            $createTime = $item['create_time'] ?: '-';
             $html .= <<<ROW
             <tr>
                 <td>{$item['id']}</td>
-                <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['name']}">{$item['name']}</td>
-                <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['mime']}">{$item['mime']}</td>
+                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['name']}">{$item['name']}</td>
+                <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['mime']}">{$item['mime']}</td>
                 <td>{$size}</td>
-                <td>{$item['ext']}</td>
-                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['md5']}">{$md5Short}</td>
-                <td>{$wh}</td>
-                <td>{$duration}</td>
+                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['md5']}">{$md5Short}</td>
+                <td>{$createTime}</td>
                 <td>
                     <button class="btn btn-sm btn-edit" onclick="openEdit({$item['id']}, '{$item['name']}', '{$item['token']}')">编辑</button>
                     <button class="btn btn-sm btn-del" onclick="doDelete({$item['id']})">删除</button>
