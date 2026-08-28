@@ -46,6 +46,7 @@
 \think\facade\Route::any('admin/cert_url', '\app\admin\controller\CertUrl@index');
 \think\facade\Route::any('admin/cert_website', '\app\admin\controller\CertWebsite@index');
 \think\facade\Route::any('admin/cert_log', '\app\admin\controller\CertLog@index');
+\think\facade\Route::any('admin/attachment', '\app\admin\controller\Attachment@index');
 \think\facade\Route::any('admin/console', '\app\admin\controller\Console@index');
 \think\facade\Route::any('admin', '\app\admin\controller\Index@index');
 

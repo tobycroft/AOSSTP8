@@ -22,6 +22,12 @@ class Layout
                 'cert_log' => ['label' => '操作日志', 'url' => '/admin/cert_log'],
             ],
         ],
+        'storage' => [
+            'title' => '存储管理',
+            'items' => [
+                'attachment' => ['label' => '附件管理', 'url' => '/admin/attachment'],
+            ],
+        ],
     ];
 
     private static function css(): string
