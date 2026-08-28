@@ -6,7 +6,6 @@ use app\admin\model\AdminHookLogModel;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
 use BaseController\CommonController;
-use Input;
 use Ret;
 
 class HookLog extends CommonController
@@ -23,8 +22,6 @@ class HookLog extends CommonController
         switch ($method) {
             case 'GET':
                 return $this->page();
-            case 'DELETE':
-                return $this->delete();
         }
         Ret::Fail(405, null, '不支持的请求方法');
     }
@@ -87,7 +84,6 @@ class HookLog extends CommonController
                 <th>URL</th>
                 <th>接收内容</th>
                 <th>创建时间</th>
-                <th>操作</th>
             </tr>
         </thead>
         <tbody>
@@ -98,7 +94,9 @@ HTML;
                 : '<span class="status-badge" style="background:#fff2f0;color:#ff4d4f;border:1px solid #ffccc7;">失败</span>';
             $remarkShort = mb_strlen($item['remark'] ?? '') > 20 ? mb_substr($item['remark'], 0, 20) . '...' : ($item['remark'] ?: '-');
             $urlShort = mb_strlen($item['url'] ?? '') > 30 ? mb_substr($item['url'], 0, 30) . '...' : ($item['url'] ?: '-');
-            $recvShort = mb_strlen($item['recv'] ?? '') > 20 ? mb_substr($item['recv'], 0, 20) . '...' : ($item['recv'] ?: '-');
+            $recv = $item['recv'] ?? '';
+            $recvEscaped = htmlspecialchars($recv, ENT_QUOTES, 'UTF-8');
+            $recvShort = mb_strlen($recv) > 20 ? mb_substr($recv, 0, 20) . '...' : ($recv ?: '-');
             $html .= <<<ROW
             <tr>
                 <td>{$item['id']}</td>
@@ -106,12 +104,8 @@ HTML;
                 <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['remark']}">{$remarkShort}</td>
                 <td>{$statusBadge}</td>
                 <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['url']}">{$urlShort}</td>
-                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['recv']}">{$recvShort}</td>
+                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;position:relative;" class="recv-cell" onmouseenter="showTooltip(this, '{$recvEscaped}')" onmouseleave="hideTooltip(this)">{$recvShort}</td>
                 <td>{$item['date']}</td>
-                <td>
-                    <button class="btn btn-sm btn-edit" onclick="openDetail({$item['id']}, '{$item['url']}', '{$item['recv']}')">详情</button>
-                    <button class="btn btn-sm btn-del" onclick="doDelete({$item['id']})">删除</button>
-                </td>
             </tr>
 ROW;
         }
@@ -121,6 +115,24 @@ ROW;
 HTML;
         $html .= Layout::pagination($currentPage, $totalPages, '/admin/hook_log', $extraParams, $limit);
         $html .= <<<HTML
+<style>
+.recv-cell:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-width: 400px;
+    z-index: 999;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+</style>
 <script>
 function doSearch() {
     var tag = document.getElementById('searchTag').value;
@@ -130,72 +142,15 @@ function doSearch() {
     if (limit) url += '&limit=' + limit;
     window.location.href = url;
 }
-function doDelete(id) {
-    if (!confirm('确定要删除该日志吗？')) return;
-    var xhr = new XMLHttpRequest();
-    xhr.open('DELETE', '/admin/hook_log', true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-            var res = JSON.parse(xhr.responseText);
-            if (res.code == 0) {
-                location.reload();
-            } else {
-                alert(res.echo);
-            }
-        }
-    };
-    xhr.send('id=' + id);
+function showTooltip(el, content) {
+    el.setAttribute('data-tooltip', content);
 }
-</script>
-<div class="modal" id="detailModal">
-    <div class="modal-box" style="width: 680px;">
-        <h3>日志详情</h3>
-        <div class="form-group">
-            <label>URL</label>
-            <textarea id="detailUrl" readonly style="width:100%;padding:8px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;outline:none;min-height:60px;resize:vertical;"></textarea>
-        </div>
-        <div class="form-group">
-            <label>接收内容</label>
-            <textarea id="detailRecv" readonly style="width:100%;padding:8px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;outline:none;min-height:120px;resize:vertical;"></textarea>
-        </div>
-        <div class="modal-actions">
-            <button class="btn btn-cancel" onclick="closeDetail()">关闭</button>
-        </div>
-    </div>
-</div>
-
-<script>
-function closeDetail() {
-    document.getElementById('detailModal').classList.remove('show');
-}
-function openDetail(id, url, recv) {
-    document.getElementById('detailUrl').value = url;
-    document.getElementById('detailRecv').value = recv;
-    document.getElementById('detailModal').classList.add('show');
+function hideTooltip(el) {
+    el.removeAttribute('data-tooltip');
 }
 </script>
 HTML;
         $html .= Layout::end();
         return response($html)->contentType('text/html');
-    }
-
-    private function delete()
-    {
-        $id = intval(request()->delete('id'));
-        if (!$id) {
-            Ret::Fail(400, null, '缺少参数[id]');
-        }
-
-        $model = new AdminHookLogModel();
-        $item = $model->findOrEmpty($id);
-
-        if ($item->isEmpty()) {
-            Ret::Fail(404, null, '日志不存在');
-        }
-
-        $item->delete();
-        Ret::Success(0, [], '删除成功');
     }
 }
