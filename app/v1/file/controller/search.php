@@ -13,6 +13,7 @@ class search extends CommonController
 
     protected mixed $token;
     protected mixed $proc;
+    protected ?string $upload_ip = null;
 
     public function initialize()
     {

@@ -33,11 +33,14 @@ class index extends V1Index
             Ret::Fail(401, null, '项目不可用');
         }
 
+        // 如果 token 预设了 IP 则使用，否则记录实际上传者的 IP
+        if (!empty($file_token['ip'])) {
+            $this->upload_ip = $file_token['ip'];
+        } else {
+            $file_token->ip = request()->ip();
+        }
         $file_token->is_used = 1;
         $file_token->update_time = date('Y-m-d H:i:s');
-        // 获取客户端 IP，兼容 IPv6（长度 45）
-        $ip = request()->ip();
-        $file_token->ip = $ip;
         $file_token->save();
     }
 

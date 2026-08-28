@@ -131,7 +131,7 @@ class index extends search
                 break;
         }
 
-        $ip = request()->ip();
+        $ip = $this->upload_ip ?? request()->ip();
 
         $file_info = [
             'token' => $token,

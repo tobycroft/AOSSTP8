@@ -16,6 +16,7 @@ class token extends CommonController
         $token = Input::Post('token');
         $timestamp = Input::Post('timestamp');
         $sign = Input::Post('sign');
+        $ip = Input::Post('ip', false);
 
         $now = time();
         if (abs($now - intval($timestamp)) > 300) {
@@ -35,13 +36,18 @@ class token extends CommonController
         $temp_token = md5(uniqid('ft_', true) . $token . microtime());
         $expired_at = date('Y-m-d H:i:s', $now + 300);
 
-        FileTokenModel::create([
+        $data = [
             'token' => $temp_token,
             'oss_token' => $token,
             'created_at' => date('Y-m-d H:i:s', $now),
             'expired_at' => $expired_at,
             'is_used' => 0,
-        ]);
+        ];
+        if (!empty($ip)) {
+            $data['ip'] = $ip;
+        }
+
+        FileTokenModel::create($data);
 
         Ret::Success(0, [
             'token' => $temp_token,
@@ -54,6 +60,7 @@ class token extends CommonController
         $token = Input::Post('token');
         $timestamp = Input::Post('timestamp');
         $sign = Input::Post('sign');
+        $ip = Input::Post('ip', false);
 
         $now = time();
         if (abs($now - intval($timestamp)) > 300) {
@@ -73,13 +80,18 @@ class token extends CommonController
         $temp_token = md5(uniqid('ft_', true) . $token . microtime());
         $expired_at = date('Y-m-d H:i:s', $now + 300);
 
-        FileTokenModel::create([
+        $data = [
             'token' => $temp_token,
             'oss_token' => $token,
             'created_at' => date('Y-m-d H:i:s', $now),
             'expired_at' => $expired_at,
             'is_used' => 0,
-        ]);
+        ];
+        if (!empty($ip)) {
+            $data['ip'] = $ip;
+        }
+
+        FileTokenModel::create($data);
 
         $base_url = 'https://upload.tuuz.cc:433/v2/file/index/upfull';
         Ret::Success(0, [
@@ -95,6 +107,7 @@ class token extends CommonController
         $token = Input::Post('token');
         $timestamp = Input::Post('timestamp');
         $sign = Input::Post('sign');
+        $ip = Input::Post('ip', false);
 
         $now = time();
         if (abs($now - intval($timestamp)) > 300) {
@@ -114,13 +127,18 @@ class token extends CommonController
         $temp_token = md5(uniqid('ft_', true) . $token . microtime());
         $expired_at = date('Y-m-d H:i:s', $now + 300);
 
-        FileTokenModel::create([
+        $data = [
             'token' => $temp_token,
             'oss_token' => $token,
             'created_at' => date('Y-m-d H:i:s', $now),
             'expired_at' => $expired_at,
             'is_used' => 0,
-        ]);
+        ];
+        if (!empty($ip)) {
+            $data['ip'] = $ip;
+        }
+
+        FileTokenModel::create($data);
 
         $base_url = 'https://upload.tuuz.cc:433/v2/file/index/uphash';
         Ret::Success(0, [
