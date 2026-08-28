@@ -378,7 +378,7 @@ HTML;
         if (request()->has('full_url', 'post')) {
             $data['full_url'] = Input::Post('full_url', false);
         }
-        if (request()->has('status', 'post')) {
+        if (request()->post('status') !== null) {
             $data['status'] = Input::PostInt('status');
         }
 
