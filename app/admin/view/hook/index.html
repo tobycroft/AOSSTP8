@@ -44,7 +44,7 @@
             <td>{$item.status_btn}</td>
             <td>{$item.date}</td>
             <td>
-                <button class="btn btn-sm btn-edit" data-id="{$item.id}" data-tag="{$item.tag|escape}" data-branch="{$item.branch|escape}" data-remark="{$item.remark|escape}" data-mode="{$item.mode}" data-method="{$item.method}" data-domain="{$item.domain|escape}" data-key="{$item.key|escape}" data-param="{$item.param|escape}" data-full_url="{$item.full_url|escape}" data-status="{$item.status}" onclick="openEdit(this)">编辑</button>
+                <button class="btn btn-sm btn-edit" data-id="{$item.id}" data-tag="{$item.tag}" data-branch="{$item.branch}" data-remark="{$item.remark}" data-mode="{$item.mode}" data-method="{$item.method}" data-domain="{$item.domain}" data-key="{$item.key}" data-param="{$item.param}" data-full_url="{$item.full_url}" data-status="{$item.status}" onclick="openEdit(this)">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
         </tr>

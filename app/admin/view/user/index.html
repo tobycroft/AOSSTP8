@@ -30,7 +30,7 @@
             <td>{$item.super_text}</td>
             <td>{$item.login_time}</td>
             <td>
-                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.username|escape}', '{$item.nickname|escape}', '{$item.email|escape}', '{$item.phone|escape}', {$item.status})">编辑</button>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.username}', '{$item.nickname}', '{$item.email}', '{$item.phone}', {$item.status})">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
         </tr>

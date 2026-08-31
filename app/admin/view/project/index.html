@@ -36,7 +36,7 @@
             <td>{$item.avail_badge}</td>
             <td>{$item.date}</td>
             <td>
-                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.appid}, '{$item.project|escape}', '{$item.appsecret|escape}', '{$item.open_token|escape}', {$item.is_opentoken}, '{$item.oss_project|escape}', {$item.is_avail})">编辑</button>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.appid}, '{$item.project}', '{$item.appsecret}', '{$item.open_token}', {$item.is_opentoken}, '{$item.oss_project}', {$item.is_avail})">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.appid})">删除</button>
             </td>
         </tr>

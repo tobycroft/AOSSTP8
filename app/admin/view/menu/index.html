@@ -28,7 +28,7 @@
             <td>{$item.sort}</td>
             <td>{$item.status_badge}</td>
             <td>
-                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, {$item.parent_id}, '{$item.name|escape}', '{$item.icon|escape}', '{$item.path|escape}', {$item.sort}, {$item.status})">编辑</button>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, {$item.parent_id}, '{$item.name}', '{$item.icon}', '{$item.path}', {$item.sort}, {$item.status})">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
         </tr>

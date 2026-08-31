@@ -40,7 +40,7 @@
             <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.ip}">{$item.ip}</td>
             <td>{$item.create_time}</td>
             <td>
-                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|escape}' , '{$item.token|escape}' , '{$item.ip|escape}' )">编辑</button>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name}' , '{$item.token}' , '{$item.ip}' )">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
         </tr>

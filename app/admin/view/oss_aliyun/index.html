@@ -24,7 +24,7 @@
             <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.endpoint}">{$item.endpoint}</td>
             <td>{$item.bucket}</td>
             <td>
-                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.tag|escape}', '{$item.accesskey|escape}', '{$item.accesssecret|escape}', '{$item.endpoint|escape}', '{$item.bucket|escape}')">编辑</button>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.tag}', '{$item.accesskey}', '{$item.accesssecret}', '{$item.endpoint}', '{$item.bucket}')">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
         </tr>

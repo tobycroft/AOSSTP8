@@ -26,7 +26,7 @@
             <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item.api}</td>
             <td>{$item.status_badge}</td>
             <td>
-                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.cert_name|escape}', '{$item.website|escape}', '{$item.type|escape}', '{$item.api|escape}', '{$item.key|escape}', {$item.status})">编辑</button>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.cert_name}', '{$item.website}', '{$item.type}', '{$item.api}', '{$item.key}', {$item.status})">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
         </tr>

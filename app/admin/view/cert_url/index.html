@@ -22,12 +22,12 @@
             <td>{$item.remark}</td>
             <td>{$item.auto_text}</td>
             <td>
-                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.cert|escape}', '{$item.url_crt|escape}', '{$item.url_key|escape}', '{$item.remark|escape}', {$item.auto})">编辑</button>
-                <button class="btn btn-sm btn-primary" onclick="doUpdateSSL({$item.id}, '{$item.cert|escape}')">更新</button>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.cert}', '{$item.url_crt}', '{$item.url_key}', '{$item.remark}', {$item.auto})">编辑</button>
+                <button class="btn btn-sm btn-primary" onclick="doUpdateSSL({$item.id}, '{$item.cert}')">更新</button>
                 <button class="btn btn-sm btn-edit" onclick="showKeys({$item.id})">查看</button>
                 {if $item.auto == 1}
-                <button class="btn btn-sm btn-success" onclick="doAutoSSL({$item.id}, '{$item.cert|escape}')">自动下发</button>
-                <button class="btn btn-sm btn-primary" onclick="doAutoMailSSL({$item.id}, '{$item.cert|escape}')">更新邮箱</button>
+                <button class="btn btn-sm btn-success" onclick="doAutoSSL({$item.id}, '{$item.cert}')">自动下发</button>
+                <button class="btn btn-sm btn-primary" onclick="doAutoMailSSL({$item.id}, '{$item.cert}')">更新邮箱</button>
                 {/if}
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
