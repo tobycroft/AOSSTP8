@@ -45,6 +45,6 @@ class CommonController extends BaseController
 
         View::assign($data);
 
-        return View::fetch($template);
+        return response(View::fetch($template));
     }
 }
