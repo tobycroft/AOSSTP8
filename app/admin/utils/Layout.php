@@ -25,8 +25,6 @@ class Layout
             'items' => [
                 'oss' => ['label' => '存储项目', 'url' => '/admin/oss'],
                 'oss_aliyun' => ['label' => '阿里云OSS', 'url' => '/admin/oss_aliyun'],
-                'attachment' => ['label' => '附件管理', 'url' => '/admin/attachment'],
-                'attachment_token' => ['label' => '上传Token', 'url' => '/admin/attachment_token'],
             ],
         ],
         'hook' => [
