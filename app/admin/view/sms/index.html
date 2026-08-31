@@ -3,7 +3,7 @@
 {block name="content"}
 <div class="toolbar">
     <div>
-        <input type="text" id="searchInput" placeholder="搜索项目名称..." value="{$search|default:''}" onkeydown="if(event.key==='Enter')doSearch()" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;width:200px;">
+        <input type="text" id="searchInput" placeholder="搜索项目名称..." value="{$search}" onkeydown="if(event.key==='Enter')doSearch()" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;width:200px;">
         <button class="btn btn-primary" onclick="doSearch()" style="margin-left:8px;">搜索</button>
     </div>
     <button class="btn btn-primary" onclick="openAdd()">新增</button>
