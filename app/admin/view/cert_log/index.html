@@ -1,0 +1,31 @@
+{extend name="layout/base" /}
+{block name="content"}
+<h2 style="margin-bottom:16px;">操作日志</h2>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>AppName</th>
+            <th>类型</th>
+            <th>站点</th>
+            <th>结果</th>
+            <th>返回内容</th>
+            <th>时间</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td>{$item.appname}</td>
+            <td>{$item.type}</td>
+            <td>{$item.website}</td>
+            <td>{$item.result_badge}</td>
+            <td class="recv-cell" title="{$item.recv}">{$item.recv_short}</td>
+            <td>{$item.create_time}</td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination}
+{/block}

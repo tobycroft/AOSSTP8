@@ -45,170 +45,29 @@ class CertWebsite extends CommonController
         $total = $list->total();
         $totalPages = max(1, (int)ceil($total / $limit));
 
-        $html = Layout::begin('证书站点', 'cert', 'cert_website');
-        $html .= <<<HTML
-    <div class="toolbar">
-        <h2>证书站点</h2>
-        <button class="btn btn-primary" onclick="openCreate()">新增站点</button>
-    </div>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>证书名称</th>
-                <th>站点</th>
-                <th>类型</th>
-                <th>API</th>
-                <th>状态</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody>
-HTML;
+        $items = [];
         foreach ($list as $item) {
             $statusBadge = $item['status'] == 1
                 ? '<span class="status-badge active">启用</span>'
                 : '<span class="status-badge inactive">禁用</span>';
-            $html .= <<<ROW
-            <tr>
-                <td>{$item['id']}</td>
-                <td>{$item['cert_name']}</td>
-                <td>{$item['website']}</td>
-                <td>{$item['type']}</td>
-                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item['api']}</td>
-                <td>{$statusBadge}</td>
-                <td>
-                    <button class="btn btn-sm btn-edit" onclick="openEdit({$item['id']}, '{$item['cert_name']}', '{$item['website']}', '{$item['type']}', '{$item['api']}', '{$item['key']}', {$item['status']})">编辑</button>
-                    <button class="btn btn-sm btn-del" onclick="doDelete({$item['id']})">删除</button>
-                </td>
-            </tr>
-ROW;
+            $items[] = [
+                'id' => $item['id'],
+                'cert_name' => $item['cert_name'],
+                'website' => $item['website'],
+                'type' => $item['type'],
+                'api' => $item['api'],
+                'key' => $item['key'],
+                'status_badge' => $statusBadge,
+                'status' => $item['status'],
+            ];
         }
-        $html .= <<<HTML
-        </tbody>
-    </table>
-HTML;
-        $html .= Layout::pagination($currentPage, $totalPages, '/admin/cert_website');
-        $html .= <<<HTML
-<div class="modal" id="websiteModal">
-    <div class="modal-box">
-        <h3 id="modalTitle">新增站点</h3>
-        <input type="hidden" id="editId" value="">
-        <div class="form-group">
-            <label>证书名称</label>
-            <input type="text" id="formCertName" placeholder="请输入证书名称">
-        </div>
-        <div class="form-group">
-            <label>站点</label>
-            <input type="text" id="formWebsite" placeholder="example.com">
-        </div>
-        <div class="form-group">
-            <label>类型</label>
-            <select id="formType">
-                <option value="web">web</option>
-                <option value="mail">mail</option>
-                <option value="panel">panel</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>API</label>
-            <input type="text" id="formApi" placeholder="BT API 地址">
-        </div>
-        <div class="form-group">
-            <label>Key</label>
-            <input type="text" id="formKey" placeholder="BT Key">
-        </div>
-        <div class="form-group">
-            <label>状态</label>
-            <select id="formStatus">
-                <option value="1">启用</option>
-                <option value="0">禁用</option>
-            </select>
-        </div>
-        <div class="modal-actions">
-            <button class="btn btn-cancel" onclick="closeModal()">取消</button>
-            <button class="btn btn-primary" onclick="submitForm()">确定</button>
-        </div>
-    </div>
-</div>
 
-<script>
-function closeModal() {
-    document.getElementById('websiteModal').classList.remove('show');
-}
-function openCreate() {
-    document.getElementById('modalTitle').textContent = '新增站点';
-    document.getElementById('editId').value = '';
-    document.getElementById('formCertName').value = '';
-    document.getElementById('formWebsite').value = '';
-    document.getElementById('formType').value = 'web';
-    document.getElementById('formApi').value = '';
-    document.getElementById('formKey').value = '';
-    document.getElementById('formStatus').value = '1';
-    document.getElementById('websiteModal').classList.add('show');
-}
-function openEdit(id, certName, website, type, api, key, status) {
-    document.getElementById('modalTitle').textContent = '编辑站点';
-    document.getElementById('editId').value = id;
-    document.getElementById('formCertName').value = certName;
-    document.getElementById('formWebsite').value = website;
-    document.getElementById('formType').value = type;
-    document.getElementById('formApi').value = api;
-    document.getElementById('formKey').value = key;
-    document.getElementById('formStatus').value = status;
-    document.getElementById('websiteModal').classList.add('show');
-}
-function submitForm() {
-    var id = document.getElementById('editId').value;
-    var cert_name = document.getElementById('formCertName').value;
-    var website = document.getElementById('formWebsite').value;
-    var type = document.getElementById('formType').value;
-    var api = document.getElementById('formApi').value;
-    var key = document.getElementById('formKey').value;
-    var status = document.getElementById('formStatus').value;
-    if (!cert_name) { alert('证书名称不能为空'); return; }
+        $pagination = Layout::pagination($currentPage, $totalPages, '/admin/cert_website');
 
-    var xhr = new XMLHttpRequest();
-    var method = id ? 'POST' : 'PUT';
-    xhr.open(method, '/admin/cert_website', true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-            var res = JSON.parse(xhr.responseText);
-            if (res.code == 0) {
-                location.reload();
-            } else {
-                alert(res.echo);
-            }
-        }
-    };
-    var params = 'cert_name=' + encodeURIComponent(cert_name) + '&website=' + encodeURIComponent(website) + '&type=' + encodeURIComponent(type) + '&api=' + encodeURIComponent(api) + '&key=' + encodeURIComponent(key) + '&status=' + status;
-    if (id) params += '&id=' + id;
-    xhr.send(params);
-}
-function doDelete(id) {
-    if (!confirm('确定要删除该站点吗？')) return;
-    var xhr = new XMLHttpRequest();
-    xhr.open('DELETE', '/admin/cert_website', true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-            var res = JSON.parse(xhr.responseText);
-            if (res.code == 0) {
-                location.reload();
-            } else {
-                alert(res.echo);
-            }
-        }
-    };
-    xhr.send('id=' + id);
-}
-</script>
-HTML;
-        $html .= Layout::end();
-        return response($html)->contentType('text/html');
+        return $this->renderPage('cert_website/index', [
+            'list' => $items,
+            'pagination' => $pagination,
+        ], '证书站点', 'cert', 'cert_website');
     }
 
     private function create()

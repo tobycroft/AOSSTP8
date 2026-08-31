@@ -4,6 +4,11 @@ namespace app\admin\utils;
 
 class Layout
 {
+    public static function getMenuGroups(): array
+    {
+        return self::$menuGroups;
+    }
+
     private static $menuGroups = [
         'cert' => [
             'title' => '证书管理',

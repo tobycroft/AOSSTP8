@@ -1,0 +1,74 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <h2>Hook日志</h2>
+        <div class="search-box">
+            <input type="text" id="searchTag" placeholder="输入 Tag 搜索" value="{$tag}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 200px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
+            <select id="limitSelect" onchange="doSearch()" style="padding: 8px 8px; margin-left: 8px; border: 1px solid #d9d9d9; border-radius: 4px; outline: none;">
+                <option value="">每页行数</option>
+                {$selectHtml}
+            </select>
+            <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
+        </div>
+    </div>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tag</th>
+            <th>备注</th>
+            <th>状态</th>
+            <th>URL</th>
+            <th>接收内容</th>
+            <th>创建时间</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td>{$item.tag}</td>
+            <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.remark}">{$item.remark_short}</td>
+            <td>{$item.status_badge}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;position:relative;" class="recv-cell" data-url="{$item.url_attr}" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)">{$item.url_short}</td>
+            <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;position:relative;" class="recv-cell" data-recv="{$item.recv_attr}" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)">{$item.recv_short}</td>
+            <td>{$item.date}</td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination}
+<div id="tooltipBox" style="display:none;position:fixed;background:rgba(0, 0, 0, 0.85);color:#fff;padding:8px 12px;border-radius:4px;font-size:12px;white-space:pre-wrap;word-break:break-word;max-width:400px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.15);"></div>
+<style>
+.recv-cell { cursor: pointer; position: relative; }
+</style>
+{/block}
+{block name="script"}
+{literal}
+<script>
+function doSearch() {
+    var tag = document.getElementById('searchTag').value;
+    var limit = document.getElementById('limitSelect').value;
+    var url = '/admin/hook_log?page=1';
+    if (tag) url += '&tag=' + encodeURIComponent(tag);
+    if (limit) url += '&limit=' + limit;
+    window.location.href = url;
+}
+var tooltipBox = document.getElementById('tooltipBox');
+function showTooltip(el) {
+    var content = el.getAttribute('data-url') || el.getAttribute('data-recv');
+    if (!content) return;
+    var rect = el.getBoundingClientRect();
+    tooltipBox.style.display = 'block';
+    tooltipBox.style.left = (rect.left) + 'px';
+    tooltipBox.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
+    tooltipBox.textContent = content;
+}
+function hideTooltip() {
+    tooltipBox.style.display = 'none';
+}
+</script>
+{/literal}
+{/block}

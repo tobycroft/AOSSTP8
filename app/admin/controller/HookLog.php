@@ -59,96 +59,39 @@ class HookLog extends CommonController
             $selectHtml .= '<option value="' . $opt . '" ' . $selected . '>' . $opt . '</option>';
         }
 
-        $html = Layout::begin('Hook日志', 'hook', 'hook_log');
-        $html .= <<<HTML
-    <div class="toolbar">
-        <div style="display:flex;align-items:center;gap:12px;">
-            <h2>Hook日志</h2>
-            <div class="search-box">
-                <input type="text" id="searchTag" placeholder="输入 Tag 搜索" value="{$tag}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 200px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
-                <select id="limitSelect" onchange="doSearch()" style="padding: 8px 8px; margin-left: 8px; border: 1px solid #d9d9d9; border-radius: 4px; outline: none;">
-                    <option value="">每页行数</option>
-                    {$selectHtml}
-                </select>
-                <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
-            </div>
-        </div>
-    </div>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Tag</th>
-                <th>备注</th>
-                <th>状态</th>
-                <th>URL</th>
-                <th>接收内容</th>
-                <th>创建时间</th>
-            </tr>
-        </thead>
-        <tbody>
-HTML;
+        $items = [];
         foreach ($list as $item) {
-            $statusBadge = $item['success'] == 1
-                ? '<span class="status-badge" style="background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f;">成功</span>'
-                : '<span class="status-badge" style="background:#fff2f0;color:#ff4d4f;border:1px solid #ffccc7;">失败</span>';
-            $remarkShort = mb_strlen($item['remark'] ?? '') > 20 ? mb_substr($item['remark'], 0, 20) . '...' : ($item['remark'] ?: '-');
+            $items[] = [
+                'id' => $item['id'],
+                'tag' => $item['tag'],
+                'remark' => $item['remark'] ?? '',
+                'remark_short' => mb_strlen($item['remark'] ?? '') > 20 ? mb_substr($item['remark'], 0, 20) . '...' : ($item['remark'] ?: '-'),
+                'status_badge' => $item['success'] == 1
+                    ? '<span class="status-badge" style="background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f;">成功</span>'
+                    : '<span class="status-badge" style="background:#fff2f0;color:#ff4d4f;border:1px solid #ffccc7;">失败</span>',
+                'url' => $item['url'] ?? '',
+                'url_short' => '',
+                'url_attr' => '',
+                'recv' => $item['recv'] ?? '',
+                'recv_short' => '',
+                'recv_attr' => '',
+                'date' => $item['date'],
+            ];
             $url = $item['url'] ?? '';
-            $urlShort = mb_strlen($url) > 30 ? mb_substr($url, 0, 30) . '...' : ($url ?: '-');
-            $urlAttr = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+            $items[count($items) - 1]['url_short'] = mb_strlen($url) > 30 ? mb_substr($url, 0, 30) . '...' : ($url ?: '-');
+            $items[count($items) - 1]['url_attr'] = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
             $recv = $item['recv'] ?? '';
-            $recvShort = mb_strlen($recv) > 20 ? mb_substr($recv, 0, 20) . '...' : ($recv ?: '-');
-            $recvAttr = htmlspecialchars($recv, ENT_QUOTES, 'UTF-8');
-            $html .= <<<ROW
-            <tr>
-                <td>{$item['id']}</td>
-                <td>{$item['tag']}</td>
-                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['remark']}">{$remarkShort}</td>
-                <td>{$statusBadge}</td>
-                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;position:relative;" class="recv-cell" data-url="{$urlAttr}" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)">{$urlShort}</td>
-                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;position:relative;" class="recv-cell" data-recv="{$recvAttr}" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)">{$recvShort}</td>
-                <td>{$item['date']}</td>
-            </tr>
-ROW;
+            $items[count($items) - 1]['recv_short'] = mb_strlen($recv) > 20 ? mb_substr($recv, 0, 20) . '...' : ($recv ?: '-');
+            $items[count($items) - 1]['recv_attr'] = htmlspecialchars($recv, ENT_QUOTES, 'UTF-8');
         }
-        $html .= <<<HTML
-        </tbody>
-    </table>
-HTML;
-        $html .= Layout::pagination($currentPage, $totalPages, '/admin/hook_log', $extraParams, $limit);
-        $html .= <<<HTML
-<div id="tooltipBox" style="display:none;position:fixed;background:rgba(0, 0, 0, 0.85);color:#fff;padding:8px 12px;border-radius:4px;font-size:12px;white-space:pre-wrap;word-break:break-word;max-width:400px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.15);"></div>
-<style>
-.recv-cell {
-    cursor: pointer;
-    position: relative;
-}
-</style>
-<script>
-function doSearch() {
-    var tag = document.getElementById('searchTag').value;
-    var limit = document.getElementById('limitSelect').value;
-    var url = '/admin/hook_log?page=1';
-    if (tag) url += '&tag=' + encodeURIComponent(tag);
-    if (limit) url += '&limit=' + limit;
-    window.location.href = url;
-}
-var tooltipBox = document.getElementById('tooltipBox');
-function showTooltip(el) {
-    var content = el.getAttribute('data-url') || el.getAttribute('data-recv');
-    if (!content) return;
-    var rect = el.getBoundingClientRect();
-    tooltipBox.style.display = 'block';
-    tooltipBox.style.left = (rect.left) + 'px';
-    tooltipBox.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
-    tooltipBox.textContent = content;
-}
-function hideTooltip() {
-    tooltipBox.style.display = 'none';
-}
-</script>
-HTML;
-        $html .= Layout::end();
-        return response($html)->contentType('text/html');
+
+        $pagination = Layout::pagination($currentPage, $totalPages, '/admin/hook_log', $extraParams, $limit);
+
+        return $this->renderPage('hook_log/index', [
+            'list' => $items,
+            'tag' => $tag,
+            'selectHtml' => $selectHtml,
+            'pagination' => $pagination,
+        ], 'Hook日志', 'hook', 'hook_log');
     }
 }

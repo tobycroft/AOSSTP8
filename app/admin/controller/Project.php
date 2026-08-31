@@ -46,34 +46,7 @@ class Project extends CommonController
         }
         $list = $query->paginate($limit, false, ['page' => $page])->toArray();
 
-        $html = Layout::begin('项目管理', 'project', 'project');
-        $html .= <<<HTML
-    <div class="toolbar">
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-            <h2>项目管理</h2>
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="搜索项目名称" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 200px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
-                <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
-            </div>
-            <button class="btn btn-primary" onclick="openCreate()">新增项目</button>
-        </div>
-    </div>
-    <table>
-        <thead>
-            <tr>
-                <th>APPID</th>
-                <th>项目名称</th>
-                <th>AppSecret</th>
-                <th>开放 Token</th>
-                <th>开放令牌</th>
-                <th>OSS项目</th>
-                <th>可用</th>
-                <th>创建时间</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody>
-HTML;
+        $items = [];
         foreach ($list['data'] as $item) {
             $availBadge = $item['is_avail'] == 1
                 ? '<span class="status-badge active">是</span>'
@@ -81,160 +54,29 @@ HTML;
             $tokenBadge = $item['is_opentoken'] == 1
                 ? '<span class="status-badge active">启用</span>'
                 : '<span class="status-badge inactive">关闭</span>';
-            $appsecretShort = mb_strlen($item['appsecret'] ?? '') > 16 ? mb_substr($item['appsecret'], 0, 16) . '...' : ($item['appsecret'] ?: '-');
-            $openTokenShort = mb_strlen($item['open_token'] ?? '') > 16 ? mb_substr($item['open_token'], 0, 16) . '...' : ($item['open_token'] ?: '-');
-            $html .= <<<ROW
-            <tr>
-                <td>{$item['appid']}</td>
-                <td>{$item['project']}</td>
-                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['appsecret']}">{$appsecretShort}</td>
-                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['open_token']}">{$openTokenShort}</td>
-                <td>{$tokenBadge}</td>
-                <td>{$item['oss_project']}</td>
-                <td>{$availBadge}</td>
-                <td>{$item['date']}</td>
-                <td>
-                    <button class="btn btn-sm btn-edit" onclick="openEdit({$item['appid']}, '{$item['project']}', '{$item['appsecret']}', '{$item['open_token']}', {$item['is_opentoken']}, '{$item['oss_project']}', {$item['is_avail']})">编辑</button>
-                    <button class="btn btn-sm btn-del" onclick="doDelete({$item['appid']})">删除</button>
-                </td>
-            </tr>
-ROW;
+            $items[] = [
+                'appid' => $item['appid'],
+                'project' => $item['project'],
+                'appsecret' => $item['appsecret'] ?? '',
+                'appsecret_short' => mb_strlen($item['appsecret'] ?? '') > 16 ? mb_substr($item['appsecret'], 0, 16) . '...' : ($item['appsecret'] ?: '-'),
+                'open_token' => $item['open_token'] ?? '',
+                'open_token_short' => mb_strlen($item['open_token'] ?? '') > 16 ? mb_substr($item['open_token'], 0, 16) . '...' : ($item['open_token'] ?: '-'),
+                'is_opentoken' => $item['is_opentoken'],
+                'token_badge' => $tokenBadge,
+                'oss_project' => $item['oss_project'],
+                'is_avail' => $item['is_avail'],
+                'avail_badge' => $availBadge,
+                'date' => $item['date'],
+            ];
         }
-        $html .= <<<HTML
-        </tbody>
-    </table>
-HTML;
-        $html .= Layout::pagination((int)$list['current_page'], max(1, (int)ceil($list['total'] / $limit)), '/admin/project', ['search' => $search], $limit);
-        $html .= <<<HTML
-<div class="modal" id="projectModal">
-    <div class="modal-box">
-        <h3 id="modalTitle">新增项目</h3>
-        <input type="hidden" id="editId" value="">
-        <div class="form-group">
-            <label>项目名称</label>
-            <input type="text" id="formProject" placeholder="请输入项目名称">
-        </div>
-        <div class="form-group">
-            <label>AppSecret</label>
-            <input type="text" id="formAppsecret" placeholder="项目密钥">
-        </div>
-        <div class="form-group">
-            <label>开放 Token</label>
-            <input type="text" id="formOpenToken" placeholder="开放令牌">
-        </div>
-        <div class="form-group">
-            <label>开放令牌</label>
-            <select id="formIsOpentoken">
-                <option value="1">启用</option>
-                <option value="0">关闭</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>OSS 项目</label>
-            <input type="text" id="formOssProject" placeholder="关联的 OSS 项目名">
-        </div>
-        <div class="form-group">
-            <label>可用</label>
-            <select id="formIsAvail">
-                <option value="1">是</option>
-                <option value="0">否</option>
-            </select>
-        </div>
-        <div class="modal-actions">
-            <button class="btn btn-cancel" onclick="closeModal()">取消</button>
-            <button class="btn btn-primary" id="modalSubmit" onclick="submitForm()">确定</button>
-        </div>
-    </div>
-</div>
 
-<style>
-.type-select { padding: 4px 6px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 13px; outline: none; cursor: pointer; background: #fff; }
-.type-select:hover { border-color: #1677ff; }
-.type-select:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
-</style>
-<script>
-function doSearch() {
-    var search = document.getElementById('searchInput').value;
-    var url = '/admin/project?page=1';
-    if (search) url += '&search=' + encodeURIComponent(search);
-    window.location.href = url;
-}
-function closeModal() {
-    document.getElementById('projectModal').classList.remove('show');
-}
-function openCreate() {
-    document.getElementById('modalTitle').textContent = '新增项目';
-    document.getElementById('editId').value = '';
-    document.getElementById('formProject').value = '';
-    document.getElementById('formAppsecret').value = '';
-    document.getElementById('formOpenToken').value = '';
-    document.getElementById('formIsOpentoken').value = '1';
-    document.getElementById('formOssProject').value = '';
-    document.getElementById('formIsAvail').value = '1';
-    document.getElementById('projectModal').classList.add('show');
-}
-function openEdit(appid, project, appsecret, openToken, isOpentoken, ossProject, isAvail) {
-    document.getElementById('modalTitle').textContent = '编辑项目';
-    document.getElementById('editId').value = appid;
-    document.getElementById('formProject').value = project;
-    document.getElementById('formAppsecret').value = appsecret;
-    document.getElementById('formOpenToken').value = openToken;
-    document.getElementById('formIsOpentoken').value = isOpentoken;
-    document.getElementById('formOssProject').value = ossProject;
-    document.getElementById('formIsAvail').value = isAvail;
-    document.getElementById('projectModal').classList.add('show');
-}
-function submitForm() {
-    var id = document.getElementById('editId').value;
-    var project = document.getElementById('formProject').value;
-    var appsecret = document.getElementById('formAppsecret').value;
-    var openToken = document.getElementById('formOpenToken').value;
-    var isOpentoken = document.getElementById('formIsOpentoken').value;
-    var ossProject = document.getElementById('formOssProject').value;
-    var isAvail = document.getElementById('formIsAvail').value;
-    if (!project) { alert('项目名称不能为空'); return; }
+        $pagination = Layout::pagination((int)$list['current_page'], max(1, (int)ceil($list['total'] / $limit)), '/admin/project', ['search' => $search], $limit);
 
-    var xhr = new XMLHttpRequest();
-    var method = id ? 'POST' : 'PUT';
-    xhr.open(method, '/admin/project', true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-            var res = JSON.parse(xhr.responseText);
-            if (res.code == 0) {
-                location.reload();
-            } else {
-                alert(res.echo);
-            }
-        }
-    };
-    var params = 'project=' + encodeURIComponent(project) + '&appsecret=' + encodeURIComponent(appsecret) + '&open_token=' + encodeURIComponent(openToken) + '&is_opentoken=' + isOpentoken + '&oss_project=' + encodeURIComponent(ossProject) + '&is_avail=' + isAvail;
-    if (id) params += '&appid=' + id;
-    xhr.send(params);
-}
-function doDelete(appid) {
-    if (!confirm('确定要删除该项目吗？')) return;
-    var xhr = new XMLHttpRequest();
-    xhr.open('DELETE', '/admin/project', true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-            var res = JSON.parse(xhr.responseText);
-            if (res.code == 0) {
-                location.reload();
-            } else {
-                alert(res.echo);
-            }
-        }
-    };
-    xhr.send('appid=' + appid);
-}
-</script>
-HTML;
-        $html .= Layout::end();
-        return response($html)->contentType('text/html');
+        return $this->renderPage('project/index', [
+            'list' => $items,
+            'search' => $search,
+            'pagination' => $pagination,
+        ], '项目管理', 'project', 'project');
     }
 
     private function create()
