@@ -56,6 +56,7 @@ class SmsLc extends CommonController
                 'sign' => $item['sign'],
                 'tpcode' => $item['tpcode'],
                 'reverse_addr' => $item['reverse_addr'],
+                'discription' => $item['discription'] ?? '',
             ];
         }
 

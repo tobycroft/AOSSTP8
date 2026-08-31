@@ -27,7 +27,7 @@
             <td>{$item.sign}</td>
             <td>{$item.tpcode}</td>
             <td>
-                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.tag}', '{$item.accessid}', '{$item.sign}', '{$item.tpcode}')">编辑</button>
+                <button class="btn btn-sm btn-edit" data-id="{$item.id}" data-tag="{$item.tag}" data-accessid="{$item.accessid}" data-sign="{$item.sign}" data-tpcode="{$item.tpcode}" onclick="openEdit(this)">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
         </tr>
@@ -88,7 +88,12 @@ function openAdd() {
     document.getElementById('formTpcode').value = '';
     document.getElementById('smsAliyunModal').classList.add('show');
 }
-function openEdit(id, tag, accessid, sign, tpcode) {
+function openEdit(btn) {
+    var id = btn.getAttribute('data-id');
+    var tag = btn.getAttribute('data-tag');
+    var accessid = btn.getAttribute('data-accessid');
+    var sign = btn.getAttribute('data-sign');
+    var tpcode = btn.getAttribute('data-tpcode');
     document.getElementById('modalTitle').textContent = '编辑';
     document.getElementById('editId').value = id;
     document.getElementById('formTag').value = tag;

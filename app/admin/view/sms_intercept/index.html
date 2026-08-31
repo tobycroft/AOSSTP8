@@ -27,7 +27,7 @@
             <td>{$item.change_date}</td>
             <td>{$item.date}</td>
             <td>
-                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.phone}', {$item.num})">编辑</button>
+                <button class="btn btn-sm btn-edit" data-id="{$item.id}" data-phone="{$item.phone}" data-num="{$item.num}" onclick="openEdit(this)">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
         </tr>
@@ -73,7 +73,10 @@ function openAdd() {
     document.getElementById('formNum').value = '';
     document.getElementById('smsInterceptModal').classList.add('show');
 }
-function openEdit(id, phone, num) {
+function openEdit(btn) {
+    var id = btn.getAttribute('data-id');
+    var phone = btn.getAttribute('data-phone');
+    var num = btn.getAttribute('data-num');
     document.getElementById('modalTitle').textContent = '编辑';
     document.getElementById('editId').value = id;
     document.getElementById('formPhone').value = phone;
