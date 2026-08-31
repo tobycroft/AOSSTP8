@@ -48,12 +48,6 @@ class Project extends CommonController
 
         $items = [];
         foreach ($list['data'] as $item) {
-            $availBadge = $item['is_avail'] == 1
-                ? '<span class="status-badge active">是</span>'
-                : '<span class="status-badge inactive">否</span>';
-            $tokenBadge = $item['is_opentoken'] == 1
-                ? '<span class="status-badge active">启用</span>'
-                : '<span class="status-badge inactive">关闭</span>';
             $items[] = [
                 'appid' => $item['appid'],
                 'project' => $item['project'],
@@ -62,10 +56,8 @@ class Project extends CommonController
                 'open_token' => $item['open_token'] ?? '',
                 'open_token_short' => mb_strlen($item['open_token'] ?? '') > 16 ? mb_substr($item['open_token'], 0, 16) . '...' : ($item['open_token'] ?: '-'),
                 'is_opentoken' => $item['is_opentoken'],
-                'token_badge' => $tokenBadge,
                 'oss_project' => $item['oss_project'],
                 'is_avail' => $item['is_avail'],
-                'avail_badge' => $availBadge,
                 'date' => $item['date'],
             ];
         }

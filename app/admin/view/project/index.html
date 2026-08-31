@@ -31,9 +31,9 @@
             <td>{$item.project}</td>
             <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.appsecret}">{$item.appsecret_short}</td>
             <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.open_token}">{$item.open_token_short}</td>
-            <td>{$item.token_badge}</td>
+            <td><span class="status-badge {if $item.is_opentoken==1}active{else/}inactive{/if}">{if $item.is_opentoken==1}启用{else/}关闭{/if}</span></td>
             <td>{$item.oss_project}</td>
-            <td>{$item.avail_badge}</td>
+            <td><span class="status-badge {if $item.is_avail==1}active{else/}inactive{/if}">{if $item.is_avail==1}是{else/}否{/if}</span></td>
             <td>{$item.date}</td>
             <td>
                 <button class="btn btn-sm btn-edit" onclick="openEdit({$item.appid}, '{$item.project}', '{$item.appsecret}', '{$item.open_token}', {$item.is_opentoken}, '{$item.oss_project}', {$item.is_avail})">编辑</button>
