@@ -35,7 +35,7 @@
             <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.oss_token}">{$item.oss_token_short}</td>
             <td>{$item.created_at}</td>
             <td>{$item.expired_at}</td>
-            <td>{$item.status_badge}</td>
+            <td>{$item.status_badge|raw}</td>
             <td>{$item.used_time}</td>
             <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.ip}">{$item.ip}</td>
             <td>
@@ -45,7 +45,7 @@
         {/foreach}
     </tbody>
 </table>
-{$pagination}
+{$pagination|raw}
 {/block}
 {block name="script"}
 {literal}

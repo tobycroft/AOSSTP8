@@ -26,7 +26,7 @@
             <td>{$item.nickname}</td>
             <td>{$item.email}</td>
             <td>{$item.phone}</td>
-            <td>{$item.status_badge}</td>
+            <td>{$item.status_badge|raw}</td>
             <td>{$item.super_text}</td>
             <td>{$item.login_time}</td>
             <td>
@@ -37,7 +37,7 @@
         {/foreach}
     </tbody>
 </table>
-{$pagination}
+{$pagination|raw}
 <div class="modal" id="userModal">
     <div class="modal-box">
         <h3 id="modalTitle">新增用户</h3>

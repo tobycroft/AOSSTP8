@@ -24,7 +24,7 @@
             <td>{$item.appkey}</td>
             <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item.bt_api}</td>
             <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item.bt_key}</td>
-            <td>{$item.status_badge}</td>
+            <td>{$item.status_badge|raw}</td>
             <td>
                 <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.appname}', '{$item.appkey}', '{$item.bt_api}', '{$item.bt_key}', {$item.status})">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
@@ -33,7 +33,7 @@
         {/foreach}
     </tbody>
 </table>
-{$pagination}
+{$pagination|raw}
 <div class="modal" id="certModal">
     <div class="modal-box">
         <h3 id="modalTitle">新增项目</h3>

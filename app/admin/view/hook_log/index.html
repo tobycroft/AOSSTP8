@@ -31,7 +31,7 @@
             <td>{$item.id}</td>
             <td>{$item.tag}</td>
             <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.remark}">{$item.remark_short}</td>
-            <td>{$item.status_badge}</td>
+            <td>{$item.status_badge|raw}</td>
             <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;position:relative;" class="recv-cell" data-url="{$item.url_attr}" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)">{$item.url_short}</td>
             <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;position:relative;" class="recv-cell" data-recv="{$item.recv_attr}" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)">{$item.recv_short}</td>
             <td>{$item.date}</td>
@@ -39,7 +39,7 @@
         {/foreach}
     </tbody>
 </table>
-{$pagination}
+{$pagination|raw}
 <div id="tooltipBox" style="display:none;position:fixed;background:rgba(0, 0, 0, 0.85);color:#fff;padding:8px 12px;border-radius:4px;font-size:12px;white-space:pre-wrap;word-break:break-word;max-width:400px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.15);"></div>
 <style>
 .recv-cell { cursor: pointer; position: relative; }
