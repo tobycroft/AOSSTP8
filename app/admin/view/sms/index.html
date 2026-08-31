@@ -1,0 +1,199 @@
+{extend name="layout/base" /}
+
+{block name="content"}
+<div class="toolbar">
+    <div>
+        <input type="text" id="searchInput" placeholder="搜索项目名称..." value="{$search|default:''}" onkeydown="if(event.key==='Enter')doSearch()" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;width:200px;">
+        <button class="btn btn-primary" onclick="doSearch()" style="margin-left:8px;">搜索</button>
+    </div>
+    <button class="btn btn-primary" onclick="openAdd()">新增</button>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>项目名称</th>
+            <th>Token</th>
+            <th>短信平台</th>
+            <th>平台标签</th>
+            <th>每日上限</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td>{$item.name}</td>
+            <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.token}">{$item.token_short}</td>
+            <td>{$item.sms_type}</td>
+            <td>{$item.sms_tag}</td>
+            <td>{$item.sms_limit}</td>
+            <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
+            <td>
+                <button class="btn btn-sm btn-edit" data-id="{$item.id}" data-name="{$item.name}" data-token="{$item.token}" data-sms_type="{$item.sms_type}" data-sms_tag="{$item.sms_tag}" data-sms_limit="{$item.sms_limit}" data-status="{$item.status}" onclick="openEdit(this)">编辑</button>
+                <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
+            </td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination|raw}
+
+<div class="modal" id="smsModal">
+    <div class="modal-box">
+        <h3 id="modalTitle">新增短信项目</h3>
+        <form id="smsForm">
+            <input type="hidden" id="editId" value="">
+            <div class="form-group">
+                <label>项目名称</label>
+                <input type="text" id="name" placeholder="请输入项目名称" required>
+            </div>
+            <div class="form-group">
+                <label>Token</label>
+                <input type="text" id="token" placeholder="鉴权token" required>
+            </div>
+            <div class="form-group">
+                <label>签名密钥</label>
+                <input type="text" id="code" placeholder="用于签名验证的密钥">
+            </div>
+            <div class="form-group">
+                <label>短信平台</label>
+                <select id="sms_type">
+                    <option value="none">未选择</option>
+                    <option value="aliyun">阿里云</option>
+                    <option value="tencent">腾讯云</option>
+                    <option value="lc">LC</option>
+                    <option value="wlwx">网路万象</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>平台标签</label>
+                <input type="text" id="sms_tag" placeholder="default" value="default">
+            </div>
+            <div class="form-group">
+                <label>每日发送上限</label>
+                <input type="number" id="sms_limit" value="20" min="1" max="999">
+            </div>
+            <div class="form-group">
+                <label>状态</label>
+                <select id="status">
+                    <option value="1">启用</option>
+                    <option value="0">禁用</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeModal()">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitForm()">保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+function doSearch() {
+    var q = document.getElementById('searchInput').value;
+    window.location.href = '/admin/sms?search=' + encodeURIComponent(q);
+}
+
+function openAdd() {
+    document.getElementById('modalTitle').textContent = '新增短信项目';
+    document.getElementById('editId').value = '';
+    document.getElementById('name').value = '';
+    document.getElementById('token').value = '';
+    document.getElementById('code').value = '';
+    document.getElementById('sms_type').value = 'none';
+    document.getElementById('sms_tag').value = 'default';
+    document.getElementById('sms_limit').value = '20';
+    document.getElementById('status').value = '1';
+    document.getElementById('smsModal').classList.add('show');
+}
+
+function openEdit(btn) {
+    var id = btn.getAttribute('data-id');
+    var name = btn.getAttribute('data-name');
+    var token = btn.getAttribute('data-token');
+    var smsType = btn.getAttribute('data-sms_type');
+    var smsTag = btn.getAttribute('data-sms_tag');
+    var smsLimit = btn.getAttribute('data-sms_limit');
+    var status = btn.getAttribute('data-status');
+    document.getElementById('modalTitle').textContent = '编辑短信项目';
+    document.getElementById('editId').value = id;
+    document.getElementById('name').value = name;
+    document.getElementById('token').value = token;
+    document.getElementById('code').value = '';
+    document.getElementById('sms_type').value = smsType;
+    document.getElementById('sms_tag').value = smsTag;
+    document.getElementById('sms_limit').value = smsLimit;
+    document.getElementById('status').value = status;
+    document.getElementById('smsModal').classList.add('show');
+}
+
+function closeModal() {
+    document.getElementById('smsModal').classList.remove('show');
+}
+
+function submitForm() {
+    var id = document.getElementById('editId').value;
+    var name = document.getElementById('name').value;
+    var token = document.getElementById('token').value;
+    var code = document.getElementById('code').value;
+    var sms_type = document.getElementById('sms_type').value;
+    var sms_tag = document.getElementById('sms_tag').value;
+    var sms_limit = document.getElementById('sms_limit').value;
+    var status = document.getElementById('status').value;
+
+    if (!name) { alert('项目名称不能为空'); return; }
+    if (!token) { alert('Token不能为空'); return; }
+
+    var params = 'name=' + encodeURIComponent(name) + '&token=' + encodeURIComponent(token) + '&sms_type=' + encodeURIComponent(sms_type) + '&sms_tag=' + encodeURIComponent(sms_tag) + '&sms_limit=' + encodeURIComponent(sms_limit) + '&status=' + encodeURIComponent(status);
+    if (code) {
+        params += '&code=' + encodeURIComponent(code);
+    }
+
+    var xhr = new XMLHttpRequest();
+    if (id) {
+        params += '&id=' + id;
+        xhr.open('POST', '/admin/sms', true);
+    } else {
+        xhr.open('PUT', '/admin/sms', true);
+    }
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                window.location.reload();
+            } else {
+                alert(res.echo || '操作失败');
+            }
+        }
+    };
+    xhr.send(params);
+}
+
+function doDelete(id) {
+    if (!confirm('确定要删除吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/sms', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                window.location.reload();
+            } else {
+                alert(res.echo || '删除失败');
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+</script>
+{/block}

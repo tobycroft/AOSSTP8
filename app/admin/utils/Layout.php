@@ -50,6 +50,7 @@ class Layout
         'sms' => [
             'title' => '短信管理',
             'items' => [
+                'sms' => ['label' => '短信项目', 'url' => '/admin/sms'],
                 'sms_aliyun' => ['label' => '阿里云短信', 'url' => '/admin/sms_aliyun'],
                 'sms_tencent' => ['label' => '腾讯云短信', 'url' => '/admin/sms_tencent'],
                 'sms_lc' => ['label' => 'LC短信', 'url' => '/admin/sms_lc'],

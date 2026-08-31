@@ -56,6 +56,7 @@
 \think\facade\Route::any('admin/console', '\app\admin\controller\Console@index');
 
 // SMS管理
+\think\facade\Route::any('admin/sms', '\app\admin\controller\Sms@index');
 \think\facade\Route::any('admin/sms_aliyun', '\app\admin\controller\SmsAliyun@index');
 \think\facade\Route::any('admin/sms_tencent', '\app\admin\controller\SmsTencent@index');
 \think\facade\Route::any('admin/sms_lc', '\app\admin\controller\SmsLc@index');
