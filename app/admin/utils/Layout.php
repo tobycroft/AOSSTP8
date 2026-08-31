@@ -17,13 +17,14 @@ class Layout
         'project' => [
             'title' => '项目',
             'items' => [
-                'oss' => ['label' => '存储项目', 'url' => '/admin/oss'],
-                'oss_aliyun' => ['label' => '阿里云OSS', 'url' => '/admin/oss_aliyun'],
+                'project' => ['label' => '项目管理', 'url' => '/admin/project'],
             ],
         ],
         'storage' => [
             'title' => '存储管理',
             'items' => [
+                'oss' => ['label' => '存储项目', 'url' => '/admin/oss'],
+                'oss_aliyun' => ['label' => '阿里云OSS', 'url' => '/admin/oss_aliyun'],
                 'attachment' => ['label' => '附件管理', 'url' => '/admin/attachment'],
                 'attachment_token' => ['label' => '上传Token', 'url' => '/admin/attachment_token'],
             ],

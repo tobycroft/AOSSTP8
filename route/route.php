@@ -50,6 +50,7 @@
 \think\facade\Route::any('admin/attachment_token', '\app\admin\controller\AttachmentToken@index');
 \think\facade\Route::any('admin/oss', '\app\admin\controller\Oss@index');
 \think\facade\Route::any('admin/oss_aliyun', '\app\admin\controller\OssAliyun@index');
+\think\facade\Route::any('admin/project', '\app\admin\controller\Project@index');
 \think\facade\Route::any('admin/hook', '\app\admin\controller\Hook@index');
 \think\facade\Route::any('admin/hook_log', '\app\admin\controller\HookLog@index');
 \think\facade\Route::any('admin/console', '\app\admin\controller\Console@index');
