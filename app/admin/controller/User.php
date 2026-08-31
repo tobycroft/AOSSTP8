@@ -275,6 +275,9 @@ HTML;
         }
 
         $data = [];
+        if (request()->has('username', 'post')) {
+            $data['username'] = Input::Post('username');
+        }
         if (request()->has('nickname', 'post')) {
             $data['nickname'] = Input::Post('nickname');
         }
