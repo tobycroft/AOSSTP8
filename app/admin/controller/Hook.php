@@ -69,9 +69,6 @@ class Hook extends CommonController
 
         $items = [];
         foreach ($list as $item) {
-            $statusBtn = $item['status'] == 1
-                ? '<button class="btn btn-sm status-toggle" data-id="' . $item['id'] . '" data-status="1" onclick="toggleStatus(this)" style="background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:12px;">启用</button>'
-                : '<button class="btn btn-sm status-toggle" data-id="' . $item['id'] . '" data-status="0" onclick="toggleStatus(this)" style="background:#fff2f0;color:#ff4d4f;border:1px solid #ffccc7;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:12px;">禁用</button>';
             $items[] = [
                 'id' => $item['id'],
                 'tag' => $item['tag'],
@@ -84,7 +81,6 @@ class Hook extends CommonController
                 'method' => $item['method'] ?? '',
                 'method_text' => $item['method'] ?? '-',
                 'domain' => $item['domain'],
-                'status_btn' => $statusBtn,
                 'date' => $item['date'],
                 'key' => $item['key'],
                 'param' => $item['param'],
