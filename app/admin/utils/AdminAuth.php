@@ -51,6 +51,11 @@ class AdminAuth
     {
         $user = self::getLoginUser();
         if (empty($user)) {
+            // 页面加载（GET）直接跳转登录页，AJAX（POST/PUT/DELETE）返回 JSON
+            if (request()->isGet()) {
+                header('Location: /admin/login');
+                exit;
+            }
             Ret::Fail(-1, null, '登录失效请重新登录');
         }
         return $user;
