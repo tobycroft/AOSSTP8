@@ -39,9 +39,14 @@ class SmsBlacklist extends CommonController
     {
         $page = input('get.page', 1, 'intval');
         $limit = 15;
+        $search = input('get.search', '');
 
         $model = new AdminSmsBlacklistModel();
-        $list = $model->order('id', 'desc')->paginate($limit, false, ['page' => $page])->toArray();
+        $query = $model->order('id', 'desc');
+        if (!empty($search)) {
+            $query->where('name', 'like', '%' . $search . '%');
+        }
+        $list = $query->paginate($limit, false, ['page' => $page])->toArray();
 
         $items = [];
         foreach ($list['data'] as $item) {
@@ -54,10 +59,11 @@ class SmsBlacklist extends CommonController
             ];
         }
 
-        $pagination = Layout::pagination((int)$list['current_page'], max(1, (int)ceil($list['total'] / $limit)), '/admin/sms_blacklist');
+        $pagination = Layout::pagination((int)$list['current_page'], max(1, (int)ceil($list['total'] / $limit)), '/admin/sms_blacklist', ['search' => $search], $limit);
 
         return $this->renderPage('sms_blacklist/index', [
             'list' => $items,
+            'search' => $search,
             'pagination' => $pagination,
         ], '短信黑名单', 'sms', 'sms_blacklist');
     }

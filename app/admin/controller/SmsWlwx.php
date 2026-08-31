@@ -37,9 +37,14 @@ class SmsWlwx extends CommonController
     {
         $page = input('get.page', 1, 'intval');
         $limit = 15;
+        $search = input('get.search', '');
 
         $model = new AdminSmsWlwxModel();
-        $list = $model->api_list($page, $limit);
+        $query = $model->order('id', 'desc');
+        if (!empty($search)) {
+            $query->where('tag', 'like', '%' . $search . '%');
+        }
+        $list = $query->paginate($limit, false, ['page' => $page])->toArray();
 
         $items = [];
         foreach ($list['data'] as $item) {
@@ -52,10 +57,11 @@ class SmsWlwx extends CommonController
             ];
         }
 
-        $pagination = Layout::pagination((int)$list['current_page'], max(1, (int)ceil($list['total'] / $limit)), '/admin/sms_wlwx');
+        $pagination = Layout::pagination((int)$list['current_page'], max(1, (int)ceil($list['total'] / $limit)), '/admin/sms_wlwx', ['search' => $search], $limit);
 
         return $this->renderPage('sms_wlwx/index', [
             'list' => $items,
+            'search' => $search,
             'pagination' => $pagination,
         ], '网路万象', 'sms', 'sms_wlwx');
     }

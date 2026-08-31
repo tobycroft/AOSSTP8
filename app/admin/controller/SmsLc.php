@@ -37,9 +37,14 @@ class SmsLc extends CommonController
     {
         $page = input('get.page', 1, 'intval');
         $limit = 15;
+        $search = input('get.search', '');
 
         $model = new AdminSmsLcModel();
-        $list = $model->api_list($page, $limit);
+        $query = $model->order('id', 'desc');
+        if (!empty($search)) {
+            $query->where('tag', 'like', '%' . $search . '%');
+        }
+        $list = $query->paginate($limit, false, ['page' => $page])->toArray();
 
         $items = [];
         foreach ($list['data'] as $item) {
@@ -54,10 +59,11 @@ class SmsLc extends CommonController
             ];
         }
 
-        $pagination = Layout::pagination((int)$list['current_page'], max(1, (int)ceil($list['total'] / $limit)), '/admin/sms_lc');
+        $pagination = Layout::pagination((int)$list['current_page'], max(1, (int)ceil($list['total'] / $limit)), '/admin/sms_lc', ['search' => $search], $limit);
 
         return $this->renderPage('sms_lc/index', [
             'list' => $items,
+            'search' => $search,
             'pagination' => $pagination,
         ], 'LC短信', 'sms', 'sms_lc');
     }

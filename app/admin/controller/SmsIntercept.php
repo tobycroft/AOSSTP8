@@ -39,9 +39,14 @@ class SmsIntercept extends CommonController
     {
         $page = input('get.page', 1, 'intval');
         $limit = 15;
+        $search = input('get.search', '');
 
         $model = new AdminSmsInterceptModel();
-        $list = $model->order('id', 'desc')->paginate($limit, false, ['page' => $page])->toArray();
+        $query = $model->order('id', 'desc');
+        if (!empty($search)) {
+            $query->where('phone', 'like', '%' . $search . '%');
+        }
+        $list = $query->paginate($limit, false, ['page' => $page])->toArray();
 
         $items = [];
         foreach ($list['data'] as $item) {
@@ -54,10 +59,11 @@ class SmsIntercept extends CommonController
             ];
         }
 
-        $pagination = Layout::pagination((int)$list['current_page'], max(1, (int)ceil($list['total'] / $limit)), '/admin/sms_intercept');
+        $pagination = Layout::pagination((int)$list['current_page'], max(1, (int)ceil($list['total'] / $limit)), '/admin/sms_intercept', ['search' => $search], $limit);
 
         return $this->renderPage('sms_intercept/index', [
             'list' => $items,
+            'search' => $search,
             'pagination' => $pagination,
         ], '拦截规则', 'sms', 'sms_intercept');
     }

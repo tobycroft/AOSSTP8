@@ -37,9 +37,14 @@ class SmsTencent extends CommonController
     {
         $page = input('get.page', 1, 'intval');
         $limit = 15;
+        $search = input('get.search', '');
 
         $model = new AdminSmsTencentModel();
-        $list = $model->api_list($page, $limit);
+        $query = $model->order('id', 'desc');
+        if (!empty($search)) {
+            $query->where('tag', 'like', '%' . $search . '%');
+        }
+        $list = $query->paginate($limit, false, ['page' => $page])->toArray();
 
         $items = [];
         foreach ($list['data'] as $item) {
@@ -53,10 +58,11 @@ class SmsTencent extends CommonController
             ];
         }
 
-        $pagination = Layout::pagination((int)$list['current_page'], max(1, (int)ceil($list['total'] / $limit)), '/admin/sms_tencent');
+        $pagination = Layout::pagination((int)$list['current_page'], max(1, (int)ceil($list['total'] / $limit)), '/admin/sms_tencent', ['search' => $search], $limit);
 
         return $this->renderPage('sms_tencent/index', [
             'list' => $items,
+            'search' => $search,
             'pagination' => $pagination,
         ], '腾讯云短信', 'sms', 'sms_tencent');
     }
