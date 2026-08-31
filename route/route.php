@@ -53,6 +53,7 @@
 \think\facade\Route::any('admin/project', '\app\admin\controller\Project@index');
 \think\facade\Route::any('admin/hook', '\app\admin\controller\Hook@index');
 \think\facade\Route::any('admin/hook_log', '\app\admin\controller\HookLog@index');
+\think\facade\Route::any('admin/excel', '\app\admin\controller\Excel@index');
 \think\facade\Route::any('admin/console', '\app\admin\controller\Console@index');
 
 // SMS管理

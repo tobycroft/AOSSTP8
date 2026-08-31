@@ -37,6 +37,7 @@ class Layout
             'items' => [
                 'hook' => ['label' => 'Hook配置', 'url' => '/admin/hook'],
                 'hook_log' => ['label' => 'Hook日志', 'url' => '/admin/hook_log'],
+                'excel' => ['label' => 'Excel缓存', 'url' => '/admin/excel'],
             ],
         ],
         'admin' => [
