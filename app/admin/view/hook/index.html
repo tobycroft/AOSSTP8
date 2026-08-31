@@ -7,7 +7,9 @@
             <input type="text" id="searchTag" placeholder="输入 Tag 搜索" value="{$tag}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 200px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
             <select id="limitSelect" onchange="doSearch()" style="padding: 8px 8px; margin-left: 8px; border: 1px solid #d9d9d9; border-radius: 4px; outline: none;">
                 <option value="">每页行数</option>
-                {$selectHtml|raw}
+                {foreach $limitOptions as $opt}
+                <option value="{$opt}" {if $opt==$limit}selected{/if}>{$opt}</option>
+                {/foreach}
             </select>
             <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
         </div>
@@ -41,7 +43,7 @@
             <td>{$item.mode_text}</td>
             <td>{$item.method_text}</td>
             <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.domain}">{$item.domain}</td>
-            <td>{include file="layout/status_toggle" id=$item.id status=$item.status /}</td>
+            <td><button class="btn btn-sm status-toggle" data-id="{$item.id}" data-status="{$item.status}" onclick="toggleStatus(this)" style="background:{if $item.status==1}#f6ffed{else/}#fff2f0{/if};color:{if $item.status==1}#52c41a{else/}#ff4d4f{/if};border:1px solid {if $item.status==1}#b7eb8f{else/}#ffccc7{/if};border-radius:4px;padding:2px 8px;cursor:pointer;font-size:12px;">{if $item.status==1}启用{else/}禁用{/if}</button></td>
             <td>{$item.date}</td>
             <td>
                 <button class="btn btn-sm btn-edit" data-id="{$item.id}" data-tag="{$item.tag}" data-branch="{$item.branch}" data-remark="{$item.remark}" data-mode="{$item.mode}" data-method="{$item.method}" data-domain="{$item.domain}" data-key="{$item.key}" data-param="{$item.param}" data-full_url="{$item.full_url}" data-status="{$item.status}" onclick="openEdit(this)">编辑</button>

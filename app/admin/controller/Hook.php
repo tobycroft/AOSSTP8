@@ -61,11 +61,6 @@ class Hook extends CommonController
         }
 
         $limitOptions = [15, 30, 50, 100];
-        $selectHtml = '';
-        foreach ($limitOptions as $opt) {
-            $selected = $opt == $limit ? 'selected' : '';
-            $selectHtml .= '<option value="' . $opt . '" ' . $selected . '>' . $opt . '</option>';
-        }
 
         $items = [];
         foreach ($list as $item) {
@@ -94,7 +89,8 @@ class Hook extends CommonController
         return $this->renderPage('hook/index', [
             'list' => $items,
             'tag' => $tag,
-            'selectHtml' => $selectHtml,
+            'limit' => $limit,
+            'limitOptions' => $limitOptions,
             'pagination' => $pagination,
         ], 'Hook管理', 'hook', 'hook');
     }
