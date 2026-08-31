@@ -75,6 +75,7 @@ class Hook extends CommonController
             $items[] = [
                 'id' => $item['id'],
                 'tag' => $item['tag'],
+                'branch' => $item['branch'] ?: 'master',
                 'branch_text' => $item['branch'] ?: 'master',
                 'remark' => $item['remark'] ?? '',
                 'remark_short' => mb_strlen($item['remark'] ?? '') > 20 ? mb_substr($item['remark'], 0, 20) . '...' : ($item['remark'] ?: '-'),
