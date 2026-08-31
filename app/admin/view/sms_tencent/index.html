@@ -1,0 +1,148 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div>
+        <input type="text" id="searchInput" placeholder="搜索..." value="{$search|default:''}" onkeydown="if(event.key==='Enter')doSearch()" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;width:200px;">
+        <button class="btn btn-primary" onclick="doSearch()" style="margin-left:8px;">搜索</button>
+    </div>
+    <button class="btn btn-primary" onclick="openAdd()">新增</button>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>标签</th>
+            <th>AppID</th>
+            <th>签名</th>
+            <th>模板ID</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td>{$item.tag}</td>
+            <td>{$item.appid}</td>
+            <td>{$item.sign}</td>
+            <td>{$item.tplid}</td>
+            <td>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.tag}', '{$item.appid}', '{$item.sign}', '{$item.tplid}')">编辑</button>
+                <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
+            </td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination|raw}
+<div class="modal" id="smsTencentModal">
+    <div class="modal-box">
+        <h3 id="modalTitle">新增</h3>
+        <input type="hidden" id="editId" value="">
+        <div class="form-group">
+            <label>标签</label>
+            <input type="text" id="formTag" placeholder="标签">
+        </div>
+        <div class="form-group">
+            <label>AppID</label>
+            <input type="text" id="formAppid" placeholder="AppID">
+        </div>
+        <div class="form-group">
+            <label>AppKey</label>
+            <input type="text" id="formAppkey" placeholder="AppKey">
+        </div>
+        <div class="form-group">
+            <label>签名</label>
+            <input type="text" id="formSign" placeholder="短信签名">
+        </div>
+        <div class="form-group">
+            <label>模板ID</label>
+            <input type="text" id="formTplid" placeholder="模板ID">
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-cancel" onclick="closeModal()">取消</button>
+            <button type="button" class="btn btn-primary" onclick="submitForm()">保存</button>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{literal}
+<script>
+function doSearch() {
+    var search = document.getElementById('searchInput').value;
+    var url = '/admin/sms_tencent?page=1';
+    if (search) url += '&search=' + encodeURIComponent(search);
+    window.location.href = url;
+}
+function closeModal() {
+    document.getElementById('smsTencentModal').classList.remove('show');
+}
+function openAdd() {
+    document.getElementById('modalTitle').textContent = '新增';
+    document.getElementById('editId').value = '';
+    document.getElementById('formTag').value = '';
+    document.getElementById('formAppid').value = '';
+    document.getElementById('formAppkey').value = '';
+    document.getElementById('formSign').value = '';
+    document.getElementById('formTplid').value = '';
+    document.getElementById('smsTencentModal').classList.add('show');
+}
+function openEdit(id, tag, appid, sign, tplid) {
+    document.getElementById('modalTitle').textContent = '编辑';
+    document.getElementById('editId').value = id;
+    document.getElementById('formTag').value = tag;
+    document.getElementById('formAppid').value = appid;
+    document.getElementById('formAppkey').value = '';
+    document.getElementById('formSign').value = sign;
+    document.getElementById('formTplid').value = tplid;
+    document.getElementById('smsTencentModal').classList.add('show');
+}
+function submitForm() {
+    var id = document.getElementById('editId').value;
+    var tag = document.getElementById('formTag').value;
+    var appid = document.getElementById('formAppid').value;
+    var appkey = document.getElementById('formAppkey').value;
+    var sign = document.getElementById('formSign').value;
+    var tplid = document.getElementById('formTplid').value;
+    if (!tag) { alert('标签不能为空'); return; }
+    var xhr = new XMLHttpRequest();
+    var method = id ? 'POST' : 'PUT';
+    xhr.open(method, '/admin/sms_tencent', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    var params = 'tag=' + encodeURIComponent(tag) + '&appid=' + encodeURIComponent(appid) + '&appkey=' + encodeURIComponent(appkey) + '&sign=' + encodeURIComponent(sign) + '&tplid=' + encodeURIComponent(tplid);
+    if (id) params += '&id=' + id;
+    xhr.send(params);
+}
+function doDelete(id) {
+    if (!confirm('确定要删除该配置吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/sms_tencent', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+</script>
+{/literal}
+{/block}

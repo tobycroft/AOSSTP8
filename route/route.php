@@ -54,6 +54,16 @@
 \think\facade\Route::any('admin/hook', '\app\admin\controller\Hook@index');
 \think\facade\Route::any('admin/hook_log', '\app\admin\controller\HookLog@index');
 \think\facade\Route::any('admin/console', '\app\admin\controller\Console@index');
+
+// SMS管理
+\think\facade\Route::any('admin/sms_aliyun', '\app\admin\controller\SmsAliyun@index');
+\think\facade\Route::any('admin/sms_tencent', '\app\admin\controller\SmsTencent@index');
+\think\facade\Route::any('admin/sms_lc', '\app\admin\controller\SmsLc@index');
+\think\facade\Route::any('admin/sms_wlwx', '\app\admin\controller\SmsWlwx@index');
+\think\facade\Route::any('admin/sms_blacklist', '\app\admin\controller\SmsBlacklist@index');
+\think\facade\Route::any('admin/sms_intercept', '\app\admin\controller\SmsIntercept@index');
+\think\facade\Route::any('admin/sms_log', '\app\admin\controller\SmsLog@index');
+
 \think\facade\Route::any('admin', '\app\admin\controller\Index@index');
 
 \think\facade\Route::any('up', '\app\v1\file\controller\index@up');

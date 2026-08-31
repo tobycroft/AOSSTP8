@@ -1,0 +1,127 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div>
+        <input type="text" id="searchInput" placeholder="搜索..." value="{$search|default:''}" onkeydown="if(event.key==='Enter')doSearch()" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;width:200px;">
+        <button class="btn btn-primary" onclick="doSearch()" style="margin-left:8px;">搜索</button>
+    </div>
+    <button class="btn btn-primary" onclick="openAdd()">新增</button>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>手机号</th>
+            <th>拦截次数</th>
+            <th>修改时间</th>
+            <th>创建时间</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td>{$item.phone}</td>
+            <td>{$item.num}</td>
+            <td>{$item.change_date}</td>
+            <td>{$item.date}</td>
+            <td>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.phone}', {$item.num})">编辑</button>
+                <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
+            </td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination|raw}
+<div class="modal" id="smsInterceptModal">
+    <div class="modal-box">
+        <h3 id="modalTitle">新增</h3>
+        <input type="hidden" id="editId" value="">
+        <div class="form-group">
+            <label>手机号</label>
+            <input type="text" id="formPhone" placeholder="手机号">
+        </div>
+        <div class="form-group">
+            <label>拦截次数</label>
+            <input type="number" id="formNum" placeholder="拦截次数">
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-cancel" onclick="closeModal()">取消</button>
+            <button type="button" class="btn btn-primary" onclick="submitForm()">保存</button>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{literal}
+<script>
+function doSearch() {
+    var search = document.getElementById('searchInput').value;
+    var url = '/admin/sms_intercept?page=1';
+    if (search) url += '&search=' + encodeURIComponent(search);
+    window.location.href = url;
+}
+function closeModal() {
+    document.getElementById('smsInterceptModal').classList.remove('show');
+}
+function openAdd() {
+    document.getElementById('modalTitle').textContent = '新增';
+    document.getElementById('editId').value = '';
+    document.getElementById('formPhone').value = '';
+    document.getElementById('formNum').value = '';
+    document.getElementById('smsInterceptModal').classList.add('show');
+}
+function openEdit(id, phone, num) {
+    document.getElementById('modalTitle').textContent = '编辑';
+    document.getElementById('editId').value = id;
+    document.getElementById('formPhone').value = phone;
+    document.getElementById('formNum').value = num;
+    document.getElementById('smsInterceptModal').classList.add('show');
+}
+function submitForm() {
+    var id = document.getElementById('editId').value;
+    var phone = document.getElementById('formPhone').value;
+    var num = document.getElementById('formNum').value;
+    if (!phone) { alert('手机号不能为空'); return; }
+    var xhr = new XMLHttpRequest();
+    var method = id ? 'POST' : 'PUT';
+    xhr.open(method, '/admin/sms_intercept', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    var params = 'phone=' + encodeURIComponent(phone) + '&num=' + encodeURIComponent(num);
+    if (id) params += '&id=' + id;
+    xhr.send(params);
+}
+function doDelete(id) {
+    if (!confirm('确定要删除该拦截规则吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/sms_intercept', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+</script>
+{/literal}
+{/block}

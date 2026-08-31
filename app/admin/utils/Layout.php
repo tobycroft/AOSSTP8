@@ -47,6 +47,18 @@ class Layout
                 'menu' => ['label' => '菜单管理', 'url' => '/admin/menu'],
             ],
         ],
+        'sms' => [
+            'title' => '短信管理',
+            'items' => [
+                'sms_aliyun' => ['label' => '阿里云短信', 'url' => '/admin/sms_aliyun'],
+                'sms_tencent' => ['label' => '腾讯云短信', 'url' => '/admin/sms_tencent'],
+                'sms_lc' => ['label' => 'LC短信', 'url' => '/admin/sms_lc'],
+                'sms_wlwx' => ['label' => '网路万象', 'url' => '/admin/sms_wlwx'],
+                'sms_blacklist' => ['label' => '黑名单', 'url' => '/admin/sms_blacklist'],
+                'sms_intercept' => ['label' => '拦截规则', 'url' => '/admin/sms_intercept'],
+                'sms_log' => ['label' => '发送日志', 'url' => '/admin/sms_log'],
+            ],
+        ],
     ];
 
     private static function css(): string

@@ -1,0 +1,59 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <h2>短信日志</h2>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>名称</th>
+            <th>手机号</th>
+            <th>状态</th>
+            <th>IP</th>
+            <th>时间</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td>{$item.name}</td>
+            <td>{$item.phone}</td>
+            <td><span class="status-badge {if $item.success=='success'}success{else/}fail{/if}">{$item.success}</span></td>
+            <td>{$item.ip}</td>
+            <td>{$item.date}</td>
+            <td>
+                <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
+            </td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination|raw}
+{/block}
+{block name="script"}
+{literal}
+<script>
+function doDelete(id) {
+    if (!confirm('确定要删除该日志吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/sms_log', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+</script>
+{/literal}
+{/block}

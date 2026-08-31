@@ -1,0 +1,139 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div>
+        <input type="text" id="searchInput" placeholder="搜索..." value="{$search|default:''}" onkeydown="if(event.key==='Enter')doSearch()" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;width:200px;">
+        <button class="btn btn-primary" onclick="doSearch()" style="margin-left:8px;">搜索</button>
+    </div>
+    <button class="btn btn-primary" onclick="openAdd()">新增</button>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>标签</th>
+            <th>客户编码</th>
+            <th>模板</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td>{$item.tag}</td>
+            <td>{$item.cust_code}</td>
+            <td>{$item.template}</td>
+            <td>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.tag}', '{$item.cust_code}', '{$item.template}')">编辑</button>
+                <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
+            </td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination|raw}
+<div class="modal" id="smsWlwxModal">
+    <div class="modal-box">
+        <h3 id="modalTitle">新增</h3>
+        <input type="hidden" id="editId" value="">
+        <div class="form-group">
+            <label>标签</label>
+            <input type="text" id="formTag" placeholder="标签">
+        </div>
+        <div class="form-group">
+            <label>客户编码</label>
+            <input type="text" id="formCustCode" placeholder="客户编码">
+        </div>
+        <div class="form-group">
+            <label>密码</label>
+            <input type="text" id="formPassword" placeholder="密码">
+        </div>
+        <div class="form-group">
+            <label>模板</label>
+            <input type="text" id="formTemplate" placeholder="短信模板">
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-cancel" onclick="closeModal()">取消</button>
+            <button type="button" class="btn btn-primary" onclick="submitForm()">保存</button>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{literal}
+<script>
+function doSearch() {
+    var search = document.getElementById('searchInput').value;
+    var url = '/admin/sms_wlwx?page=1';
+    if (search) url += '&search=' + encodeURIComponent(search);
+    window.location.href = url;
+}
+function closeModal() {
+    document.getElementById('smsWlwxModal').classList.remove('show');
+}
+function openAdd() {
+    document.getElementById('modalTitle').textContent = '新增';
+    document.getElementById('editId').value = '';
+    document.getElementById('formTag').value = '';
+    document.getElementById('formCustCode').value = '';
+    document.getElementById('formPassword').value = '';
+    document.getElementById('formTemplate').value = '';
+    document.getElementById('smsWlwxModal').classList.add('show');
+}
+function openEdit(id, tag, cust_code, template) {
+    document.getElementById('modalTitle').textContent = '编辑';
+    document.getElementById('editId').value = id;
+    document.getElementById('formTag').value = tag;
+    document.getElementById('formCustCode').value = cust_code;
+    document.getElementById('formPassword').value = '';
+    document.getElementById('formTemplate').value = template;
+    document.getElementById('smsWlwxModal').classList.add('show');
+}
+function submitForm() {
+    var id = document.getElementById('editId').value;
+    var tag = document.getElementById('formTag').value;
+    var cust_code = document.getElementById('formCustCode').value;
+    var password = document.getElementById('formPassword').value;
+    var template = document.getElementById('formTemplate').value;
+    if (!tag) { alert('标签不能为空'); return; }
+    var xhr = new XMLHttpRequest();
+    var method = id ? 'POST' : 'PUT';
+    xhr.open(method, '/admin/sms_wlwx', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    var params = 'tag=' + encodeURIComponent(tag) + '&cust_code=' + encodeURIComponent(cust_code) + '&password=' + encodeURIComponent(password) + '&template=' + encodeURIComponent(template);
+    if (id) params += '&id=' + id;
+    xhr.send(params);
+}
+function doDelete(id) {
+    if (!confirm('确定要删除该配置吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/sms_wlwx', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+</script>
+{/literal}
+{/block}
