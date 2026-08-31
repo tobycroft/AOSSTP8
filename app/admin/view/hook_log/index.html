@@ -7,7 +7,9 @@
             <input type="text" id="searchTag" placeholder="输入 Tag 搜索" value="{$tag}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 200px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
             <select id="limitSelect" onchange="doSearch()" style="padding: 8px 8px; margin-left: 8px; border: 1px solid #d9d9d9; border-radius: 4px; outline: none;">
                 <option value="">每页行数</option>
-                {$selectHtml}
+                {foreach $limitOptions as $opt}
+                <option value="{$opt}" {if $opt==$limit}selected{/if}>{$opt}</option>
+                {/foreach}
             </select>
             <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
         </div>
@@ -31,7 +33,7 @@
             <td>{$item.id}</td>
             <td>{$item.tag}</td>
             <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.remark}">{$item.remark_short}</td>
-            <td>{$item.status_badge|raw}</td>
+            <td><span class="status-badge" style="background:{if $item.success==1}#f6ffed{else/}#fff2f0{/if};color:{if $item.success==1}#52c41a{else/}#ff4d4f{/if};border:1px solid {if $item.success==1}#b7eb8f{else/}#ffccc7{/if};">{if $item.success==1}成功{else/}失败{/if}</span></td>
             <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;position:relative;" class="recv-cell" data-url="{$item.url_attr}" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)">{$item.url_short}</td>
             <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;position:relative;" class="recv-cell" data-recv="{$item.recv_attr}" onmouseenter="showTooltip(this)" onmouseleave="hideTooltip(this)">{$item.recv_short}</td>
             <td>{$item.date}</td>

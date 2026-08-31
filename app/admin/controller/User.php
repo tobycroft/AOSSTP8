@@ -48,19 +48,15 @@ class User extends CommonController
 
         $items = [];
         foreach ($list as $item) {
-            $statusBadge = $item['status'] == 1
-                ? '<span class="status-badge active">启用</span>'
-                : '<span class="status-badge inactive">禁用</span>';
             $items[] = [
                 'id' => $item['id'],
                 'username' => $item['username'],
                 'nickname' => $item['nickname'],
                 'email' => $item['email'],
                 'phone' => $item['phone'],
-                'status_badge' => $statusBadge,
-                'super_text' => $item['is_super'] ? '是' : '否',
                 'login_time' => $item['login_time'],
                 'status' => $item['status'],
+                'is_super' => $item['is_super'],
             ];
         }
 

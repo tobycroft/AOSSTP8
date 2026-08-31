@@ -26,7 +26,7 @@
             <td>{$item.icon}</td>
             <td>{$item.path}</td>
             <td>{$item.sort}</td>
-            <td>{$item.status_badge|raw}</td>
+            <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
             <td>
                 <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, {$item.parent_id}, '{$item.name}', '{$item.icon}', '{$item.path}', {$item.sort}, {$item.status})">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>

@@ -53,11 +53,6 @@ class HookLog extends CommonController
         }
 
         $limitOptions = [15, 30, 50, 100];
-        $selectHtml = '';
-        foreach ($limitOptions as $opt) {
-            $selected = $opt == $limit ? 'selected' : '';
-            $selectHtml .= '<option value="' . $opt . '" ' . $selected . '>' . $opt . '</option>';
-        }
 
         $items = [];
         foreach ($list as $item) {
@@ -66,9 +61,7 @@ class HookLog extends CommonController
                 'tag' => $item['tag'],
                 'remark' => $item['remark'] ?? '',
                 'remark_short' => mb_strlen($item['remark'] ?? '') > 20 ? mb_substr($item['remark'], 0, 20) . '...' : ($item['remark'] ?: '-'),
-                'status_badge' => $item['success'] == 1
-                    ? '<span class="status-badge" style="background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f;">成功</span>'
-                    : '<span class="status-badge" style="background:#fff2f0;color:#ff4d4f;border:1px solid #ffccc7;">失败</span>',
+                'success' => $item['success'],
                 'url' => $item['url'] ?? '',
                 'url_short' => '',
                 'url_attr' => '',
@@ -90,7 +83,8 @@ class HookLog extends CommonController
         return $this->renderPage('hook_log/index', [
             'list' => $items,
             'tag' => $tag,
-            'selectHtml' => $selectHtml,
+            'limit' => $limit,
+            'limitOptions' => $limitOptions,
             'pagination' => $pagination,
         ], 'Hook日志', 'hook', 'hook_log');
     }

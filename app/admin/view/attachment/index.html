@@ -7,7 +7,9 @@
             <input type="text" id="searchMd5" placeholder="输入 MD5 搜索" value="{$md5}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 200px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
             <select id="limitSelect" onchange="doSearch()" style="padding: 8px 8px; margin-left: 8px; border: 1px solid #d9d9d9; border-radius: 4px; outline: none;">
                 <option value="">每页行数</option>
-                {$selectHtml}
+                {foreach $limitOptions as $opt}
+                <option value="{$opt}" {if $opt==$limit}selected{/if}>{$opt}</option>
+                {/foreach}
             </select>
             <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
         </div>

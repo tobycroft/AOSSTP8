@@ -21,7 +21,7 @@
             <td>{$item.id}</td>
             <td>{$item.name}</td>
             <td>{$item.description}</td>
-            <td>{$item.status_badge|raw}</td>
+            <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
             <td>{$item.date}</td>
             <td>
                 <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name}', '{$item.description}', {$item.status})">编辑</button>

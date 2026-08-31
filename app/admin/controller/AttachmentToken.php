@@ -56,11 +56,6 @@ class AttachmentToken extends CommonController
         }
 
         $limitOptions = [15, 30, 50, 100];
-        $selectHtml = '';
-        foreach ($limitOptions as $opt) {
-            $selected = $opt == $limit ? 'selected' : '';
-            $selectHtml .= '<option value="' . $opt . '" ' . $selected . '>' . $opt . '</option>';
-        }
 
         $items = [];
         foreach ($list as $item) {
@@ -72,9 +67,7 @@ class AttachmentToken extends CommonController
                 'oss_token_short' => mb_strlen($item['oss_token']) > 16 ? mb_substr($item['oss_token'], 0, 16) . '...' : $item['oss_token'],
                 'created_at' => $item['created_at'],
                 'expired_at' => $item['expired_at'],
-                'status_badge' => $item['is_used'] == 1
-                    ? '<span class="status-badge" style="background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f;">已使用</span>'
-                    : '<span class="status-badge" style="background:#fff7e6;color:#fa8c16;border:1px solid #ffd591;">未使用</span>',
+                'is_used' => $item['is_used'],
                 'used_time' => $item['update_time'] ?: '-',
                 'ip' => $item['ip'] ?: '-',
             ];
@@ -85,7 +78,8 @@ class AttachmentToken extends CommonController
         return $this->renderPage('attachment_token/index', [
             'list' => $items,
             'md5' => $md5,
-            'selectHtml' => $selectHtml,
+            'limit' => $limit,
+            'limitOptions' => $limitOptions,
             'pagination' => $pagination,
         ], '上传Token管理', 'storage', 'attachment_token');
     }

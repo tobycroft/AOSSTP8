@@ -27,10 +27,10 @@
         <tr>
             <td>{$item.id}</td>
             <td>{$item.name}</td>
-            <td><select class="type-select" data-id="{$item.id}" onchange="changeType(this)">{$item.type_options|raw}</select></td>
+            <td><select class="type-select" data-id="{$item.id}" onchange="changeType(this)">{foreach ['local','oss','all','remote','none'] as $opt}<option value="{$opt}" {if $opt==$item.type}selected{/if}>{$opt}</option>{/foreach}</select></td>
             <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.token}">{$item.token_short}</td>
             <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.url}">{$item.url}</td>
-            <td>{$item.status_badge|raw}</td>
+            <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
             <td>
                 <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name}', '{$item.type}', '{$item.main_type}', '{$item.code}', '{$item.token}', '{$item.oss_type}', '{$item.oss_tag}', '{$item.url}', '{$item.ext}', {$item.size}, {$item.status})">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>

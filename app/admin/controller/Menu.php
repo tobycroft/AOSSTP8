@@ -39,9 +39,6 @@ class Menu extends CommonController
 
         $items = [];
         foreach ($list as $item) {
-            $statusBadge = $item['status'] == 1
-                ? '<span class="status-badge active">启用</span>'
-                : '<span class="status-badge inactive">禁用</span>';
             $items[] = [
                 'id' => $item['id'],
                 'parent_id' => $item['parent_id'],
@@ -49,7 +46,6 @@ class Menu extends CommonController
                 'icon' => $item['icon'],
                 'path' => $item['path'],
                 'sort' => $item['sort'],
-                'status_badge' => $statusBadge,
                 'status' => $item['status'],
             ];
         }

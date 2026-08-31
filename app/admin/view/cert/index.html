@@ -24,7 +24,7 @@
             <td>{$item.appkey}</td>
             <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item.bt_api}</td>
             <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item.bt_key}</td>
-            <td>{$item.status_badge|raw}</td>
+            <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
             <td>
                 <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.appname}', '{$item.appkey}', '{$item.bt_api}', '{$item.bt_key}', {$item.status})">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>

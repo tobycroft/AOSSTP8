@@ -26,8 +26,8 @@
             <td>{$item.nickname}</td>
             <td>{$item.email}</td>
             <td>{$item.phone}</td>
-            <td>{$item.status_badge|raw}</td>
-            <td>{$item.super_text}</td>
+            <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
+            <td>{if $item.is_super==1}是{else/}否{/if}</td>
             <td>{$item.login_time}</td>
             <td>
                 <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.username}', '{$item.nickname}', '{$item.email}', '{$item.phone}', {$item.status})">编辑</button>

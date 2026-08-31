@@ -42,31 +42,16 @@ class Role extends CommonController
         $model = new AdminRoleModel();
         $list = $model->api_list($page, $limit);
 
-        $items = [];
-        foreach ($list as $item) {
-            $items[] = [
-                'id' => $item['id'],
-                'name' => $item['name'],
-                'description' => $item['description'],
-                'status' => $item['status'],
-                'date' => $item['date'],
-            ];
-        }
-
         $currentPage = (int)$list->currentPage();
         $total = $list->total();
         $totalPages = max(1, (int)ceil($total / $limit));
 
         $items = [];
         foreach ($list as $item) {
-            $statusBadge = $item['status'] == 1
-                ? '<span class="status-badge active">启用</span>'
-                : '<span class="status-badge inactive">禁用</span>';
             $items[] = [
                 'id' => $item['id'],
                 'name' => $item['name'],
                 'description' => $item['description'],
-                'status_badge' => $statusBadge,
                 'date' => $item['date'],
                 'status' => $item['status'],
             ];

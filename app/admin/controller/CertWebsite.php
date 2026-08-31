@@ -47,9 +47,6 @@ class CertWebsite extends CommonController
 
         $items = [];
         foreach ($list as $item) {
-            $statusBadge = $item['status'] == 1
-                ? '<span class="status-badge active">启用</span>'
-                : '<span class="status-badge inactive">禁用</span>';
             $items[] = [
                 'id' => $item['id'],
                 'cert_name' => $item['cert_name'],
@@ -57,7 +54,6 @@ class CertWebsite extends CommonController
                 'type' => $item['type'],
                 'api' => $item['api'],
                 'key' => $item['key'],
-                'status_badge' => $statusBadge,
                 'status' => $item['status'],
             ];
         }

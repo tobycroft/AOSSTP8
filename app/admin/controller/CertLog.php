@@ -43,9 +43,7 @@ class CertLog extends CommonController
                 'appname' => $item['appname'],
                 'type' => $item['type'],
                 'website' => $item['website'],
-                'result_badge' => $item['success'] == 1
-                    ? '<span class="status-badge success">成功</span>'
-                    : '<span class="status-badge fail">失败</span>',
+                'success' => $item['success'],
                 'recv' => $item['recv'],
                 'recv_short' => mb_strlen($item['recv']) > 60 ? mb_substr($item['recv'], 0, 60) . '...' : $item['recv'],
                 'create_time' => $item['create_time'],

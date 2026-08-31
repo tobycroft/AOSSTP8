@@ -20,7 +20,7 @@
             <td>{$item.appname}</td>
             <td>{$item.type}</td>
             <td>{$item.website}</td>
-            <td>{$item.result_badge}</td>
+            <td>{if $item.success == 1}<span class="status-badge success">成功</span>{else/}<span class="status-badge fail">失败</span>{/if}</td>
             <td class="recv-cell" title="{$item.recv}">{$item.recv_short}</td>
             <td>{$item.create_time}</td>
         </tr>

@@ -48,16 +48,10 @@ class Oss extends CommonController
 
         $items = [];
         foreach ($list['data'] as $item) {
-            $typeOptions = '<option value="local"' . ($item['type'] === 'local' ? ' selected' : '') . '>local</option>';
-            $typeOptions .= '<option value="oss"' . ($item['type'] === 'oss' ? ' selected' : '') . '>oss</option>';
-            $typeOptions .= '<option value="all"' . ($item['type'] === 'all' ? ' selected' : '') . '>all</option>';
-            $typeOptions .= '<option value="remote"' . ($item['type'] === 'remote' ? ' selected' : '') . '>remote</option>';
-            $typeOptions .= '<option value="none"' . ($item['type'] === 'none' ? ' selected' : '') . '>none</option>';
             $items[] = [
                 'id' => $item['id'],
                 'name' => $item['name'],
                 'type' => $item['type'],
-                'type_options' => $typeOptions,
                 'main_type' => $item['main_type'],
                 'code' => $item['code'],
                 'token' => $item['token'],
@@ -68,9 +62,6 @@ class Oss extends CommonController
                 'ext' => $item['ext'],
                 'size' => $item['size'],
                 'status' => $item['status'],
-                'status_badge' => $item['status'] == 1
-                    ? '<span class="status-badge active">启用</span>'
-                    : '<span class="status-badge inactive">禁用</span>',
             ];
         }
 

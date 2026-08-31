@@ -61,11 +61,6 @@ class Attachment extends CommonController
         }
 
         $limitOptions = [15, 30, 50, 100];
-        $selectHtml = '';
-        foreach ($limitOptions as $opt) {
-            $selected = $opt == $limit ? 'selected' : '';
-            $selectHtml .= '<option value="' . $opt . '" ' . $selected . '>' . $opt . '</option>';
-        }
 
         $items = [];
         foreach ($list as $item) {
@@ -88,7 +83,8 @@ class Attachment extends CommonController
         return $this->renderPage('attachment/index', [
             'list' => $items,
             'md5' => $md5,
-            'selectHtml' => $selectHtml,
+            'limit' => $limit,
+            'limitOptions' => $limitOptions,
             'pagination' => $pagination,
         ], '附件管理', 'storage', 'attachment');
     }
