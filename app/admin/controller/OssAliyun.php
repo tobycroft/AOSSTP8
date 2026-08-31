@@ -41,7 +41,7 @@ class OssAliyun extends CommonController
         $model = new AdminOssAliyunModel();
         $list = $model->api_list($page, $limit);
 
-        $html = Layout::begin('阿里云OSS', 'storage', 'oss_aliyun');
+        $html = Layout::begin('阿里云OSS', 'project', 'oss_aliyun');
         $html .= <<<HTML
     <div class="toolbar">
         <h2>阿里云 OSS 配置</h2>

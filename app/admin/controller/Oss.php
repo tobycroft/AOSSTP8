@@ -46,7 +46,7 @@ class Oss extends CommonController
         }
         $list = $query->paginate($limit, false, ['page' => $page])->toArray();
 
-        $html = Layout::begin('存储项目', 'storage', 'oss');
+        $html = Layout::begin('存储项目', 'project', 'oss');
         $html .= <<<HTML
     <div class="toolbar">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">

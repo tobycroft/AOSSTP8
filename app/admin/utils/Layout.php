@@ -5,14 +5,6 @@ namespace app\admin\utils;
 class Layout
 {
     private static $menuGroups = [
-        'admin' => [
-            'title' => '管理员',
-            'items' => [
-                'user' => ['label' => '用户管理', 'url' => '/admin/user'],
-                'role' => ['label' => '角色管理', 'url' => '/admin/role'],
-                'menu' => ['label' => '菜单管理', 'url' => '/admin/menu'],
-            ],
-        ],
         'cert' => [
             'title' => '证书管理',
             'items' => [
@@ -22,11 +14,16 @@ class Layout
                 'cert_log' => ['label' => '操作日志', 'url' => '/admin/cert_log'],
             ],
         ],
-        'storage' => [
-            'title' => '存储管理',
+        'project' => [
+            'title' => '项目',
             'items' => [
                 'oss' => ['label' => '存储项目', 'url' => '/admin/oss'],
                 'oss_aliyun' => ['label' => '阿里云OSS', 'url' => '/admin/oss_aliyun'],
+            ],
+        ],
+        'storage' => [
+            'title' => '存储管理',
+            'items' => [
                 'attachment' => ['label' => '附件管理', 'url' => '/admin/attachment'],
                 'attachment_token' => ['label' => '上传Token', 'url' => '/admin/attachment_token'],
             ],
@@ -36,6 +33,14 @@ class Layout
             'items' => [
                 'hook' => ['label' => 'Hook配置', 'url' => '/admin/hook'],
                 'hook_log' => ['label' => 'Hook日志', 'url' => '/admin/hook_log'],
+            ],
+        ],
+        'admin' => [
+            'title' => '管理员',
+            'items' => [
+                'user' => ['label' => '用户管理', 'url' => '/admin/user'],
+                'role' => ['label' => '角色管理', 'url' => '/admin/role'],
+                'menu' => ['label' => '菜单管理', 'url' => '/admin/menu'],
             ],
         ],
     ];
