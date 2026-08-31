@@ -73,7 +73,11 @@ class Oss extends CommonController
         <tbody>
 HTML;
         foreach ($list['data'] as $item) {
-            $typeBadge = '<span class="status-badge ' . ($item['type'] === 'none' ? 'inactive' : 'active') . '">' . $item['type'] . '</span>';
+            $typeOptions = '<option value="local"' . ($item['type'] === 'local' ? ' selected' : '') . '>local</option>';
+            $typeOptions .= '<option value="oss"' . ($item['type'] === 'oss' ? ' selected' : '') . '>oss</option>';
+            $typeOptions .= '<option value="all"' . ($item['type'] === 'all' ? ' selected' : '') . '>all</option>';
+            $typeOptions .= '<option value="remote"' . ($item['type'] === 'remote' ? ' selected' : '') . '>remote</option>';
+            $typeOptions .= '<option value="none"' . ($item['type'] === 'none' ? ' selected' : '') . '>none</option>';
             $statusBadge = $item['status'] == 1
                 ? '<span class="status-badge active">启用</span>'
                 : '<span class="status-badge inactive">禁用</span>';
@@ -82,7 +86,7 @@ HTML;
             <tr>
                 <td>{$item['id']}</td>
                 <td>{$item['name']}</td>
-                <td>{$typeBadge}</td>
+                <td><select class="type-select" data-id="{$item['id']}" onchange="changeType(this)">{$typeOptions}</select></td>
                 <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['token']}">{$tokenShort}</td>
                 <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item['url']}">{$item['url']}</td>
                 <td>{$statusBadge}</td>
@@ -170,12 +174,35 @@ HTML;
     </div>
 </div>
 
+<style>
+.type-select { padding: 4px 6px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 13px; outline: none; cursor: pointer; background: #fff; }
+.type-select:hover { border-color: #1677ff; }
+.type-select:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+</style>
 <script>
 function doSearch() {
     var search = document.getElementById('searchInput').value;
     var url = '/admin/oss?page=1';
     if (search) url += '&search=' + encodeURIComponent(search);
     window.location.href = url;
+}
+function changeType(el) {
+    var id = el.getAttribute('data-id');
+    var type = el.value;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/oss', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code != 0) {
+                alert(res.echo);
+                location.reload();
+            }
+        }
+    };
+    xhr.send('id=' + id + '&type=' + encodeURIComponent(type));
 }
 function closeModal() {
     document.getElementById('ossModal').classList.remove('show');
