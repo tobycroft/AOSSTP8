@@ -38,6 +38,7 @@
 \think\facade\Route::any('admin/role/bind', '\app\admin\controller\Role@bind');
 \think\facade\Route::any('admin/role/getUserRoles', '\app\admin\controller\Role@getUserRoles');
 \think\facade\Route::any('admin/menu', '\app\admin\controller\Menu@index');
+\think\facade\Route::any('admin/login_log', '\app\admin\controller\LoginLog@index');
 \think\facade\Route::any('admin/cert', '\app\admin\controller\Cert@index');
 \think\facade\Route::any('admin/cert_url/updateSSL', '\app\admin\controller\CertUrl@updateSSL');
 \think\facade\Route::any('admin/cert_url/getKey', '\app\admin\controller\CertUrl@getKey');

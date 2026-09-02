@@ -46,6 +46,7 @@ class Layout
                 'user' => ['label' => '用户管理', 'url' => '/admin/user'],
                 'role' => ['label' => '角色管理', 'url' => '/admin/role'],
                 'menu' => ['label' => '菜单管理', 'url' => '/admin/menu'],
+                'login_log' => ['label' => '登录日志', 'url' => '/admin/login_log'],
             ],
         ],
         'sms' => [

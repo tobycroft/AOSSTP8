@@ -1,0 +1,67 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <h2>登录日志</h2>
+    <form method="get" action="/admin/login_log" style="display:flex;gap:8px;align-items:center;">
+        <input type="text" name="search" value="{$search}" placeholder="搜索用户名 / IP" style="padding:8px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;outline:none;">
+        <button type="submit" class="btn btn-primary">搜索</button>
+    </form>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>用户ID</th>
+            <th>用户名</th>
+            <th>IP</th>
+            <th>结果</th>
+            <th>说明</th>
+            <th>尝试密码</th>
+            <th>时间</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td>{$item.user_id}</td>
+            <td>{$item.username}</td>
+            <td>{$item.ip}</td>
+            <td>{if $item.success == 1}<span class="status-badge success">成功</span>{else/}<span class="status-badge fail">失败</span>{/if}</td>
+            <td>{$item.reason}</td>
+            <td>{if $item.success == 1}<span style="color:#999;">-</span>{else/}{$item.password}{/if}</td>
+            <td>{$item.create_time}</td>
+            <td>
+                <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
+            </td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination|raw}
+{/block}
+{block name="script"}
+{literal}
+<script>
+function doDelete(id) {
+    if (!confirm('确定要删除该日志吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/login_log', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+</script>
+{/literal}
+{/block}
