@@ -187,6 +187,64 @@ class CertUrl extends CommonController
         }
     }
 
+    public function updateAllSSL()
+    {
+        $urlModel = new AdminCertUrlModel();
+        $items = $urlModel->where('id', '>', 0)->select();
+
+        $rets = [
+            'success' => 0,
+            'fail' => 0,
+            'detail' => [],
+        ];
+
+        foreach ($items as $item) {
+            $url_crt = $item['url_crt'];
+            $url_key = $item['url_key'];
+
+            if (empty($url_crt) || empty($url_key)) {
+                $rets['fail']++;
+                $rets['detail'][] = [
+                    'cert' => $item['cert'],
+                    'success' => false,
+                    'error' => 'CRT URL 或 KEY URL 为空',
+                ];
+                continue;
+            }
+
+            try {
+                $publickey = file_get_contents($url_crt);
+                $privatekey = file_get_contents($url_key);
+            } catch (Exception $e) {
+                $publickey = '';
+                $privatekey = '';
+            }
+
+            if (empty($publickey) || empty($privatekey)) {
+                $rets['fail']++;
+                $rets['detail'][] = [
+                    'cert' => $item['cert'],
+                    'success' => false,
+                    'error' => '证书获取失败',
+                ];
+                continue;
+            }
+
+            $item->save([
+                'publickey' => $publickey,
+                'privatekey' => $privatekey,
+            ]);
+
+            $rets['success']++;
+            $rets['detail'][] = [
+                'cert' => $item['cert'],
+                'success' => true,
+            ];
+        }
+
+        Ret::Success(0, $rets, '一键更新完成');
+    }
+
     public function getKey()
     {
         $id = Input::PostInt('id');

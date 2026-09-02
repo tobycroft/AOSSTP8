@@ -41,6 +41,7 @@
 \think\facade\Route::any('admin/login_log', '\app\admin\controller\LoginLog@index');
 \think\facade\Route::any('admin/cert', '\app\admin\controller\Cert@index');
 \think\facade\Route::any('admin/cert_url/updateSSL', '\app\admin\controller\CertUrl@updateSSL');
+\think\facade\Route::any('admin/cert_url/updateAllSSL', '\app\admin\controller\CertUrl@updateAllSSL');
 \think\facade\Route::any('admin/cert_url/getKey', '\app\admin\controller\CertUrl@getKey');
 \think\facade\Route::any('admin/cert_url/autoSSL', '\app\admin\controller\CertUrl@autoSSL');
 \think\facade\Route::any('admin/cert_url/autoMailSSL', '\app\admin\controller\CertUrl@autoMailSSL');
