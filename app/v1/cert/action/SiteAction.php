@@ -123,22 +123,16 @@ class SiteAction
     {
         $bt_site = new Site($bt_api, $bt_key, './');
         $ret = $bt_site->getDomainListV2(null);
-        echo json_encode($ret,320);exit;
         if ($ret === false) {
             throw new Exception('BT API调用失败: ' . $bt_site->getError());
         }
-        if ($ret === null || !isset($ret['data'])) {
+        if ($ret === null || !isset($ret['message']['data'])) {
             return [];
         }
 
         $domains = [];
-        foreach ($ret['data'] as $site) {
-            $domainRet = $bt_site->getDomainList($site['id']);
-            if ($domainRet && isset($domainRet['data'])) {
-                foreach ($domainRet['data'] as $domain) {
-                    $domains[] = $domain['name'];
-                }
-            }
+        foreach ($ret['message']['data'] as $site) {
+            $domains[] = $site['name'];
         }
 
         return $domains;
