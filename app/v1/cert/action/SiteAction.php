@@ -122,7 +122,8 @@ class SiteAction
     public static function getDomainList($bt_api, $bt_key): array
     {
         $bt_site = new Site($bt_api, $bt_key, './');
-        $ret = $bt_site->getDomainList(-1);
+        $ret = $bt_site->getDomainList(0);
+        echo json_encode($ret,320);exit;
         if ($ret === false) {
             throw new Exception('BT API调用失败: ' . $bt_site->getError());
         }
@@ -133,11 +134,9 @@ class SiteAction
         $domains = [];
         foreach ($ret['data'] as $site) {
             $domainRet = $bt_site->getDomainList($site['id']);
-            if ($domainRet && is_array($domainRet)) {
-                foreach ($domainRet as $domain) {
-                    if (isset($domain['name'])) {
-                        $domains[] = $domain['name'];
-                    }
+            if ($domainRet && isset($domainRet['data'])) {
+                foreach ($domainRet['data'] as $domain) {
+                    $domains[] = $domain['name'];
                 }
             }
         }
