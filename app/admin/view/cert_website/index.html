@@ -4,13 +4,17 @@
     <h2>证书站点</h2>
     <button class="btn btn-primary" onclick="openCreate()">新增站点</button>
 </div>
+<div class="tab-bar">
+    <a class="tab-item {if $currentType=='web'}active{/if}" href="/admin/cert_website?type=web">Web</a>
+    <a class="tab-item {if $currentType=='mail'}active{/if}" href="/admin/cert_website?type=mail">Mail</a>
+    <a class="tab-item {if $currentType=='panel'}active{/if}" href="/admin/cert_website?type=panel">Panel</a>
+</div>
 <table>
     <thead>
         <tr>
             <th>ID</th>
             <th>证书名称</th>
             <th>站点</th>
-            <th>类型</th>
             <th>API</th>
             <th>状态</th>
             <th>操作</th>
@@ -22,7 +26,6 @@
             <td>{$item.id}</td>
             <td>{$item.cert_name}</td>
             <td>{$item.website}</td>
-            <td>{$item.type}</td>
             <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item.api}</td>
             <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}" onclick="toggleStatus({$item.id}, this)" style="cursor:pointer;">{if $item.status==1}启用{else/}禁用{/if}</span></td>
             <td>
@@ -79,6 +82,7 @@
 {block name="script"}
 {literal}
 <script>
+var currentType = '{/literal}{$currentType}{literal}';
 function closeModal() {
     document.getElementById('websiteModal').classList.remove('show');
 }
@@ -87,7 +91,7 @@ function openCreate() {
     document.getElementById('editId').value = '';
     document.getElementById('formCertName').value = '';
     document.getElementById('formWebsite').value = '';
-    document.getElementById('formType').value = 'web';
+    document.getElementById('formType').value = currentType;
     document.getElementById('formApi').value = '';
     document.getElementById('formKey').value = '';
     document.getElementById('formStatus').value = '1';

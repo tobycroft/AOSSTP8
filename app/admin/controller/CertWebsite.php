@@ -35,11 +35,12 @@ class CertWebsite extends CommonController
 
     private function page()
     {
+        $type = input('get.type', 'web');
         $page = input('get.page', 1, 'intval');
         $limit = 15;
 
         $model = new AdminCertWebsiteModel();
-        $list = $model->order('id', 'desc')->paginate($limit, false, ['page' => $page]);
+        $list = $model->where('type', $type)->order('id', 'desc')->paginate($limit, false, ['page' => $page]);
 
         $currentPage = (int)$list->currentPage();
         $total = $list->total();
@@ -58,11 +59,12 @@ class CertWebsite extends CommonController
             ];
         }
 
-        $pagination = Layout::pagination($currentPage, $totalPages, '/admin/cert_website');
+        $pagination = Layout::pagination($currentPage, $totalPages, '/admin/cert_website?type=' . $type);
 
         return $this->renderPage('cert_website/index', [
             'list' => $items,
             'pagination' => $pagination,
+            'currentType' => $type,
         ], '证书站点', 'cert', 'cert_website');
     }
 
