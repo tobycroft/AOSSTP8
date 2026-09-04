@@ -142,4 +142,25 @@ class CertWebsite extends CommonController
         $item->delete();
         Ret::Success(0, [], '删除成功');
     }
+
+    public function toggleStatus()
+    {
+        $id = Input::PostInt('id');
+        if (!$id) {
+            Ret::Fail(400, null, '缺少参数[id]');
+        }
+
+        $model = new AdminCertWebsiteModel();
+        $item = $model->findOrEmpty($id);
+
+        if ($item->isEmpty()) {
+            Ret::Fail(404, null, '记录不存在');
+        }
+
+        $newStatus = $item['status'] == 1 ? 0 : 1;
+        $item->save(['status' => $newStatus]);
+
+        $statusText = $newStatus == 1 ? '启用' : '禁用';
+        Ret::Success(0, ['status' => $newStatus], "状态已切换为{$statusText}");
+    }
 }
