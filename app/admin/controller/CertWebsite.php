@@ -40,11 +40,10 @@ class CertWebsite extends CommonController
         $limit = 15;
 
         $model = new AdminCertWebsiteModel();
-        $list = $model->where('type', $type)->order('id', 'desc')->paginate($limit, false, ['page' => $page]);
-
-        $currentPage = (int)$list->currentPage();
-        $total = $list->total();
+        $total = $model->where('type', $type)->count();
         $totalPages = max(1, (int)ceil($total / $limit));
+
+        $list = $model->where('type', $type)->order('id', 'desc')->page($page, $limit)->select();
 
         $items = [];
         foreach ($list as $item) {
@@ -59,7 +58,7 @@ class CertWebsite extends CommonController
             ];
         }
 
-        $pagination = Layout::pagination($currentPage, $totalPages, '/admin/cert_website?type=' . $type);
+        $pagination = Layout::pagination($page, $totalPages, '/admin/cert_website?type=' . $type);
 
         return $this->renderPage('cert_website/index', [
             'list' => $items,
