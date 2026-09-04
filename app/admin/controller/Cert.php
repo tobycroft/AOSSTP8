@@ -143,7 +143,7 @@ class Cert extends CommonController
 
     public function updateSite()
     {
-        $id = Input::GetInt('id');
+        $id = (int)input('get.id', 0);
         if (!$id) {
             echo '缺少参数: id';
             exit;
