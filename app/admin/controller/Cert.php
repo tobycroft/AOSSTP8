@@ -174,12 +174,13 @@ if (empty($domains)) {
                 $skipped++;
                 continue;
             }
+            $certName = SiteAction::extractMainDomain($domain);
             AdminCertWebsiteModel::create([
                 'website' => $domain,
                 'type' => 'web',
                 'api' => $cert['bt_api'],
                 'key' => $cert['bt_key'],
-                'cert_name' => $cert['appname'],
+                'cert_name' => $certName,
                 'status' => 0,
             ]);
             $existingWebsites[] = $domain;
