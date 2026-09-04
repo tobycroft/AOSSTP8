@@ -11,6 +11,7 @@ use BaseController\CommonController;
 use Input;
 use Ret;
 use think\Exception;
+use tobycroft\Bt\Site;
 
 class Cert extends CommonController
 {
@@ -153,40 +154,23 @@ class Cert extends CommonController
             Ret::Fail(404, null, '项目不存在');
         }
 
-        try {
-            $domains = SiteAction::getDomainList($cert['bt_api'], $cert['bt_key']);
-        } catch (Exception $e) {
-            Ret::Fail(500, null, $e->getMessage());
-        }
+        $bt_site = new Site($cert['bt_api'], $cert['bt_key'], './');
 
-        if (empty($domains)) {
-            Ret::Success(0, ['added' => 0, 'skipped' => 0], '未获取到域名');
-        }
+        echo '<pre>';
 
-        $existingWebsites = AdminCertWebsiteModel::where('type', 'web')->column('website');
-        $added = 0;
-        $skipped = 0;
+        echo "=== getList() ===\n";
+        $ret = $bt_site->getList();
+        var_dump($ret);
 
-        foreach ($domains as $domain) {
-            if (empty($domain)) {
-                continue;
+        if ($ret && isset($ret['data'])) {
+            foreach ($ret['data'] as $site) {
+                echo "\n=== getDomainList({$site['id']}) [{$site['name']}] ===\n";
+                $domainRet = $bt_site->getDomainList($site['id']);
+                var_dump($domainRet);
             }
-            if (in_array($domain, $existingWebsites)) {
-                $skipped++;
-                continue;
-            }
-            AdminCertWebsiteModel::create([
-                'website' => $domain,
-                'type' => 'web',
-                'api' => $cert['bt_api'],
-                'key' => $cert['bt_key'],
-                'cert_name' => $cert['appname'],
-                'status' => 0,
-            ]);
-            $existingWebsites[] = $domain;
-            $added++;
         }
 
-        Ret::Success(0, ['added' => $added, 'skipped' => $skipped, 'domains' => $domains], "新增 {$added} 个站点，跳过 {$skipped} 个已存在站点");
+        echo '</pre>';
+        exit;
     }
 }
