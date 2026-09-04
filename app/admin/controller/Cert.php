@@ -167,15 +167,7 @@ class Cert extends CommonController
         $ret = $bt_site->getList();
         var_dump($ret);
 
-        if ($ret && isset($ret['data'])) {
-            foreach ($ret['data'] as $site) {
-                echo "\n=== getDomainList({$site['id']}) [{$site['name']}] ===\n";
-                $domainRet = $bt_site->getDomainList($site['id']);
-                var_dump($domainRet);
-            }
-        }
 
-        echo '</pre>';
         exit;
     }
 }
