@@ -133,9 +133,11 @@ class SiteAction
         $domains = [];
         foreach ($ret['data'] as $site) {
             $domainRet = $bt_site->getDomainList($site['id']);
-            if ($domainRet && isset($domainRet['data'])) {
-                foreach ($domainRet['data'] as $domain) {
-                    $domains[] = $domain['name'];
+            if ($domainRet && is_array($domainRet)) {
+                foreach ($domainRet as $domain) {
+                    if (isset($domain['name'])) {
+                        $domains[] = $domain['name'];
+                    }
                 }
             }
         }
