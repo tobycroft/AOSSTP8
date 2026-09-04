@@ -48,6 +48,7 @@
 \think\facade\Route::any('admin/cert_url/autoMailSSL', '\app\admin\controller\CertUrl@autoMailSSL');
 \think\facade\Route::any('admin/cert_url', '\app\admin\controller\CertUrl@index');
 \think\facade\Route::any('admin/cert_website', '\app\admin\controller\CertWebsite@index');
+\think\facade\Route::any('admin/cert_website/toggleStatus', '\app\admin\controller\CertWebsite@toggleStatus');
 \think\facade\Route::any('admin/cert_log', '\app\admin\controller\CertLog@index');
 \think\facade\Route::any('admin/attachment', '\app\admin\controller\Attachment@index');
 \think\facade\Route::any('admin/attachment_token', '\app\admin\controller\AttachmentToken@index');
