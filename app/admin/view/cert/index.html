@@ -28,6 +28,7 @@
             <td>
                 <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.appname}', '{$item.appkey}', '{$item.bt_api}', '{$item.bt_key}', {$item.status})">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
+                <button class="btn btn-sm btn-primary" onclick="doUpdateSite({$item.id})">更新站点</button>
             </td>
         </tr>
         {/foreach}
@@ -134,6 +135,23 @@ function doDelete(id) {
                 location.reload();
             } else {
                 alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function doUpdateSite(id) {
+    if (!confirm('确定要从BT面板更新站点列表吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert/updateSite', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            alert(res.echo);
+            if (res.code == 0) {
+                location.reload();
             }
         }
     };

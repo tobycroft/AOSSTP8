@@ -108,4 +108,38 @@ class SiteAction
         }
         return $data;
     }
+
+    /**
+     * 获取站点域名列表
+     *
+     * 从宝塔面板获取所有站点的域名列表
+     *
+     * @param string $bt_api 宝塔API地址
+     * @param string $bt_key 宝塔API密钥
+     * @return array 返回所有域名数组
+     * @throws Exception 当宝塔API调用失败或返回数据异常时抛出异常
+     */
+    public static function getDomainList($bt_api, $bt_key): array
+    {
+        $bt_site = new Site($bt_api, $bt_key, './');
+        $ret = $bt_site->getList();
+        if ($ret === false) {
+            throw new Exception('BT API调用失败: ' . $bt_site->getError());
+        }
+        if ($ret === null || !isset($ret['data'])) {
+            return [];
+        }
+
+        $domains = [];
+        foreach ($ret['data'] as $site) {
+            $domainRet = $bt_site->getDomainList($site['id']);
+            if ($domainRet && isset($domainRet['data'])) {
+                foreach ($domainRet['data'] as $domain) {
+                    $domains[] = $domain['name'];
+                }
+            }
+        }
+
+        return $domains;
+    }
 }

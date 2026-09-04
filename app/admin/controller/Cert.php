@@ -3,11 +3,14 @@
 namespace app\admin\controller;
 
 use app\admin\model\AdminCertModel;
+use app\admin\model\AdminCertWebsiteModel;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
+use app\v1\cert\action\SiteAction;
 use BaseController\CommonController;
 use Input;
 use Ret;
+use think\Exception;
 
 class Cert extends CommonController
 {
@@ -135,5 +138,55 @@ class Cert extends CommonController
 
         $cert->delete();
         Ret::Success(0, [], '删除成功');
+    }
+
+    public function updateSite()
+    {
+        $id = Input::PostInt('id');
+        if (!$id) {
+            Ret::Fail(400, null, '缺少参数[id]');
+        }
+
+        $model = new AdminCertModel();
+        $cert = $model->findOrEmpty($id);
+        if ($cert->isEmpty()) {
+            Ret::Fail(404, null, '项目不存在');
+        }
+
+        try {
+            $domains = SiteAction::getDomainList($cert['bt_api'], $cert['bt_key']);
+        } catch (Exception $e) {
+            Ret::Fail(500, null, $e->getMessage());
+        }
+
+        if (empty($domains)) {
+            Ret::Success(0, ['added' => 0, 'skipped' => 0], '未获取到域名');
+        }
+
+        $existingWebsites = AdminCertWebsiteModel::where('type', 'web')->column('website');
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($domains as $domain) {
+            if (empty($domain)) {
+                continue;
+            }
+            if (in_array($domain, $existingWebsites)) {
+                $skipped++;
+                continue;
+            }
+            AdminCertWebsiteModel::create([
+                'website' => $domain,
+                'type' => 'web',
+                'api' => $cert['bt_api'],
+                'key' => $cert['bt_key'],
+                'cert_name' => $cert['appname'],
+                'status' => 0,
+            ]);
+            $existingWebsites[] = $domain;
+            $added++;
+        }
+
+        Ret::Success(0, ['added' => $added, 'skipped' => $skipped], "新增 {$added} 个站点，跳过 {$skipped} 个已存在站点");
     }
 }
