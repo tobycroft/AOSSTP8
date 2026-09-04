@@ -58,6 +58,8 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/league/flysystem-local" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/polyfill-php80" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/tobycroft/think-captcha" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-template" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/topthink/think-view" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
