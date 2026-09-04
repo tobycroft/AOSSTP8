@@ -122,7 +122,7 @@ class SiteAction
     public static function getDomainList($bt_api, $bt_key): array
     {
         $bt_site = new Site($bt_api, $bt_key, './');
-        $ret = $bt_site->getDomainList(0);
+        $ret = $bt_site->getDomainListV2();
         echo json_encode($ret,320);exit;
         if ($ret === false) {
             throw new Exception('BT API调用失败: ' . $bt_site->getError());
