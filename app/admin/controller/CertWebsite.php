@@ -164,4 +164,32 @@ class CertWebsite extends CommonController
         $statusText = $newStatus == 1 ? '启用' : '禁用';
         Ret::Success(0, ['status' => $newStatus], "状态已切换为{$statusText}");
     }
+
+    public function batchDelete()
+    {
+        $ids = request()->post('ids');
+        if (empty($ids)) {
+            Ret::Fail(400, null, '缺少参数[ids]');
+        }
+
+        $ids = json_decode($ids, true);
+        if (!is_array($ids) || empty($ids)) {
+            Ret::Fail(400, null, '参数格式错误');
+        }
+
+        $count = 0;
+        $model = new AdminCertWebsiteModel();
+        foreach ($ids as $id) {
+            $id = intval($id);
+            if ($id) {
+                $item = $model->findOrEmpty($id);
+                if (!$item->isEmpty()) {
+                    $item->delete();
+                    $count++;
+                }
+            }
+        }
+
+        Ret::Success(0, ['count' => $count], "已删除 {$count} 条记录");
+    }
 }

@@ -47,6 +47,7 @@
 \think\facade\Route::any('admin/cert_url/autoSSL', '\app\admin\controller\CertUrl@autoSSL');
 \think\facade\Route::any('admin/cert_url/autoMailSSL', '\app\admin\controller\CertUrl@autoMailSSL');
 \think\facade\Route::any('admin/cert_url', '\app\admin\controller\CertUrl@index');
+\think\facade\Route::any('admin/cert_website/batchDelete', '\app\admin\controller\CertWebsite@batchDelete');
 \think\facade\Route::any('admin/cert_website/toggleStatus', '\app\admin\controller\CertWebsite@toggleStatus');
 \think\facade\Route::any('admin/cert_website', '\app\admin\controller\CertWebsite@index');
 \think\facade\Route::any('admin/cert_log', '\app\admin\controller\CertLog@index');

@@ -2,7 +2,10 @@
 {block name="content"}
 <div class="toolbar">
     <h2>证书站点</h2>
-    <button class="btn btn-primary" onclick="openCreate()">新增站点</button>
+    <div>
+        <button class="btn btn-danger" onclick="doBatchDelete()" style="display:none;" id="batchDeleteBtn">批量删除</button>
+        <button class="btn btn-primary" onclick="openCreate()">新增站点</button>
+    </div>
 </div>
 <div class="tab-bar">
     <a class="tab-item {if $currentType=='web'}active{/if}" href="/admin/cert_website?type=web">Web</a>
@@ -12,6 +15,7 @@
 <table>
     <thead>
         <tr>
+            <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
             <th>ID</th>
             <th>证书名称</th>
             <th>站点</th>
@@ -23,6 +27,7 @@
     <tbody>
         {foreach $list as $item}
         <tr>
+            <td><input type="checkbox" class="item-checkbox" value="{$item.id}" onchange="updateBatchDeleteBtn()"></td>
             <td>{$item.id}</td>
             <td>{$item.cert_name}</td>
             <td>{$item.website}</td>
@@ -176,6 +181,46 @@ function toggleStatus(id, el) {
         }
     };
     xhr.send('id=' + id);
+}
+function toggleSelectAll() {
+    var checked = document.getElementById('selectAll').checked;
+    var boxes = document.querySelectorAll('.item-checkbox');
+    for (var i = 0; i < boxes.length; i++) {
+        boxes[i].checked = checked;
+    }
+    updateBatchDeleteBtn();
+}
+function updateBatchDeleteBtn() {
+    var checked = document.querySelectorAll('.item-checkbox:checked');
+    var btn = document.getElementById('batchDeleteBtn');
+    btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
+}
+function doBatchDelete() {
+    var checked = document.querySelectorAll('.item-checkbox:checked');
+    if (checked.length === 0) {
+        alert('请先勾选要删除的站点');
+        return;
+    }
+    if (!confirm('确定要删除选中的 ' + checked.length + ' 个站点吗？')) return;
+    var ids = [];
+    for (var i = 0; i < checked.length; i++) {
+        ids.push(checked[i].value);
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert_website/batchDelete', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('ids=' + encodeURIComponent(JSON.stringify(ids)));
 }
 </script>
 {/literal}
