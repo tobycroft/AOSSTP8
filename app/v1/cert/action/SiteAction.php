@@ -60,6 +60,20 @@ class SiteAction
      *               ]
      * @throws Exception 当宝塔API调用失败或返回数据异常时抛出异常
      */
+    /**
+     * 从域名中提取二级域名（主域名）
+     * 例如：124.tuuz.ltd → tuuz.ltd, aria.aerofsx.com → aerofsx.com
+     */
+    public static function extractMainDomain(string $domain): string
+    {
+        $parts = explode('.', $domain);
+        $count = count($parts);
+        if ($count <= 2) {
+            return $domain;
+        }
+        return $parts[$count - 2] . '.' . $parts[$count - 1];
+    }
+
     public static function updateSiteListWhichHadSSL($bt_api, $bt_key): array
     {
         $bt_site = new Site($bt_api, $bt_key, './');
@@ -76,7 +90,7 @@ class SiteAction
         $data = [];
         $insertData = [];
         $certNames = CertUrlModel::column('cert');
-        $siteNames = CertWebsiteModel::whereIn('cert_name', $certNames)->where('type', 'web')->column('website');
+        $siteNames = CertWebsiteModel::where('type', 'web')->column('website');
 
         foreach ($ret['data'] as $site) {
             if ($site['ssl'] !== -1) {
@@ -88,7 +102,7 @@ class SiteAction
                                 'type' => 'web',
                                 'api' => $bt_api,
                                 'key' => $bt_key,
-                                'cert_name' => $site['ssl']['subject'],
+                                'cert_name' => self::extractMainDomain($site['name']),
                                 'status' => 1,
                             ];
                         } else {

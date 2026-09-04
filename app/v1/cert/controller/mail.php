@@ -3,6 +3,7 @@
 namespace app\v1\cert\controller;
 
 use app\v1\cert\action\MailAction;
+use app\v1\cert\action\SiteAction;
 use app\v1\cert\model\CertLogModel;
 use app\v1\cert\model\CertUrlModel;
 use app\v1\cert\model\CertWebsiteModel;
@@ -29,7 +30,7 @@ class mail extends bt
     {
         $name = Input::Get('cert');
         $website = Input::Get('website');
-        $site = CertWebsiteModel::where('type', 'mail')->where('website', $website)->where('cert_name', $name)->where('status', 1)->find();
+        $site = CertWebsiteModel::where('type', 'mail')->where('website', $website)->where('cert_name', SiteAction::extractMainDomain($name))->where('status', 1)->find();
         if (!$site) {
             \Ret::Fail(404, null, '项目中没有该站点，请先在自动更新库中添加本站点');
         }
@@ -67,7 +68,7 @@ class mail extends bt
             \Ret::Fail('500', null, $e->getMessage());
         }
 
-        $sites = CertWebsiteModel::where('type', 'mail')->where('cert_name', $name)->where('status', 1)->select();
+        $sites = CertWebsiteModel::where('type', 'mail')->where('cert_name', SiteAction::extractMainDomain($name))->where('status', 1)->select();
         $rets = [
             'success' => 0,
             'fail' => 0,

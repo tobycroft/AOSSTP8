@@ -78,7 +78,7 @@ class bt extends CommonController
     {
         $name = Input::Get('cert');
         $website = Input::Get('website');
-        $site = CertWebsiteModel::where('type', 'mail')->where('website', $website)->where('cert_name', $name)->where('status', 1)->find();
+        $site = CertWebsiteModel::where('type', 'mail')->where('website', $website)->where('cert_name', SiteAction::extractMainDomain($name))->where('status', 1)->find();
         if (!$site) {
             \Ret::Fail(404, null, "项目中没有该站点，请先在自动更新库中添加本站点");
         }
@@ -113,7 +113,8 @@ class bt extends CommonController
         }
         $ssl = SiteAction::updatessl($name);
 
-        $sites = CertWebsiteModel::where('type', 'web')->where('cert_name', $name)->where('status', 1)->select();
+        $mainDomain = SiteAction::extractMainDomain($name);
+        $sites = CertWebsiteModel::where('type', 'web')->where('cert_name', $mainDomain)->where('status', 1)->select();
         $rets = [
             'success' => 0,
             'fail' => 0,
@@ -159,7 +160,7 @@ class bt extends CommonController
         }
 
 
-        $panelSites = CertWebsiteModel::where('type', 'panel')->where('cert_name', $name)->where('status', 1)->select();
+        $panelSites = CertWebsiteModel::where('type', 'panel')->where('cert_name', $mainDomain)->where('status', 1)->select();
         foreach ($panelSites as $site) {
             $catchError = null;
             try {

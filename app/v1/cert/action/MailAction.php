@@ -89,19 +89,25 @@ class MailAction
         }
         $data = $ret['msg']['data'];
         $insertData = [];
-        $certNames = CertUrlModel::column('cert');
-        $siteNames = CertWebsiteModel::whereIn('cert_name', $certNames)->where('type', 'mail')->column('website');
+        $siteNames = CertWebsiteModel::where('type', 'mail')->column('website');
         $domains = [];
 
         foreach ($data as $site) {
             $domains[] = $site['domain'];
             if (!in_array($site['domain'], $siteNames)) {
+                $parts = explode('.', $site['domain']);
+                $count = count($parts);
+                if ($count > 2) {
+                    $certName = $parts[$count - 2] . '.' . $parts[$count - 1];
+                } else {
+                    $certName = $site['domain'];
+                }
                 $insertData[] = [
                     'website' => $site['domain'],
                     'type' => 'mail',
                     'api' => $bt_api,
                     'key' => $bt_key,
-                    'cert_name' => $site['domain'],
+                    'cert_name' => $certName,
                     'status' => 1,
                 ];
             }
