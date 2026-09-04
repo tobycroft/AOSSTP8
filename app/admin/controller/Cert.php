@@ -187,6 +187,6 @@ class Cert extends CommonController
             $added++;
         }
 
-        Ret::Success(0, ['added' => $added, 'skipped' => $skipped], "新增 {$added} 个站点，跳过 {$skipped} 个已存在站点");
+        Ret::Success(0, ['added' => $added, 'skipped' => $skipped, 'domains' => $domains], "新增 {$added} 个站点，跳过 {$skipped} 个已存在站点");
     }
 }
