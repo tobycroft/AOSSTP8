@@ -143,9 +143,39 @@ class Cert extends CommonController
 
     public function updateSite()
     {
-       echo '更新Site';
+        $id = Input::GetInt('id');
+        if (!$id) {
+            echo '缺少参数: id';
+            exit;
+        }
 
+        $model = new AdminCertModel();
+        $cert = $model->findOrEmpty($id);
+        if ($cert->isEmpty()) {
+            echo '项目不存在';
+            exit;
+        }
 
+        $bt_site = new Site($cert['bt_api'], $cert['bt_key'], './');
+
+        echo '<pre>';
+        echo "BT API Address: " . $cert['bt_api'] . "\n";
+        echo "BT API Key: " . substr($cert['bt_key'], 0, 6) . '***' . substr($cert['bt_key'], -6) . "\n";
+        echo "========================================\n\n";
+
+        echo "=== getList() ===\n";
+        $ret = $bt_site->getList();
+        var_dump($ret);
+
+        if ($ret && isset($ret['data'])) {
+            foreach ($ret['data'] as $site) {
+                echo "\n=== getDomainList({$site['id']}) [{$site['name']}] ===\n";
+                $domainRet = $bt_site->getDomainList($site['id']);
+                var_dump($domainRet);
+            }
+        }
+
+        echo '</pre>';
         exit;
     }
 }
