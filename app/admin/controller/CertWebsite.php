@@ -58,7 +58,7 @@ class CertWebsite extends CommonController
             ];
         }
 
-        $pagination = Layout::pagination($page, $totalPages, '/admin/cert_website?type=' . $type);
+        $pagination = Layout::pagination($page, $totalPages, '/admin/cert_website', ['type' => $type]);
 
         return $this->renderPage('cert_website/index', [
             'list' => $items,
