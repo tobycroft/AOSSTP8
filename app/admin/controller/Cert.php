@@ -158,8 +158,7 @@ class Cert extends CommonController
         } catch (Exception $e) {
             Ret::Fail(500, null, $e->getMessage());
         }
-echo json_encode($domains,320);exit;
-        if (empty($domains)) {
+if (empty($domains)) {
             Ret::Success(0, ['added' => 0, 'skipped' => 0], '未获取到域名');
         }
 
