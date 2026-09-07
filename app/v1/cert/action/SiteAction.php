@@ -88,28 +88,27 @@ class SiteAction
     }
 
     /**
-     * 判断证书是否覆盖指定根域名
-     * 命中两种情况：证书名称与根域名相同（example.com）、
-     * 证书为该根域名下的子域名（shop.example.com）
+     * 判断证书名称是否与站点根域名相同
+     *
+     * 比对时忽略大小写与通配符前缀(*.)，仅当证书本身即该根域名时才算命中；
+     * 子域名证书(shop.example.com)不视为覆盖根域名(example.com)
      */
-    public static function certCoversRoot(string $cert, string $root): bool
+    public static function certEqualsRoot(string $cert, string $root): bool
     {
         $cert = self::normalizeDomain($cert);
         $root = self::normalizeDomain($root);
         if ($cert === '' || $root === '') {
             return false;
         }
-        if ($cert === $root) {
-            return true;
-        }
-        return str_ends_with($cert, '.' . $root);
+        return $cert === $root;
     }
 
     /**
      * 解析站点归属的证书名称
      *
-     * 优先到证书URL(ao_cert_url)中查找覆盖该站点根域名的证书，命中则使用对应证书名称；
-     * 未命中时回退为该站点的根域名。同名证书优先于子域名证书。
+     * 站点根域名在证书URL(ao_cert_url)中存在同名证书时使用该证书名称，
+     * 否则仍保存站点根域名（即使该根域名并不存在对应证书）。
+     * 子域名证书不会被绑定到其他同根域名的站点上。
      *
      * @param string $domain 站点域名
      * @param array|null $certNames 证书URL中的证书名称列表，为空时自动读取
@@ -126,30 +125,20 @@ class SiteAction
             return $item !== '';
         }));
 
-        if (empty($certNames)) {
-            return $root;
-        }
-
-        $matched = null;
         foreach ($certNames as $cert) {
-            if (!self::certCoversRoot($cert, $root)) {
-                continue;
-            }
-            if (self::normalizeDomain($cert) === self::normalizeDomain($root)) {
+            if (self::certEqualsRoot($cert, $root)) {
                 return $cert;
             }
-            if ($matched === null) {
-                $matched = $cert;
-            }
         }
 
-        return $matched ?? $root;
+        return $root;
     }
 
     /**
      * 获取证书名称在证书站点表中可能的取值
      *
-     * 兼容历史上写入的「根域名」与新写入的「证书名称」两种数据，避免下发时匹配不到站点
+     * 同时匹配证书名称本身与其去除通配符后的形式，
+     * 使历史写入的「根域名」与新写入的「证书名称」都能命中
      *
      * @param string $certName 证书URL中的证书名称
      * @return array cert_name 取值列表
@@ -159,7 +148,6 @@ class SiteAction
         $candidates = [
             $certName,
             self::normalizeDomain($certName),
-            self::extractMainDomain($certName),
         ];
 
         $result = [];
