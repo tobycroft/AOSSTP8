@@ -303,7 +303,7 @@ class CertUrl extends CommonController
         ];
 
         $sites = AdminCertWebsiteModel::where('type', 'web')
-            ->where('cert_name', SiteAction::extractMainDomain($name))
+            ->whereIn('cert_name', SiteAction::certNameCandidates($name))
             ->where('status', 1)
             ->select();
 
@@ -347,7 +347,7 @@ class CertUrl extends CommonController
         }
 
         $panelSites = AdminCertWebsiteModel::where('type', 'panel')
-            ->where('cert_name', SiteAction::extractMainDomain($name))
+            ->whereIn('cert_name', SiteAction::certNameCandidates($name))
             ->where('status', 1)
             ->select();
 
@@ -439,7 +439,7 @@ class CertUrl extends CommonController
         }
 
         $sites = AdminCertWebsiteModel::where('type', 'mail')
-            ->where('cert_name', SiteAction::extractMainDomain($name))
+            ->whereIn('cert_name', SiteAction::certNameCandidates($name))
             ->where('status', 1)
             ->select();
 
