@@ -3,6 +3,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\AdminCertModel;
+use app\admin\model\AdminCertUrlModel;
 use app\admin\model\AdminCertWebsiteModel;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
@@ -163,6 +164,7 @@ if (empty($domains)) {
         }
 
         $existingWebsites = AdminCertWebsiteModel::where('type', 'web')->column('website');
+        $certNames = AdminCertUrlModel::column('cert');
         $added = 0;
         $skipped = 0;
 
@@ -174,7 +176,8 @@ if (empty($domains)) {
                 $skipped++;
                 continue;
             }
-            $certName = SiteAction::extractMainDomain($domain);
+            // 优先取证书URL中覆盖该站点根域名的证书名称，未命中时回退为站点根域名
+            $certName = SiteAction::resolveCertName($domain, $certNames);
             AdminCertWebsiteModel::create([
                 'website' => $domain,
                 'type' => 'web',

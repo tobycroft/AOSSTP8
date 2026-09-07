@@ -74,6 +74,105 @@ class SiteAction
         return $parts[$count - 2] . '.' . $parts[$count - 1];
     }
 
+    /**
+     * 规整域名用于比对：去空白、统一小写、剥离通配符前缀与结尾的点
+     * 例如：*.aerofsx.com → aerofsx.com
+     */
+    public static function normalizeDomain(string $domain): string
+    {
+        $domain = strtolower(trim($domain));
+        if (str_starts_with($domain, '*.')) {
+            $domain = substr($domain, 2);
+        }
+        return rtrim($domain, '.');
+    }
+
+    /**
+     * 判断证书是否覆盖指定根域名
+     * 命中两种情况：证书名称与根域名相同（example.com）、
+     * 证书为该根域名下的子域名（shop.example.com）
+     */
+    public static function certCoversRoot(string $cert, string $root): bool
+    {
+        $cert = self::normalizeDomain($cert);
+        $root = self::normalizeDomain($root);
+        if ($cert === '' || $root === '') {
+            return false;
+        }
+        if ($cert === $root) {
+            return true;
+        }
+        return str_ends_with($cert, '.' . $root);
+    }
+
+    /**
+     * 解析站点归属的证书名称
+     *
+     * 优先到证书URL(ao_cert_url)中查找覆盖该站点根域名的证书，命中则使用对应证书名称；
+     * 未命中时回退为该站点的根域名。同名证书优先于子域名证书。
+     *
+     * @param string $domain 站点域名
+     * @param array|null $certNames 证书URL中的证书名称列表，为空时自动读取
+     * @return string 证书名称
+     */
+    public static function resolveCertName(string $domain, ?array $certNames = null): string
+    {
+        $root = self::extractMainDomain($domain);
+
+        if ($certNames === null) {
+            $certNames = CertUrlModel::column('cert');
+        }
+        $certNames = array_values(array_filter(array_map('strval', (array)$certNames), function ($item) {
+            return $item !== '';
+        }));
+
+        if (empty($certNames)) {
+            return $root;
+        }
+
+        $matched = null;
+        foreach ($certNames as $cert) {
+            if (!self::certCoversRoot($cert, $root)) {
+                continue;
+            }
+            if (self::normalizeDomain($cert) === self::normalizeDomain($root)) {
+                return $cert;
+            }
+            if ($matched === null) {
+                $matched = $cert;
+            }
+        }
+
+        return $matched ?? $root;
+    }
+
+    /**
+     * 获取证书名称在证书站点表中可能的取值
+     *
+     * 兼容历史上写入的「根域名」与新写入的「证书名称」两种数据，避免下发时匹配不到站点
+     *
+     * @param string $certName 证书URL中的证书名称
+     * @return array cert_name 取值列表
+     */
+    public static function certNameCandidates(string $certName): array
+    {
+        $candidates = [
+            $certName,
+            self::normalizeDomain($certName),
+            self::extractMainDomain($certName),
+        ];
+
+        $result = [];
+        foreach ($candidates as $candidate) {
+            $candidate = trim($candidate);
+            if ($candidate !== '' && !in_array($candidate, $result, true)) {
+                $result[] = $candidate;
+            }
+        }
+
+        return $result;
+    }
+
     public static function updateSiteListWhichHadSSL($bt_api, $bt_key): array
     {
         $bt_site = new Site($bt_api, $bt_key, './');
@@ -102,7 +201,7 @@ class SiteAction
                                 'type' => 'web',
                                 'api' => $bt_api,
                                 'key' => $bt_key,
-                                'cert_name' => self::extractMainDomain($site['name']),
+                                'cert_name' => self::resolveCertName($site['name'], $certNames),
                                 'status' => 1,
                             ];
                         } else {
