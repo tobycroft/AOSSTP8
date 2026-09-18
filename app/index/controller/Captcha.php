@@ -11,7 +11,7 @@ class Captcha extends CommonController
     {
         $config = [
             'length' => 4,
-            'codeSet' => '2345678abcdefhijkmnpqrstuvwxyz',
+            'codeSet' => '0123456789',
             'fontSize' => 25,
             'useCurve' => true,
             'useNoise' => true,
