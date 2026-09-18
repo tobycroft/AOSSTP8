@@ -68,16 +68,17 @@ class Register extends CommonController
             Ret::Fail(406, null, '用户名已存在');
         }
 
-        // 原子占用邀请码（防并发重复使用）
+        // 原子扣减邀请码可用次数（防并发超用）
         $inviteModel = new InviteCodeModel();
         $claimed = $inviteModel->where('code', '=', $invite_code)
             ->where('status', '=', 1)
+            ->whereColumn('used_count', '<', 'max_uses')
             ->update([
-                'status' => 2,
+                'used_count' => ['INC', 1],
                 'used_time' => date('Y-m-d H:i:s'),
             ]);
         if (empty($claimed)) {
-            Ret::Fail(400, null, '邀请码无效或已使用');
+            Ret::Fail(400, null, '邀请码无效、已禁用或可用次数已用完');
         }
 
         $token = UserAuth::generateToken();

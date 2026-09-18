@@ -74,6 +74,7 @@
 
     // 门户邀请码管理
     \think\facade\Route::any('admin/invite_code/toggleStatus', '\app\admin\controller\InviteCode@toggleStatus');
+    \think\facade\Route::any('admin/invite_code/updateMaxUses', '\app\admin\controller\InviteCode@updateMaxUses');
     \think\facade\Route::any('admin/invite_code/batchDelete', '\app\admin\controller\InviteCode@batchDelete');
     \think\facade\Route::any('admin/invite_code', '\app\admin\controller\InviteCode@index');
 

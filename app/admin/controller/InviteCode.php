@@ -53,6 +53,8 @@ class InviteCode extends CommonController
                 'id' => $item['id'],
                 'code' => $item['code'],
                 'status' => $item['status'],
+                'max_uses' => $item['max_uses'],
+                'used_count' => $item['used_count'],
                 'used_by' => $item['used_by'],
                 'used_time' => $item['used_time'] ?? '',
                 'remark' => $item['remark'],
@@ -76,6 +78,8 @@ class InviteCode extends CommonController
     {
         $count = intval(request()->put('count', '1'));
         $count = max(1, min(100, $count));
+        $maxUses = intval(request()->put('max_uses', '1'));
+        $maxUses = max(1, min(9999, $maxUses));
         $remark = strval(request()->put('remark', ''));
 
         // 去除易混淆字符（0/1/I/L/O）
@@ -95,6 +99,7 @@ class InviteCode extends CommonController
             AdminInviteCodeModel::create([
                 'code' => $code,
                 'status' => 1,
+                'max_uses' => $maxUses,
                 'remark' => $remark,
             ]);
             $codes[] = $code;
@@ -135,15 +140,37 @@ class InviteCode extends CommonController
             Ret::Fail(404, null, '记录不存在');
         }
 
-        if ($item['status'] == 2) {
-            Ret::Fail(406, null, '邀请码已使用，无法修改状态');
-        }
-
         $newStatus = $item['status'] == 1 ? 0 : 1;
         $item->save(['status' => $newStatus]);
 
         $statusText = $newStatus == 1 ? '启用' : '禁用';
         Ret::Success(0, ['status' => $newStatus], "状态已切换为{$statusText}");
+    }
+
+    /**
+     * 修改邀请码可用次数
+     */
+    public function updateMaxUses()
+    {
+        $id = Input::PostInt('id');
+        $maxUses = Input::PostInt('max_uses');
+        if (!$id) {
+            Ret::Fail(400, null, '缺少参数[id]');
+        }
+        if ($maxUses < 1 || $maxUses > 9999) {
+            Ret::Fail(400, null, '可用次数需在1-9999之间');
+        }
+
+        $model = new AdminInviteCodeModel();
+        $item = $model->findOrEmpty($id);
+
+        if ($item->isEmpty()) {
+            Ret::Fail(404, null, '记录不存在');
+        }
+
+        $item->save(['max_uses' => $maxUses]);
+
+        Ret::Success(0, ['max_uses' => $maxUses], "可用次数已修改为{$maxUses}");
     }
 
     public function batchDelete()

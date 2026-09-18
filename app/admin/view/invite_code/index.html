@@ -24,6 +24,7 @@
             <th>ID</th>
             <th>邀请码</th>
             <th>状态</th>
+            <th>可用次数</th>
             <th>使用者ID</th>
             <th>使用时间</th>
             <th>备注</th>
@@ -38,29 +39,29 @@
             <td>{$item.id}</td>
             <td class="code-text">{$item.code}</td>
             <td>
-                {if $item.status==1}
-                <span class="status-badge active" id="statusBadge{$item.id}">可用</span>
-                {elseif $item.status==2}
-                <span class="status-badge used" id="statusBadge{$item.id}">已使用</span>
-                {else}
+                {if $item.status==0}
                 <span class="status-badge inactive" id="statusBadge{$item.id}">禁用</span>
+                {elseif $item.used_count>=$item.max_uses}
+                <span class="status-badge used" id="statusBadge{$item.id}">已用完</span>
+                {else}
+                <span class="status-badge active" id="statusBadge{$item.id}">可用</span>
                 {/if}
             </td>
+            <td id="uses{$item.id}">{$item.used_count}/{$item.max_uses}</td>
             <td>{if $item.used_by>0}{$item.used_by}{else}-{/if}</td>
             <td>{if $item.used_time}{$item.used_time}{else}-{/if}</td>
             <td>{$item.remark}</td>
             <td>{$item.date}</td>
             <td>
-                {if $item.status!=2}
                 <button class="btn btn-sm btn-edit" id="toggleBtn{$item.id}" onclick="toggleStatus({$item.id})">{if $item.status==1}禁用{else}启用{/if}</button>
-                {/if}
+                <button class="btn btn-sm btn-edit" onclick="openEditUses({$item.id}, {$item.max_uses})">改次数</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
         </tr>
         {/foreach}
         {if empty($list)}
         <tr>
-            <td colspan="9" style="text-align:center;color:#999;">暂无邀请码，点击右上角"生成邀请码"创建</td>
+            <td colspan="10" style="text-align:center;color:#999;">暂无邀请码，点击右上角"生成邀请码"创建</td>
         </tr>
         {/if}
     </tbody>
@@ -74,12 +75,29 @@
             <input type="number" id="formCount" min="1" max="100" value="1">
         </div>
         <div class="form-group">
+            <label>每码可用次数（1-9999）</label>
+            <input type="number" id="formMaxUses" min="1" max="9999" value="1">
+        </div>
+        <div class="form-group">
             <label>备注（选填）</label>
             <input type="text" id="formRemark" placeholder="例如：给某某用户的邀请码">
         </div>
         <div class="modal-actions">
             <button class="btn btn-cancel" onclick="closeModal()">取消</button>
             <button class="btn btn-primary" onclick="submitCreate()">生成</button>
+        </div>
+    </div>
+</div>
+<div class="modal" id="editUsesModal">
+    <div class="modal-box">
+        <h3>修改可用次数</h3>
+        <div class="form-group">
+            <label>每码可用次数（1-9999）</label>
+            <input type="number" id="editMaxUses" min="1" max="9999" value="1">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeEditUses()">取消</button>
+            <button class="btn btn-primary" onclick="submitEditUses()">保存</button>
         </div>
     </div>
 </div>
@@ -92,13 +110,16 @@ function closeModal() {
 }
 function openCreate() {
     document.getElementById('formCount').value = 1;
+    document.getElementById('formMaxUses').value = 1;
     document.getElementById('formRemark').value = '';
     document.getElementById('inviteModal').classList.add('show');
 }
 function submitCreate() {
     var count = document.getElementById('formCount').value;
+    var maxUses = document.getElementById('formMaxUses').value;
     var remark = document.getElementById('formRemark').value;
     if (!count || count < 1 || count > 100) { alert('数量需在1-100之间'); return; }
+    if (!maxUses || maxUses < 1 || maxUses > 9999) { alert('每码可用次数需在1-9999之间'); return; }
     var xhr = new XMLHttpRequest();
     xhr.open('PUT', '/admin/invite_code', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -107,14 +128,14 @@ function submitCreate() {
         if (xhr.readyState == 4) {
             var res = JSON.parse(xhr.responseText);
             if (res.code == 0) {
-                alert('已生成 ' + res.data.codes.length + ' 个邀请码');
+                alert('已生成 ' + res.data.codes.length + ' 个邀请码，每码可用 ' + maxUses + ' 次');
                 location.reload();
             } else {
                 alert(res.echo);
             }
         }
     };
-    xhr.send('count=' + count + '&remark=' + encodeURIComponent(remark));
+    xhr.send('count=' + count + '&max_uses=' + maxUses + '&remark=' + encodeURIComponent(remark));
 }
 function doDelete(id) {
     if (!confirm('确定要删除该邀请码吗？')) return;
@@ -146,8 +167,14 @@ function toggleStatus(id) {
                 var badge = document.getElementById('statusBadge' + id);
                 var btn = document.getElementById('toggleBtn' + id);
                 if (res.data.status == 1) {
-                    badge.textContent = '可用';
-                    badge.className = 'status-badge active';
+                    var uses = document.getElementById('uses' + id).textContent.split('/');
+                    if (parseInt(uses[0]) >= parseInt(uses[1])) {
+                        badge.textContent = '已用完';
+                        badge.className = 'status-badge used';
+                    } else {
+                        badge.textContent = '可用';
+                        badge.className = 'status-badge active';
+                    }
                     btn.textContent = '禁用';
                 } else {
                     badge.textContent = '禁用';
@@ -160,6 +187,34 @@ function toggleStatus(id) {
         }
     };
     xhr.send('id=' + id);
+}
+var editUsesId = 0;
+function openEditUses(id, maxUses) {
+    editUsesId = id;
+    document.getElementById('editMaxUses').value = maxUses;
+    document.getElementById('editUsesModal').classList.add('show');
+}
+function closeEditUses() {
+    document.getElementById('editUsesModal').classList.remove('show');
+}
+function submitEditUses() {
+    var maxUses = document.getElementById('editMaxUses').value;
+    if (!maxUses || maxUses < 1 || maxUses > 9999) { alert('每码可用次数需在1-9999之间'); return; }
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/invite_code/updateMaxUses', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + editUsesId + '&max_uses=' + maxUses);
 }
 function toggleSelectAll() {
     var checked = document.getElementById('selectAll').checked;
