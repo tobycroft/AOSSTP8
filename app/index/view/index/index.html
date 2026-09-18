@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{$title}</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Roboto, sans-serif; color: #333; background: #fff; }
+a { text-decoration: none; color: inherit; }
+.container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+/* 导航 */
+.nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid #f0f0f0; }
+.nav-inner { max-width: 1120px; margin: 0 auto; padding: 0 24px; height: 60px; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { font-size: 20px; font-weight: 700; color: #1677ff; }
+.nav-logo span { color: #333; font-weight: 500; }
+.nav-links { display: flex; align-items: center; gap: 24px; }
+.nav-links a { font-size: 14px; color: #555; transition: color 0.2s; }
+.nav-links a:hover { color: #1677ff; }
+.nav-user { display: flex; align-items: center; gap: 12px; }
+.nav-user .welcome { font-size: 14px; color: #555; }
+.btn { display: inline-block; padding: 7px 18px; border-radius: 6px; font-size: 14px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; }
+.btn-primary { background: #1677ff; color: #fff; }
+.btn-primary:hover { background: #4096ff; }
+.btn-plain { background: #fff; color: #1677ff; border-color: #1677ff; }
+.btn-plain:hover { border-color: #4096ff; color: #4096ff; }
+.btn-text { background: none; color: #555; border: none; padding: 7px 4px; }
+.btn-text:hover { color: #1677ff; }
+.btn-logout { background: none; color: #ff4d4f; border: 1px solid #ffccc7; padding: 6px 14px; }
+.btn-logout:hover { background: #fff2f0; }
+
+/* Hero */
+.hero { padding: 150px 0 90px; background: linear-gradient(180deg, #f5f8ff 0%, #ffffff 100%); text-align: center; }
+.hero-tag { display: inline-block; padding: 4px 14px; border-radius: 20px; background: #e6f4ff; color: #1677ff; font-size: 13px; margin-bottom: 20px; }
+.hero h1 { font-size: 46px; line-height: 1.25; font-weight: 700; color: #1a1a1a; }
+.hero h1 em { font-style: normal; color: #1677ff; }
+.hero .sub { margin: 20px auto 0; max-width: 640px; font-size: 17px; line-height: 1.8; color: #666; }
+.hero-en { margin-top: 14px; font-size: 13px; color: #999; }
+.hero-actions { margin-top: 34px; display: flex; justify-content: center; gap: 14px; }
+.hero-actions .btn { padding: 11px 30px; font-size: 15px; }
+
+/* 区块通用 */
+.section { padding: 72px 0; }
+.section.alt { background: #fafbfc; }
+.section-head { text-align: center; margin-bottom: 44px; }
+.section-head h2 { font-size: 30px; color: #1a1a1a; }
+.section-head p { margin-top: 10px; font-size: 15px; color: #888; }
+
+/* 解决的问题 */
+.goals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.goal { background: #fff; border: 1px solid #eef0f3; border-radius: 10px; padding: 24px; transition: box-shadow 0.2s, transform 0.2s; }
+.goal:hover { box-shadow: 0 6px 20px rgba(22,119,255,0.08); transform: translateY(-2px); }
+.goal .num { width: 32px; height: 32px; border-radius: 8px; background: #e6f4ff; color: #1677ff; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.goal h3 { font-size: 16px; color: #222; margin-bottom: 8px; }
+.goal p { font-size: 14px; line-height: 1.7; color: #777; }
+
+/* SDK */
+.sdk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.sdk-card { background: #fff; border: 1px solid #eef0f3; border-radius: 10px; padding: 28px; }
+.sdk-card .lang { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 12px; background: #f0f5ff; color: #2f54eb; margin-bottom: 12px; }
+.sdk-card .lang.go { background: #e6fffb; color: #13a8a8; }
+.sdk-card h3 { font-size: 19px; margin-bottom: 6px; }
+.sdk-card h3 a { color: #1677ff; }
+.sdk-card h3 a:hover { text-decoration: underline; }
+.sdk-card p { font-size: 14px; color: #777; margin-bottom: 16px; }
+.sdk-card code { display: block; background: #1e293b; color: #93c5fd; padding: 12px 16px; border-radius: 8px; font-size: 13px; font-family: "SF Mono", Consolas, monospace; overflow-x: auto; }
+
+/* 功能矩阵 */
+.feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.feature-card { background: #fff; border: 1px solid #eef0f3; border-radius: 10px; padding: 20px; }
+.feature-card h3 { font-size: 15px; color: #1a1a1a; padding-bottom: 12px; border-bottom: 1px solid #f2f4f7; margin-bottom: 12px; }
+.feature-card h3::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: #1677ff; margin-right: 8px; vertical-align: 2px; }
+.feature-card ul { list-style: none; }
+.feature-card li { font-size: 13px; color: #666; line-height: 1.6; padding: 3px 0 3px 14px; position: relative; }
+.feature-card li::before { content: ""; position: absolute; left: 0; top: 11px; width: 5px; height: 5px; border-radius: 50%; background: #cfe4ff; }
+.feature-card li.group { color: #444; font-weight: 500; }
+.feature-card li.group::before { background: #1677ff; }
+
+/* 关于 */
+.about { text-align: center; }
+.about .contact { margin-top: 18px; font-size: 15px; color: #555; }
+.about .contact a { color: #1677ff; }
+.about .contact a:hover { text-decoration: underline; }
+
+/* 页脚 */
+.footer { border-top: 1px solid #f0f0f0; padding: 28px 0 34px; text-align: center; }
+.footer p { font-size: 13px; color: #999; line-height: 1.9; }
+
+@media (max-width: 900px) {
+    .goals { grid-template-columns: 1fr; }
+    .sdk-grid { grid-template-columns: 1fr; }
+    .feature-grid { grid-template-columns: repeat(2, 1fr); }
+    .hero h1 { font-size: 32px; }
+    .nav-links a.hide-sm { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="nav">
+    <div class="nav-inner">
+        <a class="nav-logo" href="/">AOSS<span>8</span></a>
+        <div class="nav-links">
+            <a href="#goals" class="hide-sm">解决的问题</a>
+            <a href="#sdk" class="hide-sm">SDK</a>
+            <a href="#features" class="hide-sm">能力表</a>
+            <a href="/admin" class="hide-sm">后台管理</a>
+            <div class="nav-user">
+                {if $is_login}
+                <span class="welcome">欢迎，{$nickname}</span>
+                <button class="btn btn-logout" id="logoutBtn">退出登录</button>
+                {else}
+                <a class="btn btn-text" href="/login">登录</a>
+                <a class="btn btn-primary" href="/register">注册</a>
+                {/if}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="hero">
+    <div class="container">
+        <span class="hero-tag">AOSSTP8 · 私有化能力平台</span>
+        <h1>AOSS，你的<em>全栈能力中转站</em></h1>
+        <p class="sub">AOSSTP8 是 AOSSTP 的前作，一个开箱即用的私有平台：统一集成 Office、文件上传、微信、短信、直播、验证码等常用能力，让业务在短时间内拥有常用能力，更方便地切换业务底层。</p>
+        <p class="hero-en">AOSS is a private platform! Aoss is now support GPT-APIs.</p>
+        {if $is_login}
+        <div class="hero-actions">
+            <a class="btn btn-primary" href="#features">浏览能力表</a>
+            <a class="btn btn-plain" href="/admin">进入后台</a>
+        </div>
+        {else}
+        <div class="hero-actions">
+            <a class="btn btn-primary" href="/register">立即注册</a>
+            <a class="btn btn-plain" href="#features">浏览能力表</a>
+        </div>
+        {/if}
+    </div>
+</div>
+
+<div class="section" id="goals">
+    <div class="container">
+        <div class="section-head">
+            <h2>解决什么问题</h2>
+            <p>让常用能力触手可及，让业务底层随时可换</p>
+        </div>
+        <div class="goals">
+            <div class="goal">
+                <div class="num">1</div>
+                <h3>插件升级风险</h3>
+                <p>解决插件在 PHP 版本升级后可能出现的需要重接的风险。</p>
+            </div>
+            <div class="goal">
+                <div class="num">2</div>
+                <h3>跨语言中转站</h3>
+                <p>作为跨语言的中转站，任何语言都能通过接口复用平台能力。</p>
+            </div>
+            <div class="goal">
+                <div class="num">3</div>
+                <h3>告别重复查文档</h3>
+                <p>降低很不经常使用的功能重复看文档导致心态爆炸的风险。</p>
+            </div>
+            <div class="goal">
+                <div class="num">4</div>
+                <h3>短时间常用能力</h3>
+                <p>短时间内拥有常用能力，接入即用，无需重复造轮子。</p>
+            </div>
+            <div class="goal">
+                <div class="num">5</div>
+                <h3>灵活切换底层</h3>
+                <p>更方便地切换业务底层，阿里云与腾讯云随时互换。</p>
+            </div>
+            <div class="goal">
+                <div class="num">6</div>
+                <h3>测试与互补</h3>
+                <p>作为新功能的测试平台，使用 composer 和 gopkg 互补。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="section alt" id="sdk">
+    <div class="container">
+        <div class="section-head">
+            <h2>官方 SDK</h2>
+            <p>PHP 与 Golang 双版本，接入只需一行命令</p>
+        </div>
+        <div class="sdk-grid">
+            <div class="sdk-card">
+                <span class="lang">PHP</span>
+                <h3><a href="https://github.com/tobycroft/AossSdk" target="_blank" rel="noopener">AossSdk</a></h3>
+                <p>AossSdk PHP 版本，通过 composer 快速接入平台全部能力。</p>
+                <code>composer require tobycroft/aoss-sdk</code>
+            </div>
+            <div class="sdk-card">
+                <span class="lang go">Golang</span>
+                <h3><a href="https://github.com/tobycroft/AossGoSdk" target="_blank" rel="noopener">AossGoSdk</a></h3>
+                <p>AossGoSdk Golang 版本，通过 go get 快速接入平台全部能力。</p>
+                <code>go get github.com/tobycroft/AossGoSdk</code>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="section" id="features">
+    <div class="container">
+        <div class="section-head">
+            <h2>AOSS8 能力表</h2>
+            <p>十四大能力域，覆盖业务开发常用场景</p>
+        </div>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>Office 能力</h3>
+                <ul>
+                    <li class="group">Excel</li>
+                    <li>Excel 解析 JSON</li>
+                    <li>JSON 生成 Excel</li>
+                    <li class="group">Word</li>
+                    <li>文字导入 / 文字生成</li>
+                    <li class="group">PDF</li>
+                    <li>图文能力生成</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>文件上传</h3>
+                <ul>
+                    <li>上传到本地 / OSS（阿里云、腾讯云）</li>
+                    <li>上传到 OSS 并本地保存（双地址）</li>
+                    <li class="group">音视频识别</li>
+                    <li>解析音频 / 视频时间长度</li>
+                    <li class="group">文件识别</li>
+                    <li>避免重复文件、文件秒传</li>
+                    <li class="group">v2 直传模式</li>
+                    <li>临时 Token、一次性 Token</li>
+                    <li>upfull / uphash 两种模式</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>微信能力</h3>
+                <ul>
+                    <li class="group">WXA-QR 二维码生成</li>
+                    <li>自动地址 / Base64 / 302 地址</li>
+                    <li class="group">SNS</li>
+                    <li>小程序登录、公众号登录</li>
+                    <li class="group">公众号</li>
+                    <li>用户列表、用户信息、模板推送</li>
+                    <li>获取 openid、生成二维码</li>
+                    <li>签名鉴权</li>
+                    <li class="group">被动接收消息</li>
+                    <li>自动回复、关键词触发、欢迎消息</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>图形能力</h3>
+                <ul>
+                    <li class="group">画图</li>
+                    <li>返回图片 binary 流 / 下载地址</li>
+                    <li>自动上传 OSS / 仅保留本地</li>
+                    <li class="group">条形码</li>
+                    <li>条形码生成</li>
+                    <li class="group">二维码</li>
+                    <li>图片流 / 带 LOGO / B64</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>短信能力（ASMS）</h3>
+                <ul>
+                    <li>发送短信</li>
+                    <li class="group">防火墙</li>
+                    <li>号码防火墙、IP 防火墙</li>
+                    <li>业务联动防火墙（防刷）</li>
+                    <li>图形验证码 / 语音验证码</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>Hook</h3>
+                <ul>
+                    <li>WebHook 分发平台</li>
+                    <li>普通直推模式</li>
+                    <li class="group">Github 模式</li>
+                    <li>单推 / 多推 / Branch 推送</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>Tasker</h3>
+                <ul>
+                    <li>自动测试工具</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>LCIC 直播课堂</h3>
+                <ul>
+                    <li class="group">用户</li>
+                    <li>全自动模式 / 手动新建 / 手动修改</li>
+                    <li class="group">创建直播间</li>
+                    <li>全自动模式、修改直播</li>
+                    <li>生成直播推广码</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>普通直播</h3>
+                <ul>
+                    <li>阿里云</li>
+                    <li class="group">腾讯云</li>
+                    <li>创建直播（返回基本信息 / 全部信息）</li>
+                    <li>读取直播地址（鉴权播放）</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>AI-GPT 能力</h3>
+                <ul>
+                    <li class="group">接入 Google-Bard</li>
+                    <li>按项目设定训练好的模型回复</li>
+                    <li class="group">接入 Bing-AI</li>
+                    <li>按项目设定训练好的模型回复</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>IP 安全</h3>
+                <ul>
+                    <li class="group">IP 地区范围查询</li>
+                    <li>仅 IP 验证模式</li>
+                    <li>IP + 验证码交互验证模式</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>验证码</h3>
+                <ul>
+                    <li class="group">图形码（普通码）</li>
+                    <li>计算型（22+5=?）/ 中文 / 数字 / 字母 / 混合</li>
+                    <li class="group">智力码（图形选择）</li>
+                    <li>通用单验证</li>
+                    <li>自动威胁匹配</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>游戏支持</h3>
+                <ul>
+                    <li class="group">RCON</li>
+                    <li>Palworld 幻兽帕鲁</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>运维支持（独立鉴权）</h3>
+                <ul>
+                    <li class="group">证书管理（Let's Encrypt）</li>
+                    <li>宝塔面板 / AAPanel-API</li>
+                    <li>网站证书自动添加与更新</li>
+                    <li>自动更新通配符证书</li>
+                    <li>邮件系统证书自动更新</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="section alt about">
+    <div class="container">
+        <div class="section-head">
+            <h2>加入我们</h2>
+            <p>AOSS is a private platform! Aoss is now support GPT-APIs.</p>
+        </div>
+        <p class="contact">请发送邮件至 <a href="mailto:oss@tuuz.cc">oss@tuuz.cc</a> 并说明你的来意，与我们一同使用。</p>
+    </div>
+</div>
+
+<div class="footer">
+    <div class="container">
+        <p>AOSS is a private platform! Aoss is now support GPT-APIs.</p>
+        <p>Contact oss@tuuz.cc with your reason to join us!</p>
+    </div>
+</div>
+
+{literal}
+<script>
+document.getElementById('logoutBtn') && document.getElementById('logoutBtn').addEventListener('click', function () {
+    if (!confirm('确定要退出登录吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/login/logout', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4) {
+            document.cookie = 'user_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+            window.location.href = '/';
+        }
+    };
+    xhr.send();
+});
+</script>
+{/literal}
+</body>
+</html>

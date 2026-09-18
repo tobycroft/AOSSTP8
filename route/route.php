@@ -81,6 +81,13 @@
 \think\facade\Route::any('github', '\app\v1\hook\controller\push@github');
 
 
+// 门户用户
+\think\facade\Route::any('captcha/gif', '\app\index\controller\Captcha@gif');
+\think\facade\Route::any('login/info', '\app\index\controller\Login@info');
+\think\facade\Route::any('login/logout', '\app\index\controller\Login@logout');
+\think\facade\Route::any('login', '\app\index\controller\Login@index');
+\think\facade\Route::any('register', '\app\index\controller\Register@index');
+
 \think\facade\Route::any(':any', function () {
     header("Access-Control-Allow-Origin: *", true);
     header("Access-Control-Max-Age: 86400", true);
@@ -93,14 +100,5 @@
     return \think\facade\Request::url();
 });
 
-\think\facade\Route::any('', function () {
-    header("Access-Control-Allow-Origin: *", true);
-    header("Access-Control-Max-Age: 86400", true);
-    header("Access-Control-Allow-Credentials: true", true);
-    header("Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS", true);
-    header("Access-Control-Allow-Headers: *", true);
-    if (\think\facade\Request::isOptions()) {
-        return false;
-    }
-    return 'AOSS is a private platform! </br> Aoss is now support GPT-APIs </br> Contact oss@tuuz.cc with your reason to join us! ';
-});
+// 首页
+\think\facade\Route::any('', '\app\index\controller\Index@index');

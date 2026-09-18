@@ -7,6 +7,7 @@ class Captcha
     public $key;
     public $hash;
     public $question;
+    public $cookie_name = 'admin_captcha';
 
     protected string $codeSet = '2345678abcdefhijkmnpqrstuvwxyzABCDEFGHJKLMNPQRTUVWXY';
     protected int $length = 4;
@@ -55,7 +56,7 @@ class Captcha
         }
 
         // 验证码 hash 存入 cookie，替代 session（项目未开启 session 中间件）
-        setcookie('admin_captcha', $this->hash, [
+        setcookie($this->cookie_name, $this->hash, [
             'expires' => time() + 300,
             'path' => '/',
             'httponly' => true,
