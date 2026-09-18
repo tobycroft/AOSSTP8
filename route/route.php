@@ -27,56 +27,58 @@
 });
 
 
-// 后台管理路由
-\think\facade\Route::any('admin/captcha/gif', '\app\admin\controller\Captcha@gif');
-\think\facade\Route::any('admin/login/index', '\app\admin\controller\Login@index');
-\think\facade\Route::any('admin/login/logout', '\app\admin\controller\Login@logout');
-\think\facade\Route::any('admin/login/info', '\app\admin\controller\Login@info');
-\think\facade\Route::any('admin/user', '\app\admin\controller\User@index');
-\think\facade\Route::any('admin/role', '\app\admin\controller\Role@index');
-\think\facade\Route::any('admin/role/all', '\app\admin\controller\Role@all');
-\think\facade\Route::any('admin/role/bind', '\app\admin\controller\Role@bind');
-\think\facade\Route::any('admin/role/getUserRoles', '\app\admin\controller\Role@getUserRoles');
-\think\facade\Route::any('admin/menu', '\app\admin\controller\Menu@index');
-\think\facade\Route::any('admin/login_log', '\app\admin\controller\LoginLog@index');
-\think\facade\Route::any('admin/cert/updateSite', '\app\admin\controller\Cert@updateSite');
-\think\facade\Route::any('admin/cert', '\app\admin\controller\Cert@index');
-\think\facade\Route::any('admin/cert_url/updateSSL', '\app\admin\controller\CertUrl@updateSSL');
-\think\facade\Route::any('admin/cert_url/updateAllSSL', '\app\admin\controller\CertUrl@updateAllSSL');
-\think\facade\Route::any('admin/cert_url/getKey', '\app\admin\controller\CertUrl@getKey');
-\think\facade\Route::any('admin/cert_url/autoSSL', '\app\admin\controller\CertUrl@autoSSL');
-\think\facade\Route::any('admin/cert_url/autoMailSSL', '\app\admin\controller\CertUrl@autoMailSSL');
-\think\facade\Route::any('admin/cert_url', '\app\admin\controller\CertUrl@index');
-\think\facade\Route::any('admin/cert_website/batchDelete', '\app\admin\controller\CertWebsite@batchDelete');
-\think\facade\Route::any('admin/cert_website/toggleStatus', '\app\admin\controller\CertWebsite@toggleStatus');
-\think\facade\Route::any('admin/cert_website', '\app\admin\controller\CertWebsite@index');
-\think\facade\Route::any('admin/cert_log', '\app\admin\controller\CertLog@index');
-\think\facade\Route::any('admin/attachment', '\app\admin\controller\Attachment@index');
-\think\facade\Route::any('admin/attachment_token', '\app\admin\controller\AttachmentToken@index');
-\think\facade\Route::any('admin/oss', '\app\admin\controller\Oss@index');
-\think\facade\Route::any('admin/oss_aliyun', '\app\admin\controller\OssAliyun@index');
-\think\facade\Route::any('admin/project', '\app\admin\controller\Project@index');
-\think\facade\Route::any('admin/hook', '\app\admin\controller\Hook@index');
-\think\facade\Route::any('admin/hook_log', '\app\admin\controller\HookLog@index');
-\think\facade\Route::any('admin/excel', '\app\admin\controller\Excel@index');
-\think\facade\Route::any('admin/console', '\app\admin\controller\Console@index');
+// 后台管理路由（绑定 aoss.tuuz.cc 域名，仅该主机头可访问）
+\think\facade\Route::domain('aoss.tuuz.cc', function () {
+    \think\facade\Route::any('admin/captcha/gif', '\app\admin\controller\Captcha@gif');
+    \think\facade\Route::any('admin/login/index', '\app\admin\controller\Login@index');
+    \think\facade\Route::any('admin/login/logout', '\app\admin\controller\Login@logout');
+    \think\facade\Route::any('admin/login/info', '\app\admin\controller\Login@info');
+    \think\facade\Route::any('admin/user', '\app\admin\controller\User@index');
+    \think\facade\Route::any('admin/role', '\app\admin\controller\Role@index');
+    \think\facade\Route::any('admin/role/all', '\app\admin\controller\Role@all');
+    \think\facade\Route::any('admin/role/bind', '\app\admin\controller\Role@bind');
+    \think\facade\Route::any('admin/role/getUserRoles', '\app\admin\controller\Role@getUserRoles');
+    \think\facade\Route::any('admin/menu', '\app\admin\controller\Menu@index');
+    \think\facade\Route::any('admin/login_log', '\app\admin\controller\LoginLog@index');
+    \think\facade\Route::any('admin/cert/updateSite', '\app\admin\controller\Cert@updateSite');
+    \think\facade\Route::any('admin/cert', '\app\admin\controller\Cert@index');
+    \think\facade\Route::any('admin/cert_url/updateSSL', '\app\admin\controller\CertUrl@updateSSL');
+    \think\facade\Route::any('admin/cert_url/updateAllSSL', '\app\admin\controller\CertUrl@updateAllSSL');
+    \think\facade\Route::any('admin/cert_url/getKey', '\app\admin\controller\CertUrl@getKey');
+    \think\facade\Route::any('admin/cert_url/autoSSL', '\app\admin\controller\CertUrl@autoSSL');
+    \think\facade\Route::any('admin/cert_url/autoMailSSL', '\app\admin\controller\CertUrl@autoMailSSL');
+    \think\facade\Route::any('admin/cert_url', '\app\admin\controller\CertUrl@index');
+    \think\facade\Route::any('admin/cert_website/batchDelete', '\app\admin\controller\CertWebsite@batchDelete');
+    \think\facade\Route::any('admin/cert_website/toggleStatus', '\app\admin\controller\CertWebsite@toggleStatus');
+    \think\facade\Route::any('admin/cert_website', '\app\admin\controller\CertWebsite@index');
+    \think\facade\Route::any('admin/cert_log', '\app\admin\controller\CertLog@index');
+    \think\facade\Route::any('admin/attachment', '\app\admin\controller\Attachment@index');
+    \think\facade\Route::any('admin/attachment_token', '\app\admin\controller\AttachmentToken@index');
+    \think\facade\Route::any('admin/oss', '\app\admin\controller\Oss@index');
+    \think\facade\Route::any('admin/oss_aliyun', '\app\admin\controller\OssAliyun@index');
+    \think\facade\Route::any('admin/project', '\app\admin\controller\Project@index');
+    \think\facade\Route::any('admin/hook', '\app\admin\controller\Hook@index');
+    \think\facade\Route::any('admin/hook_log', '\app\admin\controller\HookLog@index');
+    \think\facade\Route::any('admin/excel', '\app\admin\controller\Excel@index');
+    \think\facade\Route::any('admin/console', '\app\admin\controller\Console@index');
 
-// SMS管理
-\think\facade\Route::any('admin/sms', '\app\admin\controller\Sms@index');
-\think\facade\Route::any('admin/sms_aliyun', '\app\admin\controller\SmsAliyun@index');
-\think\facade\Route::any('admin/sms_tencent', '\app\admin\controller\SmsTencent@index');
-\think\facade\Route::any('admin/sms_lc', '\app\admin\controller\SmsLc@index');
-\think\facade\Route::any('admin/sms_wlwx', '\app\admin\controller\SmsWlwx@index');
-\think\facade\Route::any('admin/sms_blacklist', '\app\admin\controller\SmsBlacklist@index');
-\think\facade\Route::any('admin/sms_intercept', '\app\admin\controller\SmsIntercept@index');
-\think\facade\Route::any('admin/sms_log', '\app\admin\controller\SmsLog@index');
+    // SMS管理
+    \think\facade\Route::any('admin/sms', '\app\admin\controller\Sms@index');
+    \think\facade\Route::any('admin/sms_aliyun', '\app\admin\controller\SmsAliyun@index');
+    \think\facade\Route::any('admin/sms_tencent', '\app\admin\controller\SmsTencent@index');
+    \think\facade\Route::any('admin/sms_lc', '\app\admin\controller\SmsLc@index');
+    \think\facade\Route::any('admin/sms_wlwx', '\app\admin\controller\SmsWlwx@index');
+    \think\facade\Route::any('admin/sms_blacklist', '\app\admin\controller\SmsBlacklist@index');
+    \think\facade\Route::any('admin/sms_intercept', '\app\admin\controller\SmsIntercept@index');
+    \think\facade\Route::any('admin/sms_log', '\app\admin\controller\SmsLog@index');
 
-// 门户邀请码管理
-\think\facade\Route::any('admin/invite_code/toggleStatus', '\app\admin\controller\InviteCode@toggleStatus');
-\think\facade\Route::any('admin/invite_code/batchDelete', '\app\admin\controller\InviteCode@batchDelete');
-\think\facade\Route::any('admin/invite_code', '\app\admin\controller\InviteCode@index');
+    // 门户邀请码管理
+    \think\facade\Route::any('admin/invite_code/toggleStatus', '\app\admin\controller\InviteCode@toggleStatus');
+    \think\facade\Route::any('admin/invite_code/batchDelete', '\app\admin\controller\InviteCode@batchDelete');
+    \think\facade\Route::any('admin/invite_code', '\app\admin\controller\InviteCode@index');
 
-\think\facade\Route::any('admin', '\app\admin\controller\Index@index');
+    \think\facade\Route::any('admin', '\app\admin\controller\Index@index');
+});
 
 \think\facade\Route::any('up', '\app\v1\file\controller\index@up');
 
