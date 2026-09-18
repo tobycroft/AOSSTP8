@@ -2,7 +2,7 @@
 
 namespace app\index\controller;
 
-use app\admin\utils\Captcha as AdminCaptcha;
+use app\v1\captcha\utils\GifCaptcha;
 use BaseController\CommonController;
 
 class Captcha extends CommonController
@@ -16,10 +16,20 @@ class Captcha extends CommonController
             'useCurve' => true,
             'useNoise' => true,
             'bg' => [243, 251, 254],
-            'cookie_name' => 'user_captcha',
+            'frameDelay' => 100,
         ];
 
-        $capt = new AdminCaptcha($config);
-        return $capt->create();
+        $capt = new GifCaptcha($config);
+        $response = $capt->create();
+
+        // 验证码 hash 存入 cookie，供登录/注册校验
+        setcookie('user_captcha', $capt->hash, [
+            'expires' => time() + 300,
+            'path' => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+
+        return $response;
     }
 }
