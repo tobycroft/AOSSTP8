@@ -71,6 +71,11 @@
 \think\facade\Route::any('admin/sms_intercept', '\app\admin\controller\SmsIntercept@index');
 \think\facade\Route::any('admin/sms_log', '\app\admin\controller\SmsLog@index');
 
+// 门户邀请码管理
+\think\facade\Route::any('admin/invite_code/toggleStatus', '\app\admin\controller\InviteCode@toggleStatus');
+\think\facade\Route::any('admin/invite_code/batchDelete', '\app\admin\controller\InviteCode@batchDelete');
+\think\facade\Route::any('admin/invite_code', '\app\admin\controller\InviteCode@index');
+
 \think\facade\Route::any('admin', '\app\admin\controller\Index@index');
 
 \think\facade\Route::any('up', '\app\v1\file\controller\index@up');

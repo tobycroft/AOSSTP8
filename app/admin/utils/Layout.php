@@ -25,6 +25,12 @@ class Layout
                 'project' => ['label' => '项目管理', 'url' => '/admin/project'],
             ],
         ],
+        'user' => [
+            'title' => '门户用户',
+            'items' => [
+                'invite_code' => ['label' => '邀请码管理', 'url' => '/admin/invite_code'],
+            ],
+        ],
         'storage' => [
             'title' => '存储管理',
             'items' => [

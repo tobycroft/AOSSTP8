@@ -1,0 +1,212 @@
+{extend name="layout/base" /}
+{block name="content"}
+<style>
+.status-badge.used { background: #f5f5f5; color: #999; border: 1px solid #e0e0e0; }
+.code-text { font-family: "SF Mono", Consolas, monospace; letter-spacing: 1px; }
+.search-box { display: flex; gap: 8px; align-items: center; }
+.search-box input { padding: 6px 10px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 13px; outline: none; width: 200px; }
+</style>
+<div class="toolbar">
+    <h2>邀请码管理</h2>
+    <div style="display:flex;gap:12px;align-items:center;">
+        <form class="search-box" onsubmit="return false;">
+            <input type="text" id="searchInput" placeholder="搜索邀请码" value="{$search}">
+            <button class="btn btn-primary btn-sm" onclick="doSearch()">搜索</button>
+        </form>
+        <button class="btn btn-danger" onclick="doBatchDelete()" style="display:none;" id="batchDeleteBtn">批量删除</button>
+        <button class="btn btn-primary" onclick="openCreate()">生成邀请码</button>
+    </div>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+            <th>ID</th>
+            <th>邀请码</th>
+            <th>状态</th>
+            <th>使用者ID</th>
+            <th>使用时间</th>
+            <th>备注</th>
+            <th>创建时间</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td><input type="checkbox" class="item-checkbox" value="{$item.id}" onchange="updateBatchDeleteBtn()"></td>
+            <td>{$item.id}</td>
+            <td class="code-text">{$item.code}</td>
+            <td>
+                {if $item.status==1}
+                <span class="status-badge active" id="statusBadge{$item.id}">可用</span>
+                {elseif $item.status==2}
+                <span class="status-badge used" id="statusBadge{$item.id}">已使用</span>
+                {else}
+                <span class="status-badge inactive" id="statusBadge{$item.id}">禁用</span>
+                {/if}
+            </td>
+            <td>{if $item.used_by>0}{$item.used_by}{else}-{/if}</td>
+            <td>{if $item.used_time}{$item.used_time}{else}-{/if}</td>
+            <td>{$item.remark}</td>
+            <td>{$item.date}</td>
+            <td>
+                {if $item.status!=2}
+                <button class="btn btn-sm btn-edit" id="toggleBtn{$item.id}" onclick="toggleStatus({$item.id})">{if $item.status==1}禁用{else}启用{/if}</button>
+                {/if}
+                <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
+            </td>
+        </tr>
+        {/foreach}
+        {if empty($list)}
+        <tr>
+            <td colspan="9" style="text-align:center;color:#999;">暂无邀请码，点击右上角"生成邀请码"创建</td>
+        </tr>
+        {/if}
+    </tbody>
+</table>
+{$pagination|raw}
+<div class="modal" id="inviteModal">
+    <div class="modal-box">
+        <h3>生成邀请码</h3>
+        <div class="form-group">
+            <label>数量（1-100）</label>
+            <input type="number" id="formCount" min="1" max="100" value="1">
+        </div>
+        <div class="form-group">
+            <label>备注（选填）</label>
+            <input type="text" id="formRemark" placeholder="例如：给某某用户的邀请码">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn btn-primary" onclick="submitCreate()">生成</button>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{literal}
+<script>
+function closeModal() {
+    document.getElementById('inviteModal').classList.remove('show');
+}
+function openCreate() {
+    document.getElementById('formCount').value = 1;
+    document.getElementById('formRemark').value = '';
+    document.getElementById('inviteModal').classList.add('show');
+}
+function submitCreate() {
+    var count = document.getElementById('formCount').value;
+    var remark = document.getElementById('formRemark').value;
+    if (!count || count < 1 || count > 100) { alert('数量需在1-100之间'); return; }
+    var xhr = new XMLHttpRequest();
+    xhr.open('PUT', '/admin/invite_code', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                alert('已生成 ' + res.data.codes.length + ' 个邀请码');
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('count=' + count + '&remark=' + encodeURIComponent(remark));
+}
+function doDelete(id) {
+    if (!confirm('确定要删除该邀请码吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/invite_code', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function toggleStatus(id) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/invite_code/toggleStatus', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                var badge = document.getElementById('statusBadge' + id);
+                var btn = document.getElementById('toggleBtn' + id);
+                if (res.data.status == 1) {
+                    badge.textContent = '可用';
+                    badge.className = 'status-badge active';
+                    btn.textContent = '禁用';
+                } else {
+                    badge.textContent = '禁用';
+                    badge.className = 'status-badge inactive';
+                    btn.textContent = '启用';
+                }
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function toggleSelectAll() {
+    var checked = document.getElementById('selectAll').checked;
+    var boxes = document.querySelectorAll('.item-checkbox');
+    for (var i = 0; i < boxes.length; i++) {
+        boxes[i].checked = checked;
+    }
+    updateBatchDeleteBtn();
+}
+function updateBatchDeleteBtn() {
+    var checked = document.querySelectorAll('.item-checkbox:checked');
+    var btn = document.getElementById('batchDeleteBtn');
+    btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
+}
+function doBatchDelete() {
+    var checked = document.querySelectorAll('.item-checkbox:checked');
+    if (checked.length === 0) {
+        alert('请先勾选要删除的邀请码');
+        return;
+    }
+    if (!confirm('确定要删除选中的 ' + checked.length + ' 个邀请码吗？')) return;
+    var ids = [];
+    for (var i = 0; i < checked.length; i++) {
+        ids.push(checked[i].value);
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/invite_code/batchDelete', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('ids=' + encodeURIComponent(JSON.stringify(ids)));
+}
+function doSearch() {
+    var search = document.getElementById('searchInput').value;
+    var url = '/admin/invite_code';
+    if (search) url += '?search=' + encodeURIComponent(search);
+    window.location.href = url;
+}
+</script>
+{/literal}
+{/block}

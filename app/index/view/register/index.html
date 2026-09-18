@@ -46,6 +46,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC"
             <input type="text" id="nickname" name="nickname" placeholder="不填则默认为用户名">
         </div>
         <div class="form-group">
+            <label>邀请码</label>
+            <input type="text" id="inviteCode" name="invite_code" placeholder="请输入邀请码" required>
+            <div class="tip">注册需要邀请码，请联系管理员获取</div>
+        </div>
+        <div class="form-group">
             <label>验证码</label>
             <div class="captcha-row">
                 <input type="text" id="code" name="code" placeholder="请输入验证码" maxlength="4" required>
@@ -68,8 +73,9 @@ document.getElementById('submitBtn').onclick = function() {
     var username = document.getElementById('username').value;
     var password = document.getElementById('password').value;
     var nickname = document.getElementById('nickname').value;
+    var inviteCode = document.getElementById('inviteCode').value;
     var code = document.getElementById('code').value;
-    if (!username || !password || !code) { alert('请填写完整信息'); return; }
+    if (!username || !password || !inviteCode || !code) { alert('请填写完整信息'); return; }
     if (username.length < 2) { alert('用户名至少2个字符'); return; }
     if (password.length < 6) { alert('密码至少6位'); return; }
     var errorMsg = document.getElementById('errorMsg');
@@ -92,7 +98,7 @@ document.getElementById('submitBtn').onclick = function() {
             }
         }
     };
-    xhr.send('username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password) + '&nickname=' + encodeURIComponent(nickname) + '&code=' + encodeURIComponent(code));
+    xhr.send('username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password) + '&nickname=' + encodeURIComponent(nickname) + '&invite_code=' + encodeURIComponent(inviteCode) + '&code=' + encodeURIComponent(code));
 };
 </script>
 {/literal}
