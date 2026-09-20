@@ -22,6 +22,7 @@ class ConsoleLayout
         'account' => [
             'title' => '账号',
             'items' => [
+                'password' => ['label' => '修改密码', 'url' => '/console/password'],
                 'login_log' => ['label' => '登录记录', 'url' => '/console/login_log'],
             ],
         ],

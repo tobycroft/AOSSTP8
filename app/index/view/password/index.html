@@ -1,0 +1,61 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <h2>修改密码</h2>
+</div>
+<div class="card" style="max-width:480px;">
+    <div class="form-group">
+        <label>旧密码</label>
+        <input type="password" id="oldPassword" placeholder="请输入当前密码">
+    </div>
+    <div class="form-group">
+        <label>新密码</label>
+        <input type="password" id="newPassword" placeholder="至少6位">
+    </div>
+    <div class="form-group">
+        <label>确认新密码</label>
+        <input type="password" id="confirmPassword" placeholder="再次输入新密码">
+    </div>
+    <div style="margin-top:16px;">
+        <button class="btn btn-primary" onclick="submitChange()">保存修改</button>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{literal}
+<script>
+function submitChange() {
+    var oldPassword = document.getElementById('oldPassword').value;
+    var newPassword = document.getElementById('newPassword').value;
+    var confirmPassword = document.getElementById('confirmPassword').value;
+    if (!oldPassword || !newPassword) { alert('请填写完整'); return; }
+    if (newPassword.length < 6) { alert('新密码至少6位'); return; }
+    if (newPassword !== confirmPassword) { alert('两次输入的新密码不一致'); return; }
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/console/password', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                alert('密码修改成功，请使用新密码重新登录');
+                var lo = new XMLHttpRequest();
+                lo.open('POST', '/login/logout', true);
+                lo.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                lo.onreadystatechange = function() {
+                    if (lo.readyState == 4) {
+                        document.cookie = 'user_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+                        window.location.href = '/login';
+                    }
+                };
+                lo.send();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('old_password=' + encodeURIComponent(oldPassword) + '&new_password=' + encodeURIComponent(newPassword) + '&confirm_password=' + encodeURIComponent(confirmPassword));
+}
+</script>
+{/literal}
+{/block}

@@ -102,6 +102,7 @@
 \think\facade\Route::any('console/project/resetAk', '\app\index\controller\Project@resetAk');
 \think\facade\Route::any('console/project', '\app\index\controller\Project@index');
 \think\facade\Route::any('console/login_log', '\app\index\controller\LoginLog@index');
+\think\facade\Route::any('console/password', '\app\index\controller\Password@index');
 \think\facade\Route::any('console', '\app\index\controller\Console@index');
 
 \think\facade\Route::any(':any', function () {
