@@ -30,6 +30,8 @@ a { text-decoration: none; color: inherit; }
 .btn-text:hover { color: #1677ff; }
 .btn-logout { background: none; color: #ff4d4f; border: 1px solid #ffccc7; padding: 6px 14px; }
 .btn-logout:hover { background: #fff2f0; }
+.btn-console { background: #1677ff; color: #fff; padding: 6px 14px; }
+.btn-console:hover { background: #4096ff; }
 
 /* Hero */
 .hero { padding: 150px 0 90px; background: linear-gradient(180deg, #f5f8ff 0%, #ffffff 100%); text-align: center; }
@@ -108,6 +110,7 @@ a { text-decoration: none; color: inherit; }
             <div class="nav-user">
                 {if $is_login}
                 <span class="welcome">Welcome, {$nickname}</span>
+                <a class="btn btn-console" href="/console">Console</a>
                 <button class="btn btn-logout" id="logoutBtn">Log out</button>
                 {else}
                 <a class="btn btn-text" href="/login">Log in</a>

@@ -98,6 +98,11 @@
 \think\facade\Route::any('register', '\app\index\controller\Register@index');
 \think\facade\Route::any('en', '\app\index\controller\Index@indexEn');
 
+// 门户用户控制台（多租户）
+\think\facade\Route::any('console/project/resetAk', '\app\index\controller\Project@resetAk');
+\think\facade\Route::any('console/project', '\app\index\controller\Project@index');
+\think\facade\Route::any('console', '\app\index\controller\Console@index');
+
 \think\facade\Route::any(':any', function () {
     header("Access-Control-Allow-Origin: *", true);
     header("Access-Control-Max-Age: 86400", true);

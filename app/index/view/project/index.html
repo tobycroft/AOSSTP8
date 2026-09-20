@@ -1,0 +1,213 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>项目管理</h2>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索项目名称" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 200px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
+            <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
+        </div>
+        <button class="btn btn-primary" onclick="openCreate()">新建项目</button>
+    </div>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>APPID</th>
+            <th>项目名称</th>
+            <th>AK</th>
+            <th>状态</th>
+            <th>创建时间</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.appid}</td>
+            <td>{$item.project}</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'SF Mono',Consolas,monospace;" title="{$item.ak}">{$item.ak_short}</td>
+            <td><span class="status-badge {if $item.is_avail==1}active{else/}inactive{/if}">{if $item.is_avail==1}可用{else/}停用{/if}</span></td>
+            <td>{$item.date}</td>
+            <td>
+                <button class="btn btn-sm btn-edit" onclick="openKeys('{$item.ak}', '{$item.sk}')">密钥</button>
+                <button class="btn btn-sm btn-edit" onclick="openReset({$item.appid})">重置AK</button>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.appid}, '{$item.project}', {$item.is_avail})">编辑</button>
+                <button class="btn btn-sm btn-del" onclick="doDelete({$item.appid})">删除</button>
+            </td>
+        </tr>
+        {/foreach}
+        {if empty($list)}
+        <tr>
+            <td colspan="6" style="text-align:center;color:#999;">暂无项目，点击右上角"新建项目"创建并生成 AK</td>
+        </tr>
+        {/if}
+    </tbody>
+</table>
+{$pagination|raw}
+
+<div class="modal" id="createModal">
+    <div class="modal-box">
+        <h3>新建项目</h3>
+        <div class="form-group">
+            <label>项目名称</label>
+            <input type="text" id="formProject" placeholder="请输入项目名称">
+        </div>
+        <div class="form-group">
+            <label>OSS 项目（选填）</label>
+            <input type="text" id="formOssProject" placeholder="关联的 OSS 项目名">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeCreate()">取消</button>
+            <button class="btn btn-primary" onclick="submitCreate()">创建</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="editModal">
+    <div class="modal-box">
+        <h3>编辑项目</h3>
+        <input type="hidden" id="editId" value="">
+        <div class="form-group">
+            <label>项目名称</label>
+            <input type="text" id="editProject" placeholder="请输入项目名称">
+        </div>
+        <div class="form-group">
+            <label>状态</label>
+            <select id="editIsAvail">
+                <option value="1">可用</option>
+                <option value="0">停用</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeEdit()">取消</button>
+            <button class="btn btn-primary" onclick="submitEdit()">保存</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="keyModal">
+    <div class="modal-box">
+        <h3>项目密钥</h3>
+        <div class="form-group">
+            <label>AK（open_token，SDK 的 token 参数）</label>
+            <div class="code-key" id="keyAk"></div>
+            <button class="btn btn-sm btn-primary" onclick="copyText(document.getElementById('keyAk').textContent, this)">复制 AK</button>
+        </div>
+        <div class="form-group">
+            <label>SK（appsecret）</label>
+            <div class="code-key" id="keySk"></div>
+            <button class="btn btn-sm btn-primary" onclick="copyText(document.getElementById('keySk').textContent, this)">复制 SK</button>
+        </div>
+        <p style="color:#ff4d4f;font-size:12px;">请妥善保管密钥，泄露后可重置 AK（旧 AK 立即失效）。</p>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeKeys()">关闭</button>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{literal}
+<script>
+function doSearch() {
+    var search = document.getElementById('searchInput').value;
+    var url = '/console/project?page=1';
+    if (search) url += '&search=' + encodeURIComponent(search);
+    window.location.href = url;
+}
+function closeCreate() { document.getElementById('createModal').classList.remove('show'); }
+function openCreate() {
+    document.getElementById('formProject').value = '';
+    document.getElementById('formOssProject').value = '';
+    document.getElementById('createModal').classList.add('show');
+}
+function submitCreate() {
+    var project = document.getElementById('formProject').value;
+    var ossProject = document.getElementById('formOssProject').value;
+    if (!project) { alert('项目名称不能为空'); return; }
+    var xhr = new XMLHttpRequest();
+    xhr.open('PUT', '/console/project', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('project=' + encodeURIComponent(project) + '&oss_project=' + encodeURIComponent(ossProject));
+}
+function openEdit(appid, project, isAvail) {
+    document.getElementById('editId').value = appid;
+    document.getElementById('editProject').value = project;
+    document.getElementById('editIsAvail').value = isAvail;
+    document.getElementById('editModal').classList.add('show');
+}
+function closeEdit() { document.getElementById('editModal').classList.remove('show'); }
+function submitEdit() {
+    var appid = document.getElementById('editId').value;
+    var project = document.getElementById('editProject').value;
+    var isAvail = document.getElementById('editIsAvail').value;
+    if (!project) { alert('项目名称不能为空'); return; }
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/console/project', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('appid=' + appid + '&project=' + encodeURIComponent(project) + '&is_avail=' + isAvail);
+}
+function openKeys(ak, sk) {
+    document.getElementById('keyAk').textContent = ak;
+    document.getElementById('keySk').textContent = sk;
+    document.getElementById('keyModal').classList.add('show');
+}
+function closeKeys() { document.getElementById('keyModal').classList.remove('show'); }
+function openReset(appid) {
+    if (!confirm('重置 AK 后旧 AK 将立即失效，使用旧 AK 的业务会中断，确定继续吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/console/project/resetAk', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                alert('新 AK：' + res.data.ak);
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('appid=' + appid);
+}
+function doDelete(appid) {
+    if (!confirm('确定要删除该项目吗？删除后 AK 立即失效。')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/console/project', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('appid=' + appid);
+}
+</script>
+{/literal}
+{/block}

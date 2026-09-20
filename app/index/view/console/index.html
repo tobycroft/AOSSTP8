@@ -1,0 +1,64 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="welcome">欢迎回来，{$nickname}</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="num">{$total}</div>
+        <div class="label">我的项目</div>
+    </div>
+    <div class="stat-card">
+        <div class="num">{$avail}</div>
+        <div class="label">可用项目（AK 生效中）</div>
+    </div>
+    <div class="stat-card">
+        <div class="num">{$total-$avail}</div>
+        <div class="label">已停用</div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>个人信息</h3>
+    <div class="info-row"><span class="label">用户名</span><span class="value">{$user.username}</span></div>
+    <div class="info-row"><span class="label">昵称</span><span class="value">{$user.nickname}</span></div>
+    <div class="info-row"><span class="label">注册时间</span><span class="value">{$user.date}</span></div>
+    <div class="info-row"><span class="label">最近登录</span><span class="value">{$user.login_time}（{$user.login_ip}）</span></div>
+</div>
+
+<div class="card">
+    <h3>我的项目</h3>
+    {if empty($projects)}
+    <p>还没有项目，前往 <a href="/console/project" style="color:#1677ff;">项目管理</a> 创建项目并生成 AK。</p>
+    {else}
+    <table>
+        <thead>
+            <tr>
+                <th>APPID</th>
+                <th>项目名称</th>
+                <th>AK</th>
+                <th>状态</th>
+                <th>创建时间</th>
+            </tr>
+        </thead>
+        <tbody>
+            {foreach $projects as $item}
+            <tr>
+                <td>{$item.appid}</td>
+                <td>{$item.project}</td>
+                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'SF Mono',Consolas,monospace;" title="{$item.open_token}">{$item.open_token}</td>
+                <td><span class="status-badge {if $item.is_avail==1}active{else/}inactive{/if}">{if $item.is_avail==1}可用{else/}停用{/if}</span></td>
+                <td>{$item.date}</td>
+            </tr>
+            {/foreach}
+        </tbody>
+    </table>
+    <p style="margin-top:12px;">查看全部项目与密钥，前往 <a href="/console/project" style="color:#1677ff;">项目管理</a>。</p>
+    {/if}
+</div>
+
+<div class="card">
+    <h3>快速接入</h3>
+    <p>使用官方 SDK，将项目 AK 作为 token 参数即可调用平台全部能力，无需改动已有业务。</p>
+    <p style="font-family:'SF Mono',Consolas,monospace;background:#1e293b;color:#93c5fd;padding:10px 12px;border-radius:6px;font-size:13px;">composer require tobycroft/aoss-sdk<br>go get github.com/tobycroft/AossGoSdk</p>
+</div>
+{/block}
