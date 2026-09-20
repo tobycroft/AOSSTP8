@@ -96,6 +96,7 @@
 \think\facade\Route::any('login/logout', '\app\index\controller\Login@logout');
 \think\facade\Route::any('login', '\app\index\controller\Login@index');
 \think\facade\Route::any('register', '\app\index\controller\Register@index');
+\think\facade\Route::any('en', '\app\index\controller\Index@indexEn');
 
 \think\facade\Route::any(':any', function () {
     header("Access-Control-Allow-Origin: *", true);

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +7,7 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Roboto, sans-serif; color: #333; background: #fff; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #333; background: #fff; }
 a { text-decoration: none; color: inherit; }
 .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
 
@@ -36,8 +36,7 @@ a { text-decoration: none; color: inherit; }
 .hero-tag { display: inline-block; padding: 4px 14px; border-radius: 20px; background: #e6f4ff; color: #1677ff; font-size: 13px; margin-bottom: 20px; }
 .hero h1 { font-size: 46px; line-height: 1.25; font-weight: 700; color: #1a1a1a; }
 .hero h1 em { font-style: normal; color: #1677ff; }
-.hero .sub { margin: 20px auto 0; max-width: 640px; font-size: 17px; line-height: 1.8; color: #666; }
-.hero-en { margin-top: 14px; font-size: 13px; color: #999; }
+.hero .sub { margin: 20px auto 0; max-width: 680px; font-size: 17px; line-height: 1.8; color: #666; }
 .hero-actions { margin-top: 34px; display: flex; justify-content: center; gap: 14px; }
 .hero-actions .btn { padding: 11px 30px; font-size: 15px; }
 
@@ -101,20 +100,20 @@ a { text-decoration: none; color: inherit; }
 
 <div class="nav">
     <div class="nav-inner">
-        <a class="nav-logo" href="/">AOSS<span>8</span></a>
+        <a class="nav-logo" href="/en">AOSS<span>8</span></a>
         <div class="nav-links">
-            <a href="#goals" class="hide-sm">解决的问题</a>
+            <a href="#goals" class="hide-sm">Why AOSS</a>
             <a href="#sdk" class="hide-sm">SDK</a>
-            <a href="#features" class="hide-sm">能力表</a>
+            <a href="#features" class="hide-sm">Capabilities</a>
             <div class="nav-user">
                 {if $is_login}
-                <span class="welcome">欢迎，{$nickname}</span>
-                <button class="btn btn-logout" id="logoutBtn">退出登录</button>
+                <span class="welcome">Welcome, {$nickname}</span>
+                <button class="btn btn-logout" id="logoutBtn">Log out</button>
                 {else}
-                <a class="btn btn-text" href="/login">登录</a>
-                <a class="btn btn-primary" href="/register">注册</a>
+                <a class="btn btn-text" href="/login">Log in</a>
+                <a class="btn btn-primary" href="/register">Sign up</a>
                 {/if}
-                <a class="btn btn-text" href="/en">English</a>
+                <a class="btn btn-text" href="/">中文</a>
             </div>
         </div>
     </div>
@@ -122,18 +121,18 @@ a { text-decoration: none; color: inherit; }
 
 <div class="hero">
     <div class="container">
-        <span class="hero-tag">AOSSTP8 · 私有化能力平台</span>
-        <h1>AOSS，你的<em>全栈能力中转站</em></h1>
-        <p class="sub">AOSSTP8 是 AOSSTP 的前作，一个开箱即用的私有平台：统一集成 Office、文件上传、微信、短信、直播、验证码等常用能力，让业务在短时间内拥有常用能力，更方便地切换业务底层。</p>
-        <p class="hero-en">AOSS is a private platform! Aoss is now support GPT-APIs.</p>
+        <span class="hero-tag">AOSSTP8 · Private Capability Platform</span>
+        <h1>AOSS, Your <em>Full-stack Capability Hub</em></h1>
+        <p class="sub">AOSSTP8 is the successor of AOSSTP — a ready-to-use private platform that integrates Office, file upload, WeChat, SMS, live streaming, CAPTCHA and other common capabilities, so your business can have them all in minutes and switch underlying providers with ease.</p>
+        <p class="sub">AOSS is a private platform! AOSS now supports GPT-APIs.</p>
         {if $is_login}
         <div class="hero-actions">
-            <a class="btn btn-primary" href="#features">浏览能力表</a>
+            <a class="btn btn-primary" href="#features">Browse Capabilities</a>
         </div>
         {else}
         <div class="hero-actions">
-            <a class="btn btn-primary" href="/register">立即注册</a>
-            <a class="btn btn-plain" href="#features">浏览能力表</a>
+            <a class="btn btn-primary" href="/register">Get Started</a>
+            <a class="btn btn-plain" href="#features">Browse Capabilities</a>
         </div>
         {/if}
     </div>
@@ -142,39 +141,39 @@ a { text-decoration: none; color: inherit; }
 <div class="section" id="goals">
     <div class="container">
         <div class="section-head">
-            <h2>解决什么问题</h2>
-            <p>让常用能力触手可及，让业务底层随时可换</p>
+            <h2>What Problems It Solves</h2>
+            <p>Common capabilities at your fingertips, swappable underlying providers at any time</p>
         </div>
         <div class="goals">
             <div class="goal">
                 <div class="num">1</div>
-                <h3>插件升级风险</h3>
-                <p>解决插件在 PHP 版本升级后可能出现的需要重接的风险。</p>
+                <h3>Plugin Upgrade Risks</h3>
+                <p>Eliminates the risk of re-integrating plugins after PHP version upgrades.</p>
             </div>
             <div class="goal">
                 <div class="num">2</div>
-                <h3>跨语言中转站</h3>
-                <p>作为跨语言的中转站，任何语言都能通过接口复用平台能力。</p>
+                <h3>Cross-language Hub</h3>
+                <p>Acts as a cross-language relay — any language can reuse platform capabilities via APIs.</p>
             </div>
             <div class="goal">
                 <div class="num">3</div>
-                <h3>告别重复查文档</h3>
-                <p>降低很不经常使用的功能重复看文档导致心态爆炸的风险。</p>
+                <h3>No More Re-reading Docs</h3>
+                <p>Reduces the frustration of re-reading documentation for rarely used features.</p>
             </div>
             <div class="goal">
                 <div class="num">4</div>
-                <h3>短时间常用能力</h3>
-                <p>短时间内拥有常用能力，接入即用，无需重复造轮子。</p>
+                <h3>Common Capabilities Fast</h3>
+                <p>Get commonly used capabilities in minutes — plug and play, no wheel reinvention.</p>
             </div>
             <div class="goal">
                 <div class="num">5</div>
-                <h3>灵活切换底层</h3>
-                <p>更方便地切换业务底层，阿里云与腾讯云随时互换。</p>
+                <h3>Flexible Providers</h3>
+                <p>Switch business underlying providers with ease — Alibaba Cloud and Tencent Cloud interchangeably.</p>
             </div>
             <div class="goal">
                 <div class="num">6</div>
-                <h3>测试与互补</h3>
-                <p>作为新功能的测试平台，使用 composer 和 gopkg 互补。</p>
+                <h3>Testing &amp; Complement</h3>
+                <p>Serves as a testing ground for new features, complementing composer and gopkg.</p>
             </div>
         </div>
     </div>
@@ -183,20 +182,20 @@ a { text-decoration: none; color: inherit; }
 <div class="section alt" id="sdk">
     <div class="container">
         <div class="section-head">
-            <h2>官方 SDK</h2>
-            <p>PHP 与 Golang 双版本，接入只需一行命令</p>
+            <h2>Official SDKs</h2>
+            <p>PHP &amp; Golang versions — integrate with a single command</p>
         </div>
         <div class="sdk-grid">
             <div class="sdk-card">
                 <span class="lang">PHP</span>
                 <h3><a href="https://github.com/tobycroft/AossSdk" target="_blank" rel="noopener">AossSdk</a></h3>
-                <p>AossSdk PHP 版本，通过 composer 快速接入平台全部能力。</p>
+                <p>The PHP version of AossSdk — quickly integrate all platform capabilities via composer.</p>
                 <code>composer require tobycroft/aoss-sdk</code>
             </div>
             <div class="sdk-card">
                 <span class="lang go">Golang</span>
                 <h3><a href="https://github.com/tobycroft/AossGoSdk" target="_blank" rel="noopener">AossGoSdk</a></h3>
-                <p>AossGoSdk Golang 版本，通过 go get 快速接入平台全部能力。</p>
+                <p>The Golang version of AossGoSdk — quickly integrate all platform capabilities via go get.</p>
                 <code>go get github.com/tobycroft/AossGoSdk</code>
             </div>
         </div>
@@ -206,149 +205,149 @@ a { text-decoration: none; color: inherit; }
 <div class="section" id="features">
     <div class="container">
         <div class="section-head">
-            <h2>AOSS8 能力表</h2>
-            <p>十四大能力域，覆盖业务开发常用场景</p>
+            <h2>AOSS8 Capabilities</h2>
+            <p>14 capability domains covering common business scenarios</p>
         </div>
         <div class="feature-grid">
             <div class="feature-card">
-                <h3>Office 能力</h3>
+                <h3>Office</h3>
                 <ul>
                     <li class="group">Excel</li>
-                    <li>Excel 解析 JSON</li>
-                    <li>JSON 生成 Excel</li>
+                    <li>Parse Excel to JSON</li>
+                    <li>Generate Excel from JSON</li>
                     <li class="group">Word</li>
-                    <li>文字导入 / 文字生成</li>
+                    <li>Text import / generation</li>
                     <li class="group">PDF</li>
-                    <li>图文能力生成</li>
+                    <li>Image &amp; text generation</li>
                 </ul>
             </div>
             <div class="feature-card">
-                <h3>文件上传</h3>
+                <h3>File Upload</h3>
                 <ul>
-                    <li>上传到本地 / OSS（阿里云、腾讯云）</li>
-                    <li>上传到 OSS 并本地保存（双地址）</li>
-                    <li class="group">音视频识别</li>
-                    <li>解析音频 / 视频时间长度</li>
-                    <li class="group">文件识别</li>
-                    <li>避免重复文件、文件秒传</li>
-                    <li class="group">v2 直传模式</li>
-                    <li>临时 Token、一次性 Token</li>
-                    <li>upfull / uphash 两种模式</li>
+                    <li>Upload to local / OSS (Alibaba, Tencent)</li>
+                    <li>Upload to OSS with local backup (dual paths)</li>
+                    <li class="group">Audio/Video Detection</li>
+                    <li>Parse audio / video duration</li>
+                    <li class="group">File Recognition</li>
+                    <li>Duplicate prevention, instant upload</li>
+                    <li class="group">v2 Direct Upload</li>
+                    <li>Temporary Token, one-time Token</li>
+                    <li>upfull / uphash modes</li>
                 </ul>
             </div>
             <div class="feature-card">
-                <h3>微信能力</h3>
+                <h3>WeChat</h3>
                 <ul>
-                    <li class="group">WXA-QR 二维码生成</li>
-                    <li>自动地址 / Base64 / 302 地址</li>
+                    <li class="group">WXA-QR Generation</li>
+                    <li>Auto URL / Base64 / 302 redirect</li>
                     <li class="group">SNS</li>
-                    <li>小程序登录、公众号登录</li>
-                    <li class="group">公众号</li>
-                    <li>用户列表、用户信息、模板推送</li>
-                    <li>获取 openid、生成二维码</li>
-                    <li>签名鉴权</li>
-                    <li class="group">被动接收消息</li>
-                    <li>自动回复、关键词触发、欢迎消息</li>
+                    <li>Mini-program login, official account login</li>
+                    <li class="group">Official Account</li>
+                    <li>User list, user info, template messages</li>
+                    <li>Get openid, generate QR codes</li>
+                    <li>Signature authentication</li>
+                    <li class="group">Passive Messages</li>
+                    <li>Auto reply, keyword triggers, welcome messages</li>
                 </ul>
             </div>
             <div class="feature-card">
-                <h3>图形能力</h3>
+                <h3>Graphics</h3>
                 <ul>
-                    <li class="group">画图</li>
-                    <li>返回图片 binary 流 / 下载地址</li>
-                    <li>自动上传 OSS / 仅保留本地</li>
-                    <li class="group">条形码</li>
-                    <li>条形码生成</li>
-                    <li class="group">二维码</li>
-                    <li>图片流 / 带 LOGO / B64</li>
+                    <li class="group">Drawing</li>
+                    <li>Return image binary stream / download URL</li>
+                    <li>Auto upload to OSS / keep local only</li>
+                    <li class="group">Barcode</li>
+                    <li>Barcode generation</li>
+                    <li class="group">QR Code</li>
+                    <li>Image stream / with LOGO / Base64</li>
                 </ul>
             </div>
             <div class="feature-card">
-                <h3>短信能力（ASMS）</h3>
+                <h3>SMS (ASMS)</h3>
                 <ul>
-                    <li>发送短信</li>
-                    <li class="group">防火墙</li>
-                    <li>号码防火墙、IP 防火墙</li>
-                    <li>业务联动防火墙（防刷）</li>
-                    <li>图形验证码 / 语音验证码</li>
+                    <li>Send SMS</li>
+                    <li class="group">Firewall</li>
+                    <li>Number firewall, IP firewall</li>
+                    <li>Business-linked firewall (anti-abuse)</li>
+                    <li>Image CAPTCHA / voice CAPTCHA</li>
                 </ul>
             </div>
             <div class="feature-card">
                 <h3>Hook</h3>
                 <ul>
-                    <li>WebHook 分发平台</li>
-                    <li>普通直推模式</li>
-                    <li class="group">Github 模式</li>
-                    <li>单推 / 多推 / Branch 推送</li>
+                    <li>WebHook distribution platform</li>
+                    <li>Standard direct push mode</li>
+                    <li class="group">Github Mode</li>
+                    <li>Single / multi / Branch push</li>
                 </ul>
             </div>
             <div class="feature-card">
                 <h3>Tasker</h3>
                 <ul>
-                    <li>自动测试工具</li>
+                    <li>Automated testing tool</li>
                 </ul>
             </div>
             <div class="feature-card">
-                <h3>LCIC 直播课堂</h3>
+                <h3>LCIC Live Classroom</h3>
                 <ul>
-                    <li class="group">用户</li>
-                    <li>全自动模式 / 手动新建 / 手动修改</li>
-                    <li class="group">创建直播间</li>
-                    <li>全自动模式、修改直播</li>
-                    <li>生成直播推广码</li>
+                    <li class="group">Users</li>
+                    <li>Full-auto mode / manual create / manual update</li>
+                    <li class="group">Create Live Room</li>
+                    <li>Full-auto mode, live update</li>
+                    <li>Generate live promo codes</li>
                 </ul>
             </div>
             <div class="feature-card">
-                <h3>普通直播</h3>
+                <h3>Live Streaming</h3>
                 <ul>
-                    <li>阿里云</li>
-                    <li class="group">腾讯云</li>
-                    <li>创建直播（返回基本信息 / 全部信息）</li>
-                    <li>读取直播地址（鉴权播放）</li>
+                    <li>Alibaba Cloud</li>
+                    <li class="group">Tencent Cloud</li>
+                    <li>Create live (basic info / full info)</li>
+                    <li>Read live URLs (authenticated playback)</li>
                 </ul>
             </div>
             <div class="feature-card">
-                <h3>AI-GPT 能力</h3>
+                <h3>AI-GPT</h3>
                 <ul>
-                    <li class="group">接入 Google-Bard</li>
-                    <li>按项目设定训练好的模型回复</li>
-                    <li class="group">接入 Bing-AI</li>
-                    <li>按项目设定训练好的模型回复</li>
+                    <li class="group">Google-Bard Integration</li>
+                    <li>Reply with models trained per project</li>
+                    <li class="group">Bing-AI Integration</li>
+                    <li>Reply with models trained per project</li>
                 </ul>
             </div>
             <div class="feature-card">
-                <h3>IP 安全</h3>
+                <h3>IP Security</h3>
                 <ul>
-                    <li class="group">IP 地区范围查询</li>
-                    <li>仅 IP 验证模式</li>
-                    <li>IP + 验证码交互验证模式</li>
+                    <li class="group">IP Region Lookup</li>
+                    <li>IP-only verification mode</li>
+                    <li>IP + CAPTCHA interactive verification mode</li>
                 </ul>
             </div>
             <div class="feature-card">
-                <h3>验证码</h3>
+                <h3>CAPTCHA</h3>
                 <ul>
-                    <li class="group">图形码（普通码）</li>
-                    <li>计算型（22+5=?）/ 中文 / 数字 / 字母 / 混合</li>
-                    <li class="group">智力码（图形选择）</li>
-                    <li>通用单验证</li>
-                    <li>自动威胁匹配</li>
+                    <li class="group">Image Codes (standard)</li>
+                    <li>Math (22+5=?) / Chinese / digits / letters / mixed</li>
+                    <li class="group">Puzzle Codes (image selection)</li>
+                    <li>Universal single verification</li>
+                    <li>Automatic threat matching</li>
                 </ul>
             </div>
             <div class="feature-card">
-                <h3>游戏支持</h3>
+                <h3>Gaming</h3>
                 <ul>
                     <li class="group">RCON</li>
-                    <li>Palworld 幻兽帕鲁</li>
+                    <li>Palworld</li>
                 </ul>
             </div>
             <div class="feature-card">
-                <h3>运维支持（独立鉴权）</h3>
+                <h3>DevOps (Independent Auth)</h3>
                 <ul>
-                    <li class="group">证书管理（Let's Encrypt）</li>
-                    <li>宝塔面板 / AAPanel-API</li>
-                    <li>网站证书自动添加与更新</li>
-                    <li>自动更新通配符证书</li>
-                    <li>邮件系统证书自动更新</li>
+                    <li class="group">Certificate Management (Let's Encrypt)</li>
+                    <li>BT Panel / AAPanel API</li>
+                    <li>Auto add &amp; renew site certificates</li>
+                    <li>Auto renew wildcard certificates</li>
+                    <li>Auto renew mail system certificates</li>
                 </ul>
             </div>
         </div>
@@ -358,16 +357,16 @@ a { text-decoration: none; color: inherit; }
 <div class="section alt about">
     <div class="container">
         <div class="section-head">
-            <h2>加入我们</h2>
-            <p>AOSS is a private platform! Aoss is now support GPT-APIs.</p>
+            <h2>Join Us</h2>
+            <p>AOSS is a private platform! AOSS now supports GPT-APIs.</p>
         </div>
-        <p class="contact">请发送邮件至 <a href="mailto:oss@tuuz.cc">oss@tuuz.cc</a> 并说明你的来意，与我们一同使用。</p>
+        <p class="contact">Send an email to <a href="mailto:oss@tuuz.cc">oss@tuuz.cc</a> with your reason, and use it together with us.</p>
     </div>
 </div>
 
 <div class="footer">
     <div class="container">
-        <p>AOSS is a private platform! Aoss is now support GPT-APIs.</p>
+        <p>AOSS is a private platform! AOSS now supports GPT-APIs.</p>
         <p>Contact oss@tuuz.cc with your reason to join us!</p>
     </div>
 </div>
@@ -375,14 +374,14 @@ a { text-decoration: none; color: inherit; }
 {literal}
 <script>
 document.getElementById('logoutBtn') && document.getElementById('logoutBtn').addEventListener('click', function () {
-    if (!confirm('确定要退出登录吗？')) return;
+    if (!confirm('Log out of your account?')) return;
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/login/logout', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.onreadystatechange = function () {
         if (xhr.readyState == 4) {
             document.cookie = 'user_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
-            window.location.href = '/';
+            window.location.href = '/en';
         }
     };
     xhr.send();
