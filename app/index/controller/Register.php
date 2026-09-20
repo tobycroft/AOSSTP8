@@ -3,6 +3,7 @@
 namespace app\index\controller;
 
 use app\index\model\InviteCodeModel;
+use app\index\model\LoginLogModel;
 use app\index\model\UserModel;
 use app\index\utils\UserAuth;
 use BaseController\CommonController;
@@ -97,6 +98,9 @@ class Register extends CommonController
         $inviteModel->where('code', '=', $invite_code)->update([
             'used_by' => $model->id,
         ]);
+
+        // 记录登录日志（注册即首次登录）
+        LoginLogModel::addLog(intval($model->id), $username, $ip);
 
         setcookie('user_token', $token, time() + 86400, '/');
 

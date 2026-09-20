@@ -19,6 +19,12 @@ class ConsoleLayout
                 'project' => ['label' => '项目管理', 'url' => '/console/project'],
             ],
         ],
+        'account' => [
+            'title' => '账号',
+            'items' => [
+                'login_log' => ['label' => '登录记录', 'url' => '/console/login_log'],
+            ],
+        ],
     ];
 
     /**

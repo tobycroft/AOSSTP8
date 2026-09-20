@@ -1,0 +1,28 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <h2>登录记录</h2>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>登录时间</th>
+            <th>登录 IP</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.date}</td>
+            <td>{$item.ip}</td>
+        </tr>
+        {/foreach}
+        {if empty($list)}
+        <tr>
+            <td colspan="2" style="text-align:center;color:#999;">暂无登录记录</td>
+        </tr>
+        {/if}
+    </tbody>
+</table>
+{$pagination|raw}
+{/block}

@@ -2,6 +2,7 @@
 
 namespace app\index\controller;
 
+use app\index\model\LoginLogModel;
 use app\index\model\UserModel;
 use app\index\utils\UserAuth;
 use BaseController\CommonController;
@@ -72,6 +73,9 @@ class Login extends CommonController
             'login_ip' => $ip,
             'login_time' => date('Y-m-d H:i:s'),
         ]);
+
+        // 记录登录日志
+        LoginLogModel::addLog(intval($user['id']), strval($user['username']), $ip);
 
         setcookie('user_token', $token, time() + 86400, '/');
 
