@@ -27,8 +27,9 @@
 });
 
 
-// 后台管理路由（绑定 aoss.tuuz.cc 域名，仅该主机头可访问）
+// 后台管理路由（绑定 aoss.tuuz.cc 域名，仅该主机头可访问；域名根路径直接打开后台）
 \think\facade\Route::domain('aoss.tuuz.cc', function () {
+    \think\facade\Route::any('', '\app\admin\controller\Index@index');
     \think\facade\Route::any('admin/captcha/gif', '\app\admin\controller\Captcha@gif');
     \think\facade\Route::any('admin/login/index', '\app\admin\controller\Login@index');
     \think\facade\Route::any('admin/login/logout', '\app\admin\controller\Login@logout');
