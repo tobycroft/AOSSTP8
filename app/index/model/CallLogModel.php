@@ -6,7 +6,7 @@ use think\Model;
 
 class CallLogModel extends Model
 {
-    protected $table = 'ao_call_log';
+    protected $table = 'ao_ak_log';
 
     /**
      * 记录一次 AK 接口调用（在 v2 ProjectModel::api_find_token 鉴权成功后调用）

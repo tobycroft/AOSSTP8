@@ -6,7 +6,7 @@ use think\Model;
 
 class AdminProjectModel extends Model
 {
-    protected $table = 'ao_project';
+    protected $table = 'ao_ak';
     protected $pk = 'appid';
 
     public function api_list($page, $limit)

@@ -6,7 +6,7 @@ use think\Model;
 
 class ProjectModel extends Model
 {
-    protected $table = 'ao_project';
+    protected $table = 'ao_ak';
 
     public function api_list_by_uid($uid, string $search = '', int $page = 1, int $limit = 15)
     {
