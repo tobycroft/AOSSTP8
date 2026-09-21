@@ -36,6 +36,7 @@
             <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
             <td>{$item.date}</td>
             <td>
+                <button class="btn btn-sm btn-edit" onclick="doCopy({$item.id})">复制</button>
                 <button class="btn btn-sm btn-edit" onclick="openEdit(this)" data-id="{$item.id}" data-tag="{$item.tag}" data-branch="{$item.branch}" data-remark="{$item.remark}" data-mode="{$item.mode}" data-method="{$item.method}" data-domain="{$item.domain}" data-key="{$item.key}" data-param="{$item.param}" data-full_url="{$item.full_url}" data-status="{$item.status}">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
@@ -200,6 +201,23 @@ function submitForm() {
     var params = collectParams();
     if (id) params += '&id=' + id;
     xhr.send(params);
+}
+function doCopy(id) {
+    if (!confirm('确定要复制该 Hook 吗？将生成一条相同配置的新记录。')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/console/hook', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('copy=1&id=' + id);
 }
 function doDelete(id) {
     if (!confirm('确定要删除该 Hook 吗？')) return;

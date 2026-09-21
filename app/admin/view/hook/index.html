@@ -47,6 +47,7 @@
             <td><button class="btn btn-sm status-toggle" data-id="{$item.id}" data-status="{$item.status}" onclick="toggleStatus(this)" style="background:{if $item.status==1}#f6ffed{else/}#fff2f0{/if};color:{if $item.status==1}#52c41a{else/}#ff4d4f{/if};border:1px solid {if $item.status==1}#b7eb8f{else/}#ffccc7{/if};border-radius:4px;padding:2px 8px;cursor:pointer;font-size:12px;">{if $item.status==1}启用{else/}禁用{/if}</button></td>
             <td>{$item.date}</td>
             <td>
+                <button class="btn btn-sm btn-edit" onclick="doCopy({$item.id})">复制</button>
                 <button class="btn btn-sm btn-edit" data-id="{$item.id}" data-tag="{$item.tag}" data-branch="{$item.branch}" data-remark="{$item.remark}" data-mode="{$item.mode}" data-method="{$item.method}" data-domain="{$item.domain}" data-key="{$item.key}" data-param="{$item.param}" data-full_url="{$item.full_url}" data-status="{$item.status}" onclick="openEdit(this)">编辑</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
@@ -260,6 +261,24 @@ function submitForm() {
     var params = collectParams();
     if (id) params += '&id=' + id;
     xhr.send(params);
+}
+function doCopy(id) {
+    if (!confirm('确定要复制该 Hook 吗？将生成一条相同配置的新记录。')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/hook', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('copy=1&id=' + id);
 }
 function doDelete(id) {
     if (!confirm('确定要删除该Hook吗？')) return;

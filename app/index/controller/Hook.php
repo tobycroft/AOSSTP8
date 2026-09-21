@@ -25,6 +25,9 @@ class Hook extends CommonController
             case 'GET':
                 return $this->page();
             case 'POST':
+                if (request()->post('copy')) {
+                    return $this->copy();
+                }
                 return $this->update();
             case 'PUT':
                 return $this->create();
@@ -178,6 +181,30 @@ class Hook extends CommonController
         }
 
         return ['row' => $row, 'errors' => $errors];
+    }
+
+    /**
+     * 复制自己的 Hook 为新记录（remark 追加"副本"标记，uid 隔离）
+     */
+    private function copy()
+    {
+        $uid = intval(UserAuth::getLoginUser()['id']);
+        $id = Input::PostInt('id');
+        if (!$id) {
+            Ret::Fail(400, null, '缺少参数[id]');
+        }
+
+        $model = new HookModel();
+        $item = $model->api_find_uid($id, $uid);
+        if ($item->isEmpty()) {
+            Ret::Fail(404, null, 'Hook 不存在');
+        }
+
+        $row = $item->toArray();
+        unset($row['id'], $row['date'], $row['change_date']);
+        $row['remark'] = $row['remark'] . '-副本';
+        HookModel::create($row);
+        Ret::Success(0, [], '复制成功');
     }
 
     private function delete()

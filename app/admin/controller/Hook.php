@@ -27,6 +27,9 @@ class Hook extends CommonController
                 if (request()->post('batch_delete')) {
                     return $this->batchDelete();
                 }
+                if (request()->post('copy')) {
+                    return $this->copy();
+                }
                 return $this->update();
             case 'PUT':
                 return $this->create();
@@ -217,6 +220,29 @@ class Hook extends CommonController
 
         $item->save($data);
         Ret::Success(0, [], '更新成功');
+    }
+
+    /**
+     * 复制一条 Hook 为新记录（remark 追加"副本"标记）
+     */
+    private function copy()
+    {
+        $id = Input::PostInt('id');
+        if (!$id) {
+            Ret::Fail(400, null, '缺少参数[id]');
+        }
+
+        $model = new AdminHookModel();
+        $item = $model->findOrEmpty($id);
+        if ($item->isEmpty()) {
+            Ret::Fail(404, null, 'Hook不存在');
+        }
+
+        $row = $item->toArray();
+        unset($row['id'], $row['date'], $row['change_date']);
+        $row['remark'] = $row['remark'] . '-副本';
+        AdminHookModel::create($row);
+        Ret::Success(0, [], '复制成功');
     }
 
     private function delete()
