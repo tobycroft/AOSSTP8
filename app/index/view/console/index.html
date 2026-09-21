@@ -3,26 +3,44 @@
 <div class="welcome">欢迎回来，{$nickname}</div>
 
 <div class="stat-grid">
-    <div class="stat-card">
+    <a href="/console/project" class="stat-card" style="text-decoration:none;">
         <div class="num">{$total}</div>
         <div class="label">我的项目</div>
-    </div>
-    <div class="stat-card">
-        <div class="num">{$avail}</div>
+    </a>
+    <a href="/console/project" class="stat-card" style="text-decoration:none;">
+        <div class="num" style="color:#52c41a;">{$avail}</div>
         <div class="label">可用项目（AK 生效中）</div>
-    </div>
-    <div class="stat-card">
-        <div class="num">{$total-$avail}</div>
-        <div class="label">已停用</div>
-    </div>
+    </a>
+    <a href="/console/hook" class="stat-card" style="text-decoration:none;">
+        <div class="num">{$hook_total}</div>
+        <div class="label">我的 Hook</div>
+    </a>
+    <a href="/console/hook" class="stat-card" style="text-decoration:none;">
+        <div class="num" style="color:#52c41a;">{$hook_avail}</div>
+        <div class="label">启用中 Hook</div>
+    </a>
 </div>
 
 <div class="card">
-    <h3>个人信息</h3>
-    <div class="info-row"><span class="label">用户名</span><span class="value">{$user.username}</span></div>
-    <div class="info-row"><span class="label">昵称</span><span class="value">{$user.nickname}</span></div>
-    <div class="info-row"><span class="label">注册时间</span><span class="value">{$user.date}</span></div>
-    <div class="info-row"><span class="label">最近登录</span><span class="value">{$user.login_time}（{$user.login_ip}）</span></div>
+    <h3>快捷入口</h3>
+    <div class="shortcut-grid">
+        <a class="shortcut-item" href="/console/project">
+            <div class="shortcut-title">项目管理</div>
+            <div class="shortcut-desc">创建项目、生成/重置 AK 与 SK</div>
+        </a>
+        <a class="shortcut-item" href="/console/hook">
+            <div class="shortcut-title">Hook 管理</div>
+            <div class="shortcut-desc">配置自动部署钩子，推送即部署</div>
+        </a>
+        <a class="shortcut-item" href="/console/password">
+            <div class="shortcut-title">修改密码</div>
+            <div class="shortcut-desc">定期更换密码保障账号安全</div>
+        </a>
+        <a class="shortcut-item" href="/console/login_log">
+            <div class="shortcut-title">登录记录</div>
+            <div class="shortcut-desc">查看每次登录的时间与 IP</div>
+        </a>
+    </div>
 </div>
 
 <div class="card">
@@ -57,8 +75,24 @@
 </div>
 
 <div class="card">
+    <h3>个人信息</h3>
+    <div class="info-row"><span class="label">用户名</span><span class="value">{$user.username}</span></div>
+    <div class="info-row"><span class="label">昵称</span><span class="value">{$user.nickname}</span></div>
+    <div class="info-row"><span class="label">注册时间</span><span class="value">{$user.date}</span></div>
+    <div class="info-row"><span class="label">上次登录</span><span class="value">{$last_login_time}（IP {$last_login_ip}）</span></div>
+</div>
+
+<div class="card">
     <h3>快速接入</h3>
     <p>使用官方 SDK，将项目 AK 作为 token 参数即可调用平台全部能力，无需改动已有业务。</p>
     <p style="font-family:'SF Mono',Consolas,monospace;background:#1e293b;color:#93c5fd;padding:10px 12px;border-radius:6px;font-size:13px;">composer require tobycroft/aoss-sdk<br>go get github.com/tobycroft/AossGoSdk</p>
 </div>
+
+<style>
+.shortcut-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.shortcut-item { display: block; padding: 14px 16px; border: 1px solid #e5e7eb; border-radius: 8px; text-decoration: none; transition: all .15s; }
+.shortcut-item:hover { border-color: #1677ff; box-shadow: 0 2px 8px rgba(22,119,255,.12); }
+.shortcut-title { font-weight: 600; color: #1f2937; margin-bottom: 4px; }
+.shortcut-desc { font-size: 12px; color: #6b7280; }
+</style>
 {/block}

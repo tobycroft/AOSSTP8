@@ -2,7 +2,9 @@
 
 namespace app\index\controller;
 
+use app\index\model\HookModel;
 use app\index\model\ProjectModel;
+use app\index\model\LoginLogModel;
 use app\index\utils\ConsoleLayout;
 use app\index\utils\UserAuth;
 use BaseController\CommonController;
@@ -36,6 +38,13 @@ class Console extends CommonController
             ];
         }
 
+        $hookModel = new HookModel();
+        $hook_total = $hookModel->where('uid', '=', $uid)->count();
+        $hook_avail = $hookModel->where('uid', '=', $uid)->where('status', '=', 1)->count();
+
+        $loginLogModel = new LoginLogModel();
+        $last_login = $loginLogModel->where('uid', '=', $uid)->order('id', 'desc')->findOrEmpty();
+
         return ConsoleLayout::render('console/index', [
             'user' => [
                 'username' => $user['username'],
@@ -47,6 +56,10 @@ class Console extends CommonController
             'total' => $total,
             'avail' => $avail,
             'projects' => $projects,
+            'hook_total' => $hook_total,
+            'hook_avail' => $hook_avail,
+            'last_login_ip' => $last_login->isEmpty() ? '-' : $last_login['ip'],
+            'last_login_time' => $last_login->isEmpty() ? '-' : $last_login['date'],
         ], '控制台', null, 'console');
     }
 }
