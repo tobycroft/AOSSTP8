@@ -54,10 +54,10 @@ class push extends CommonController
                         break;
 
                     default:
-                        $ret = Net::PostJson($datum['url']);
+                        $ret = Net::PostJson($datum['full_url']);
                         $rets[$datum['remark']] = $ret;
                         if ($ret) {
-//                            $status[$datum['remark']] = 'success';
+//                            $status[$datum["remark"]] = "success";
                         } else {
                             $status[$datum['remark']] = 'fail';
                         }
@@ -65,7 +65,7 @@ class push extends CommonController
                             'tag' => $datum['tag'],
                             'remark' => $datum['remark'],
                             'success' => false,
-                            'url' => $datum['url'],
+                            'url' => $datum['full_url'],
                             'recv' => $ret,
                         ]);
                         break;
@@ -134,7 +134,7 @@ class push extends CommonController
                         break;
 
                     default:
-                        $ret = Net::PostJson($datum['url']);
+                        $ret = Net::PostJson($datum['full_url']);
                         $rets[$datum['remark']] = $ret;
                         if ($ret) {
 //                            $status[$datum['remark']] = 'success';
@@ -142,7 +142,7 @@ class push extends CommonController
                                 'tag' => $datum['tag'],
                                 'remark' => $datum['remark'],
                                 'success' => true,
-                                'url' => $datum['url'],
+                                'url' => $datum['full_url'],
                                 'recv' => $ret,
                             ]);
                         } else {
@@ -151,7 +151,7 @@ class push extends CommonController
                                 'tag' => $datum['tag'],
                                 'remark' => $datum['remark'],
                                 'success' => false,
-                                'url' => $datum['url'],
+                                'url' => $datum['full_url'],
                                 'recv' => $ret,
                             ]);
                         }
