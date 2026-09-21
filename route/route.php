@@ -104,6 +104,7 @@
 \think\facade\Route::any('console/login_log', '\app\index\controller\LoginLog@index');
 \think\facade\Route::any('console/password', '\app\index\controller\Password@index');
 \think\facade\Route::any('console/hook', '\app\index\controller\Hook@index');
+\think\facade\Route::any('console/call_log', '\app\index\controller\CallLog@index');
 \think\facade\Route::any('console', '\app\index\controller\Console@index');
 
 \think\facade\Route::any(':any', function () {

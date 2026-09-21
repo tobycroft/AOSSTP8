@@ -17,6 +17,7 @@ class ConsoleLayout
             'title' => '项目',
             'items' => [
                 'project' => ['label' => '项目管理', 'url' => '/console/project'],
+                'call_log' => ['label' => '调用日志', 'url' => '/console/call_log'],
             ],
         ],
         'hook' => [

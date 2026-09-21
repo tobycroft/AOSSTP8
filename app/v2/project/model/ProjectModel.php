@@ -2,6 +2,7 @@
 
 namespace app\v2\project\model;
 
+use app\index\model\CallLogModel;
 use think\Model;
 
 class ProjectModel extends Model
@@ -10,9 +11,14 @@ class ProjectModel extends Model
 
     public function api_find_token($token)
     {
-        return $this->where('open_token', '=', $token)
+        $proc = $this->where('open_token', '=', $token)
             ->where('is_avail', '=', 1)
             ->findOrEmpty();
+        // 记录 AK 调用日志（uid=0 为管理员项目，门户控制台不展示）
+        if (!$proc->isEmpty()) {
+            CallLogModel::addLog($proc->toArray());
+        }
+        return $proc;
     }
 
     public function api_find_appid($appid)

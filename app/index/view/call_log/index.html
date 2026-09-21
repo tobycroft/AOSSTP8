@@ -1,0 +1,54 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>调用日志</h2>
+        <select id="appidSelect" onchange="doFilter()" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; outline: none; background:#fff;">
+            <option value="0">全部项目</option>
+            {foreach $projects as $pid => $pname}
+            <option value="{$pid}" {if $appid==$pid}selected{/if}>{$pname}</option>
+            {/foreach}
+        </select>
+    </div>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>调用时间</th>
+            <th>项目</th>
+            <th>接口路径</th>
+            <th>方法</th>
+            <th>来源 IP</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.date}</td>
+            <td>{$item.project}（{$item.appid}）</td>
+            <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'SF Mono',Consolas,monospace;" title="{$item.path}">/{$item.path}</td>
+            <td>{$item.method}</td>
+            <td>{$item.ip}</td>
+        </tr>
+        {/foreach}
+        {if empty($list)}
+        <tr>
+            <td colspan="5" style="text-align:center;color:#999;">暂无调用记录，使用项目 AK 调用平台接口后这里会展示日志</td>
+        </tr>
+        {/if}
+    </tbody>
+</table>
+{$pagination|raw}
+{/block}
+{block name="script"}
+{literal}
+<script>
+function doFilter() {
+    var appid = document.getElementById('appidSelect').value;
+    var url = '/console/call_log?page=1';
+    if (appid && appid !== '0') url += '&appid=' + appid;
+    window.location.href = url;
+}
+</script>
+{/literal}
+{/block}
