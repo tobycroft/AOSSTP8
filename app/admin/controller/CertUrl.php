@@ -34,6 +34,9 @@ class CertUrl extends CommonController
             case 'GET':
                 return $this->page();
             case 'POST':
+                if (request()->post('copy')) {
+                    return $this->copy();
+                }
                 return $this->update();
             case 'PUT':
                 return $this->create();
@@ -97,6 +100,55 @@ class CertUrl extends CommonController
         ]);
 
         Ret::Success(0, ['id' => $model['id']], '创建成功');
+    }
+
+    /**
+     * 复制一条证书URL为新记录
+     *
+     * 证书名自动追加 -copy 保证唯一，备注追加「副本」，证书内容留空待重新拉取
+     */
+    private function copy()
+    {
+        $id = Input::PostInt('id');
+        $model = new AdminCertUrlModel();
+        $item = $model->findOrEmpty($id);
+
+        if ($item->isEmpty()) {
+            Ret::Fail(404, null, '记录不存在');
+        }
+
+        $cert = $this->uniqueCopyCert((string)$item['cert']);
+        $remark = trim((string)$item['remark']);
+
+        AdminCertUrlModel::create([
+            'cert' => $cert,
+            'url_crt' => $item['url_crt'],
+            'url_key' => $item['url_key'],
+            'remark' => $remark === '' ? '副本' : $remark . '-副本',
+            'auto' => $item['auto'],
+        ]);
+
+        Ret::Success(0, ['cert' => $cert], '复制成功，请修改证书名称');
+    }
+
+    /**
+     * 生成不重复的副本证书名
+     */
+    private function uniqueCopyCert(string $cert): string
+    {
+        $base = $cert . '-copy';
+        $name = $base;
+        $index = 1;
+
+        while (AdminCertUrlModel::where('cert', $name)->find()) {
+            $index++;
+            if ($index > 99) {
+                return $base . '-' . bin2hex(random_bytes(4));
+            }
+            $name = $base . '-' . $index;
+        }
+
+        return $name;
     }
 
     private function update()
