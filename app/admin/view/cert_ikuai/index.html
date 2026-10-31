@@ -44,6 +44,7 @@
                 <button class="btn btn-sm btn-success" onclick="doDeploy({$item.id})">下发证书</button>
                 <button class="btn btn-sm btn-primary" onclick="doTestLogin({$item.id})">测试登录</button>
                 <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.api}', '{$item.cert_name}', '{$item.username}', {$item.status})">编辑</button>
+                <button class="btn btn-sm btn-edit" onclick="copyRouter('{$item.api}', '{$item.cert_name}', '{$item.username}', {$item.status})">复制</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
         </tr>
@@ -103,6 +104,7 @@ function openCreate() {
     document.getElementById('formCertName').value = '';
     document.getElementById('formUsername').value = '';
     document.getElementById('formPassword').value = '';
+    document.getElementById('formPassword').placeholder = '编辑时留空表示不修改';
     document.getElementById('formStatus').value = '1';
     document.getElementById('ikuaiModal').classList.add('show');
 }
@@ -113,8 +115,21 @@ function openEdit(id, api, certName, username, status) {
     document.getElementById('formCertName').value = certName;
     document.getElementById('formUsername').value = username;
     document.getElementById('formPassword').value = '';
+    document.getElementById('formPassword').placeholder = '编辑时留空表示不修改';
     document.getElementById('formStatus').value = status;
     document.getElementById('ikuaiModal').classList.add('show');
+}
+function copyRouter(api, certName, username, status) {
+    document.getElementById('modalTitle').textContent = '复制新增（修改地址与密码后保存）';
+    document.getElementById('editId').value = '';
+    document.getElementById('formApi').value = api;
+    document.getElementById('formCertName').value = certName;
+    document.getElementById('formUsername').value = username;
+    document.getElementById('formPassword').value = '';
+    document.getElementById('formPassword').placeholder = '复制后需重新输入密码';
+    document.getElementById('formStatus').value = status;
+    document.getElementById('ikuaiModal').classList.add('show');
+    document.getElementById('formApi').focus();
 }
 function submitForm() {
     var id = document.getElementById('editId').value;

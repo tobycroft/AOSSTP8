@@ -85,6 +85,11 @@ class CertIkuai extends CommonController
             Ret::Fail(400, null, '登录密码不能为空');
         }
 
+        // 复制新增时容易遗漏修改地址或用户名，提前给出提示避免唯一索引报错
+        if (AdminCertIkuaiModel::where('api', $api)->where('username', $username)->find()) {
+            Ret::Fail(400, null, '该路由器地址与用户名已存在，请修改后再保存');
+        }
+
         $item = AdminCertIkuaiModel::create([
             'api' => $api,
             'cert_name' => trim(strval(request()->put('cert_name', ''))),
