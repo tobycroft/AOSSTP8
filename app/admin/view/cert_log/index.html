@@ -1,6 +1,14 @@
 {extend name="layout/base" /}
 {block name="content"}
-<h2 style="margin-bottom:16px;">操作日志</h2>
+<div class="toolbar">
+    <h2>操作日志</h2>
+</div>
+<div class="tab-bar">
+    <a class="tab-item {if $currentType==''}active{/if}" href="/admin/cert_log">全部</a>
+    {foreach $types as $type}
+    <a class="tab-item {if $currentType==$type.value}active{/if}" href="/admin/cert_log?type={$type.value}">{$type.label} ({$type.count})</a>
+    {/foreach}
+</div>
 <table>
     <thead>
         <tr>
@@ -9,7 +17,8 @@
             <th>类型</th>
             <th>站点</th>
             <th>结果</th>
-            <th>返回内容</th>
+            <th>归类</th>
+            <th>详细</th>
             <th>时间</th>
         </tr>
     </thead>
@@ -18,14 +27,42 @@
         <tr>
             <td>{$item.id}</td>
             <td>{$item.appname}</td>
-            <td>{$item.type}</td>
-            <td>{$item.website}</td>
+            <td>{$item.type_text}</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item.website}</td>
             <td>{if $item.success == 1}<span class="status-badge success">成功</span>{else/}<span class="status-badge fail">失败</span>{/if}</td>
-            <td class="recv-cell" title="{$item.recv}">{$item.recv_short}</td>
+            <td style="max-width:340px;">{$item.reason}</td>
+            <td><button class="btn btn-sm btn-edit" data-recv="{$item.recv_pretty}" onclick="showRecv(this)">详细</button></td>
             <td>{$item.create_time}</td>
         </tr>
         {/foreach}
+        {if empty($list)}
+        <tr>
+            <td colspan="8" style="text-align:center;color:#999;">暂无日志</td>
+        </tr>
+        {/if}
     </tbody>
 </table>
 {$pagination|raw}
+<div class="modal" id="recvModal">
+    <div class="modal-box" style="max-width:760px;">
+        <h3>接口返回内容</h3>
+        <pre id="recvContent" style="max-height:60vh;overflow:auto;white-space:pre-wrap;word-break:break-all;background:#f7f8fa;padding:12px;border-radius:6px;font-size:12px;line-height:1.6;"></pre>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeRecv()">关闭</button>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{literal}
+<script>
+function showRecv(btn) {
+    document.getElementById('recvContent').textContent = btn.getAttribute('data-recv') || '(空)';
+    document.getElementById('recvModal').classList.add('show');
+}
+function closeRecv() {
+    document.getElementById('recvModal').classList.remove('show');
+}
+</script>
+{/literal}
 {/block}
