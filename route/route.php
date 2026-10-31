@@ -48,10 +48,16 @@
     \think\facade\Route::any('admin/cert_url/getKey', '\app\admin\controller\CertUrl@getKey');
     \think\facade\Route::any('admin/cert_url/autoSSL', '\app\admin\controller\CertUrl@autoSSL');
     \think\facade\Route::any('admin/cert_url/autoMailSSL', '\app\admin\controller\CertUrl@autoMailSSL');
+    \think\facade\Route::any('admin/cert_url/deployIkuai', '\app\admin\controller\CertUrl@deployIkuai');
     \think\facade\Route::any('admin/cert_url', '\app\admin\controller\CertUrl@index');
     \think\facade\Route::any('admin/cert_website/batchDelete', '\app\admin\controller\CertWebsite@batchDelete');
     \think\facade\Route::any('admin/cert_website/toggleStatus', '\app\admin\controller\CertWebsite@toggleStatus');
     \think\facade\Route::any('admin/cert_website', '\app\admin\controller\CertWebsite@index');
+    \think\facade\Route::any('admin/cert_ikuai/deploy', '\app\admin\controller\CertIkuai@deploy');
+    \think\facade\Route::any('admin/cert_ikuai/testLogin', '\app\admin\controller\CertIkuai@testLogin');
+    \think\facade\Route::any('admin/cert_ikuai/toggleStatus', '\app\admin\controller\CertIkuai@toggleStatus');
+    \think\facade\Route::any('admin/cert_ikuai/batchDelete', '\app\admin\controller\CertIkuai@batchDelete');
+    \think\facade\Route::any('admin/cert_ikuai', '\app\admin\controller\CertIkuai@index');
     \think\facade\Route::any('admin/cert_log', '\app\admin\controller\CertLog@index');
     \think\facade\Route::any('admin/attachment', '\app\admin\controller\Attachment@index');
     \think\facade\Route::any('admin/attachment_token', '\app\admin\controller\AttachmentToken@index');

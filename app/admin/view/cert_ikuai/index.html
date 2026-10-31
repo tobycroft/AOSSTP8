@@ -1,0 +1,268 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <h2>爱快路由器</h2>
+    <div>
+        <button class="btn btn-danger" onclick="doBatchDelete()" style="display:none;" id="batchDeleteBtn">批量删除</button>
+        <button class="btn btn-primary" onclick="openCreate()">新增路由器</button>
+    </div>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+            <th>ID</th>
+            <th>路由器地址</th>
+            <th>绑定证书</th>
+            <th>用户名</th>
+            <th>登录态</th>
+            <th>上次登录</th>
+            <th>过期时间</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td><input type="checkbox" class="item-checkbox" value="{$item.id}" onchange="updateBatchDeleteBtn()"></td>
+            <td>{$item.id}</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item.api}</td>
+            <td>{$item.cert_name}</td>
+            <td>{$item.username}</td>
+            <td>
+                {if $item.sess_key}
+                <span class="status-badge active">{$item.sess_key}</span>
+                {else/}
+                <span class="status-badge inactive">未登录</span>
+                {/if}
+            </td>
+            <td>{$item.last_login_time}</td>
+            <td>{$item.expire_time}</td>
+            <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}" onclick="toggleStatus({$item.id}, this)" style="cursor:pointer;">{if $item.status==1}启用{else/}禁用{/if}</span></td>
+            <td>
+                <button class="btn btn-sm btn-success" onclick="doDeploy({$item.id})">下发证书</button>
+                <button class="btn btn-sm btn-primary" onclick="doTestLogin({$item.id})">测试登录</button>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.api}', '{$item.cert_name}', '{$item.username}', {$item.status})">编辑</button>
+                <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
+            </td>
+        </tr>
+        {/foreach}
+        {if empty($list)}
+        <tr>
+            <td colspan="9" style="text-align:center;color:#999;">暂无路由器，点击右上角"新增路由器"添加爱快登录信息</td>
+        </tr>
+        {/if}
+    </tbody>
+</table>
+{$pagination|raw}
+<div class="modal" id="ikuaiModal">
+    <div class="modal-box">
+        <h3 id="modalTitle">新增路由器</h3>
+        <input type="hidden" id="editId" value="">
+        <div class="form-group">
+            <label>路由器地址</label>
+            <input type="text" id="formApi" placeholder="http://192.168.1.1:9600">
+        </div>
+        <div class="form-group">
+            <label>绑定证书</label>
+            <input type="text" id="formCertName" placeholder="与证书URL中的证书名称一致，如 aerofsx.com">
+        </div>
+        <div class="form-group">
+            <label>登录用户名</label>
+            <input type="text" id="formUsername" placeholder="admin">
+        </div>
+        <div class="form-group">
+            <label>登录密码</label>
+            <input type="password" id="formPassword" placeholder="编辑时留空表示不修改">
+        </div>
+        <div class="form-group">
+            <label>状态</label>
+            <select id="formStatus">
+                <option value="1">启用</option>
+                <option value="0">禁用</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn btn-primary" onclick="submitForm()">确定</button>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{literal}
+<script>
+function closeModal() {
+    document.getElementById('ikuaiModal').classList.remove('show');
+}
+function openCreate() {
+    document.getElementById('modalTitle').textContent = '新增路由器';
+    document.getElementById('editId').value = '';
+    document.getElementById('formApi').value = '';
+    document.getElementById('formCertName').value = '';
+    document.getElementById('formUsername').value = '';
+    document.getElementById('formPassword').value = '';
+    document.getElementById('formStatus').value = '1';
+    document.getElementById('ikuaiModal').classList.add('show');
+}
+function openEdit(id, api, certName, username, status) {
+    document.getElementById('modalTitle').textContent = '编辑路由器';
+    document.getElementById('editId').value = id;
+    document.getElementById('formApi').value = api;
+    document.getElementById('formCertName').value = certName;
+    document.getElementById('formUsername').value = username;
+    document.getElementById('formPassword').value = '';
+    document.getElementById('formStatus').value = status;
+    document.getElementById('ikuaiModal').classList.add('show');
+}
+function submitForm() {
+    var id = document.getElementById('editId').value;
+    var api = document.getElementById('formApi').value;
+    var certName = document.getElementById('formCertName').value;
+    var username = document.getElementById('formUsername').value;
+    var password = document.getElementById('formPassword').value;
+    var status = document.getElementById('formStatus').value;
+    if (!api) { alert('路由器地址不能为空'); return; }
+    if (!username) { alert('登录用户名不能为空'); return; }
+    if (!id && !password) { alert('登录密码不能为空'); return; }
+    var xhr = new XMLHttpRequest();
+    var method = id ? 'POST' : 'PUT';
+    xhr.open(method, '/admin/cert_ikuai', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    var params = 'api=' + encodeURIComponent(api) + '&cert_name=' + encodeURIComponent(certName) + '&username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password) + '&status=' + status;
+    if (id) params += '&id=' + id;
+    xhr.send(params);
+}
+function doDeploy(id) {
+    if (!confirm('确定要把绑定的证书下发到该路由器吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert_ikuai/deploy', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                alert('证书「' + res.data.cert_name + '」下发成功');
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function doTestLogin(id) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert_ikuai/testLogin', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                alert('登录成功，sess_key：' + res.data.sess_key + '\n过期时间：' + res.data.expire_time);
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function doDelete(id) {
+    if (!confirm('确定要删除该路由器吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/cert_ikuai', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function toggleStatus(id, el) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert_ikuai/toggleStatus', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                if (res.data.status == 1) {
+                    el.textContent = '启用';
+                    el.className = 'status-badge active';
+                } else {
+                    el.textContent = '禁用';
+                    el.className = 'status-badge inactive';
+                }
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function toggleSelectAll() {
+    var checked = document.getElementById('selectAll').checked;
+    var boxes = document.querySelectorAll('.item-checkbox');
+    for (var i = 0; i < boxes.length; i++) {
+        boxes[i].checked = checked;
+    }
+    updateBatchDeleteBtn();
+}
+function updateBatchDeleteBtn() {
+    var checked = document.querySelectorAll('.item-checkbox:checked');
+    var btn = document.getElementById('batchDeleteBtn');
+    btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
+}
+function doBatchDelete() {
+    var checked = document.querySelectorAll('.item-checkbox:checked');
+    if (checked.length === 0) {
+        alert('请先勾选要删除的路由器');
+        return;
+    }
+    if (!confirm('确定要删除选中的 ' + checked.length + ' 个路由器吗？')) return;
+    var ids = [];
+    for (var i = 0; i < checked.length; i++) {
+        ids.push(checked[i].value);
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert_ikuai/batchDelete', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('ids=' + encodeURIComponent(JSON.stringify(ids)));
+}
+</script>
+{/literal}
+{/block}

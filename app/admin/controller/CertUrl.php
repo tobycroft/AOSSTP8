@@ -10,6 +10,7 @@ use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
 use app\v1\cert\action\SiteAction;
 use app\v1\cert\action\ConfigAction;
+use app\v1\cert\action\IkuaiAction;
 use app\v1\cert\action\MailAction;
 use BaseController\CommonController;
 use Input;
@@ -245,6 +246,40 @@ class CertUrl extends CommonController
         Ret::Success(0, $rets, '一键更新完成');
     }
 
+    /**
+     * 下发证书到所有绑定了该证书的爱快路由器
+     */
+    public function deployIkuai()
+    {
+        $id = Input::PostInt('id');
+        $model = new AdminCertUrlModel();
+        $item = $model->findOrEmpty($id);
+
+        if ($item->isEmpty()) {
+            Ret::Fail(404, null, '记录不存在');
+        }
+
+        $name = $item['cert'];
+
+        // 先尝试从证书 URL 刷新，失败则沿用库中已有证书
+        try {
+            SiteAction::updatessl($name);
+        } catch (Exception $e) {
+        }
+
+        try {
+            $rets = IkuaiAction::autossl($name);
+        } catch (Exception $e) {
+            Ret::Fail(500, null, '爱快下发失败: ' . $e->getMessage());
+        }
+
+        if ($rets['success'] === 0 && $rets['fail'] === 0) {
+            Ret::Fail(404, $rets, '没有绑定该证书的爱快路由器');
+        }
+
+        Ret::Success(0, $rets, '爱快下发完成');
+    }
+
     public function getKey()
     {
         $id = Input::PostInt('id');
@@ -398,6 +433,23 @@ class CertUrl extends CommonController
                     'error' => $error,
                 ];
             }
+        }
+
+        // 爱快路由器：按绑定的证书名称下发，单台失败不影响其他面板结果
+        try {
+            $ikuaiRets = IkuaiAction::autossl($name);
+            $rets['success'] += $ikuaiRets['success'];
+            $rets['fail'] += $ikuaiRets['fail'];
+            $rets['detail'] = array_merge($rets['detail'], $ikuaiRets['detail']);
+        } catch (Exception $e) {
+            $rets['fail']++;
+            $rets['detail'][] = [
+                'type' => 'ikuai',
+                'api' => '',
+                'cert_name' => $name,
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
         }
 
         Ret::Success(0, $rets, '自动下发完成');
