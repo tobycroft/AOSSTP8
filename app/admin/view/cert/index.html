@@ -102,7 +102,7 @@ function submitForm() {
     var bt_api = document.getElementById('formBtApi').value;
     var bt_key = document.getElementById('formBtKey').value;
     var status = document.getElementById('formStatus').value;
-    if (!appname) { alert('AppName 不能为空'); return; }
+    if (!appname) { showToast('AppName 不能为空', 'warn', 2500); return; }
     var xhr = new XMLHttpRequest();
     var method = id ? 'POST' : 'PUT';
     xhr.open(method, '/admin/cert', true);
@@ -112,9 +112,10 @@ function submitForm() {
         if (xhr.readyState == 4) {
             var res = JSON.parse(xhr.responseText);
             if (res.code == 0) {
-                location.reload();
+                showToast('保存成功', 'success', 1500);
+                setTimeout(function() { location.reload(); }, 800);
             } else {
-                alert(res.echo);
+                showToast(res.echo || '保存失败', 'error', 5000);
             }
         }
     };
@@ -132,16 +133,16 @@ function doDelete(id) {
         if (xhr.readyState == 4) {
             var res = JSON.parse(xhr.responseText);
             if (res.code == 0) {
-                location.reload();
+                showToast('删除成功', 'success', 1500);
+                setTimeout(function() { location.reload(); }, 800);
             } else {
-                alert(res.echo);
+                showToast(res.echo || '删除失败', 'error', 5000);
             }
         }
     };
     xhr.send('id=' + id);
 }
 function doUpdateSite(id) {
-    if (!confirm('确定要从BT面板更新站点列表吗？')) return;
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/admin/cert/updateSite', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -149,9 +150,11 @@ function doUpdateSite(id) {
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4) {
             var res = JSON.parse(xhr.responseText);
-            alert(res.echo);
             if (res.code == 0) {
-                location.reload();
+                showToast(res.echo || '更新成功', 'success', 1500);
+                setTimeout(function() { location.reload(); }, 800);
+            } else {
+                showToast(res.echo || '更新失败', 'error', 5000);
             }
         }
     };

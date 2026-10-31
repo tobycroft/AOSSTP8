@@ -121,7 +121,7 @@ function submitForm() {
     var api = document.getElementById('formApi').value;
     var key = document.getElementById('formKey').value;
     var status = document.getElementById('formStatus').value;
-    if (!cert_name) { alert('证书名称不能为空'); return; }
+    if (!cert_name) { showToast('证书名称不能为空', 'warn', 2500); return; }
     var xhr = new XMLHttpRequest();
     var method = id ? 'POST' : 'PUT';
     xhr.open(method, '/admin/cert_website', true);
@@ -131,9 +131,10 @@ function submitForm() {
         if (xhr.readyState == 4) {
             var res = JSON.parse(xhr.responseText);
             if (res.code == 0) {
-                location.reload();
+                showToast('保存成功', 'success', 1500);
+                setTimeout(function() { location.reload(); }, 800);
             } else {
-                alert(res.echo);
+                showToast(res.echo || '保存失败', 'error', 5000);
             }
         }
     };
@@ -151,9 +152,10 @@ function doDelete(id) {
         if (xhr.readyState == 4) {
             var res = JSON.parse(xhr.responseText);
             if (res.code == 0) {
-                location.reload();
+                showToast('删除成功', 'success', 1500);
+                setTimeout(function() { location.reload(); }, 800);
             } else {
-                alert(res.echo);
+                showToast(res.echo || '删除失败', 'error', 5000);
             }
         }
     };
@@ -171,12 +173,14 @@ function toggleStatus(id, el) {
                 if (res.data.status == 1) {
                     el.textContent = '启用';
                     el.className = 'status-badge active';
+                    showToast('已启用', 'success', 1500);
                 } else {
                     el.textContent = '禁用';
                     el.className = 'status-badge inactive';
+                    showToast('已禁用', 'warn', 1500);
                 }
             } else {
-                alert(res.echo);
+                showToast(res.echo || '操作失败', 'error', 5000);
             }
         }
     };
@@ -198,7 +202,7 @@ function updateBatchDeleteBtn() {
 function doBatchDelete() {
     var checked = document.querySelectorAll('.item-checkbox:checked');
     if (checked.length === 0) {
-        alert('请先勾选要删除的站点');
+        showToast('请先勾选要删除的站点', 'warn', 2500);
         return;
     }
     if (!confirm('确定要删除选中的 ' + checked.length + ' 个站点吗？')) return;
@@ -214,9 +218,10 @@ function doBatchDelete() {
         if (xhr.readyState == 4) {
             var res = JSON.parse(xhr.responseText);
             if (res.code == 0) {
-                location.reload();
+                showToast('删除成功', 'success', 1500);
+                setTimeout(function() { location.reload(); }, 800);
             } else {
-                alert(res.echo);
+                showToast(res.echo || '删除失败', 'error', 5000);
             }
         }
     };

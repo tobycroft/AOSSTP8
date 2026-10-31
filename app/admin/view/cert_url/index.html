@@ -126,7 +126,7 @@ function submitForm() {
     var url_key = document.getElementById('formUrlKey').value;
     var remark = document.getElementById('formRemark').value;
     var auto = document.getElementById('formAuto').value;
-    if (!cert) { alert('证书名称不能为空'); return; }
+    if (!cert) { showToast('证书名称不能为空', 'warn', 2500); return; }
     var xhr = new XMLHttpRequest();
     var method = id ? 'POST' : 'PUT';
     xhr.open(method, '/admin/cert_url', true);
@@ -136,9 +136,10 @@ function submitForm() {
         if (xhr.readyState == 4) {
             var res = JSON.parse(xhr.responseText);
             if (res.code == 0) {
-                location.reload();
+                showToast('保存成功', 'success', 1500);
+                setTimeout(function() { location.reload(); }, 800);
             } else {
-                alert(res.echo);
+                showToast(res.echo || '保存失败', 'error', 5000);
             }
         }
     };
@@ -156,16 +157,16 @@ function doDelete(id) {
         if (xhr.readyState == 4) {
             var res = JSON.parse(xhr.responseText);
             if (res.code == 0) {
-                location.reload();
+                showToast('删除成功', 'success', 1500);
+                setTimeout(function() { location.reload(); }, 800);
             } else {
-                alert(res.echo);
+                showToast(res.echo || '删除失败', 'error', 5000);
             }
         }
     };
     xhr.send('id=' + id);
 }
 function doUpdateSSL(id, cert) {
-    if (!confirm('确定要更新证书「' + cert + '」的SSL吗？将从URL拉取最新证书。')) return;
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/admin/cert_url/updateSSL', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -174,17 +175,16 @@ function doUpdateSSL(id, cert) {
         if (xhr.readyState == 4) {
             var res = JSON.parse(xhr.responseText);
             if (res.code == 0) {
-                alert('更新成功');
-                location.reload();
+                showToast('更新成功', 'success', 1500);
+                setTimeout(function() { location.reload(); }, 800);
             } else {
-                alert(res.echo);
+                showToast(res.echo || '更新失败', 'error', 5000);
             }
         }
     };
     xhr.send('id=' + id);
 }
 function doUpdateAllSSL() {
-    if (!confirm('确定要一键更新所有证书吗？将逐个从URL拉取最新证书。')) return;
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/admin/cert_url/updateAllSSL', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -200,17 +200,16 @@ function doUpdateAllSSL() {
                     msg += '\\n  [' + (d.success ? 'OK' : 'XX') + '] ' + d.cert;
                     if (d.error) msg += ' - ' + d.error;
                 }
-                alert(msg);
-                location.reload();
+                showToast(msg, res.data.fail > 0 ? 'warn' : 'success', 6000);
+                setTimeout(function() { location.reload(); }, 1000);
             } else {
-                alert(res.echo);
+                showToast(res.echo || '更新失败', 'error', 5000);
             }
         }
     };
     xhr.send();
 }
 function doIkuaiSSL(id, cert) {
-    if (!confirm('确定要把证书「' + cert + '」下发到绑定的爱快路由器吗？')) return;
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/admin/cert_url/deployIkuai', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -226,16 +225,15 @@ function doIkuaiSSL(id, cert) {
                     msg += '\n  [' + (d.success ? 'OK' : 'XX') + '] ' + (d.api || '') + (d.cert_name ? ' (' + d.cert_name + ')' : '');
                     if (d.error) msg += ' - ' + d.error;
                 }
-                alert(msg);
+                showToast(msg, res.data.fail > 0 ? 'warn' : 'success', 6000);
             } else {
-                alert(res.echo);
+                showToast(res.echo || '下发失败', 'error', 5000);
             }
         }
     };
     xhr.send('id=' + id);
 }
 function doAutoSSL(id, cert) {
-    if (!confirm('确定要对证书「' + cert + '」执行自动下发吗？')) return;
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/admin/cert_url/autoSSL', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -251,17 +249,16 @@ function doAutoSSL(id, cert) {
                     msg += '\\n  [' + (d.success ? 'OK' : 'XX') + '] ' + d.website;
                     if (d.error) msg += ' - ' + d.error;
                 }
-                alert(msg);
-                location.reload();
+                showToast(msg, res.data.fail > 0 ? 'warn' : 'success', 6000);
+                setTimeout(function() { location.reload(); }, 1000);
             } else {
-                alert(res.echo);
+                showToast(res.echo || '下发失败', 'error', 5000);
             }
         }
     };
     xhr.send('id=' + id);
 }
 function doAutoMailSSL(id, cert) {
-    if (!confirm('确定要更新证书「' + cert + '」的邮箱SSL吗？')) return;
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/admin/cert_url/autoMailSSL', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -277,10 +274,10 @@ function doAutoMailSSL(id, cert) {
                     msg += '\\n  [' + (d.success ? 'OK' : 'XX') + '] ' + d.website;
                     if (d.error) msg += ' - ' + d.error;
                 }
-                alert(msg);
-                location.reload();
+                showToast(msg, res.data.fail > 0 ? 'warn' : 'success', 6000);
+                setTimeout(function() { location.reload(); }, 1000);
             } else {
-                alert(res.echo);
+                showToast(res.echo || '更新失败', 'error', 5000);
             }
         }
     };
