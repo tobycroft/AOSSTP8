@@ -54,6 +54,7 @@
     \think\facade\Route::any('admin/cert_website/toggleStatus', '\app\admin\controller\CertWebsite@toggleStatus');
     \think\facade\Route::any('admin/cert_website', '\app\admin\controller\CertWebsite@index');
     \think\facade\Route::any('admin/cert_ikuai/deploy', '\app\admin\controller\CertIkuai@deploy');
+    \think\facade\Route::any('admin/cert_ikuai/deployAll', '\app\admin\controller\CertIkuai@deployAll');
     \think\facade\Route::any('admin/cert_ikuai/testLogin', '\app\admin\controller\CertIkuai@testLogin');
     \think\facade\Route::any('admin/cert_ikuai/toggleStatus', '\app\admin\controller\CertIkuai@toggleStatus');
     \think\facade\Route::any('admin/cert_ikuai/batchDelete', '\app\admin\controller\CertIkuai@batchDelete');

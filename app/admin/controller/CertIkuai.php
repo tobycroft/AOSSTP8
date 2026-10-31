@@ -201,6 +201,49 @@ class CertIkuai extends CommonController
     }
 
     /**
+     * 一键下发：把每台启用且已绑定证书的路由器按其绑定证书逐个下发
+     */
+    public function deployAll()
+    {
+        $routers = AdminCertIkuaiModel::where('status', 1)
+            ->where('cert_name', '<>', '')
+            ->select();
+
+        if (count($routers) === 0) {
+            Ret::Fail(404, null, '没有可下发的路由器（需启用且已绑定证书）');
+        }
+
+        $rets = [
+            'success' => 0,
+            'fail' => 0,
+            'detail' => [],
+        ];
+
+        foreach ($routers as $router) {
+            $item = $router->toArray();
+            try {
+                IkuaiAction::updatessl((string)$item['cert_name'], $item);
+                $rets['success']++;
+                $rets['detail'][] = [
+                    'api' => $item['api'],
+                    'cert_name' => $item['cert_name'],
+                    'success' => true,
+                ];
+            } catch (Exception $e) {
+                $rets['fail']++;
+                $rets['detail'][] = [
+                    'api' => $item['api'],
+                    'cert_name' => $item['cert_name'],
+                    'success' => false,
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        Ret::Success(0, $rets, '一键下发完成');
+    }
+
+    /**
      * 手动下发证书到该路由器
      */
     public function deploy()

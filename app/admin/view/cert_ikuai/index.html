@@ -4,6 +4,7 @@
     <h2>爱快路由器</h2>
     <div>
         <button class="btn btn-danger" onclick="doBatchDelete()" style="display:none;" id="batchDeleteBtn">批量删除</button>
+        <button class="btn btn-success" onclick="doDeployAll(this)" id="deployAllBtn">一键下发</button>
         <button class="btn btn-primary" onclick="openCreate()">新增路由器</button>
     </div>
 </div>
@@ -159,6 +160,46 @@ function submitForm() {
     var params = 'api=' + encodeURIComponent(api) + '&cert_name=' + encodeURIComponent(certName) + '&username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password) + '&status=' + status;
     if (id) params += '&id=' + id;
     xhr.send(params);
+}
+function doDeployAll(btn) {
+    if (!confirm('确定对所有启用的路由器执行一键下发吗？每台会下发各自绑定的证书。')) return;
+    var label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '下发中...';
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert_ikuai/deployAll', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            btn.disabled = false;
+            btn.textContent = label;
+            var res = null;
+            try { res = JSON.parse(xhr.responseText); } catch (e) {}
+            if (!res) {
+                showToast('请求失败，请稍后重试', 'error', 5000);
+                return;
+            }
+            if (res.code == 0) {
+                var msg = '一键下发完成\n成功: ' + res.data.success + ' | 失败: ' + res.data.fail;
+                var detail = res.data.detail || [];
+                var shown = 0;
+                for (var i = 0; i < detail.length && shown < 3; i++) {
+                    if (!detail[i].success) {
+                        msg += '\n  [XX] ' + detail[i].api + ' - ' + detail[i].error;
+                        shown++;
+                    }
+                }
+                showToast(msg, res.data.fail > 0 ? 'warn' : 'success', 6000);
+                if (res.data.success > 0) {
+                    setTimeout(function() { location.reload(); }, 1800);
+                }
+            } else {
+                showToast(res.echo || '下发失败', 'error', 5000);
+            }
+        }
+    };
+    xhr.send('');
 }
 function doDeploy(id) {
     if (!confirm('确定要把绑定的证书下发到该路由器吗？')) return;
