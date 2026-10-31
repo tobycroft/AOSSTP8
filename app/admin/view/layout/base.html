@@ -81,6 +81,12 @@ tr:hover { background: #fafafa; }
 .tab-item { padding: 10px 24px; font-size: 14px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.2s, border-color 0.2s; }
 .tab-item:hover { color: #1677ff; }
 .tab-item.active { color: #1677ff; border-bottom-color: #1677ff; font-weight: 500; }
+.toast-box { position: fixed; top: 80px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { min-width: 220px; max-width: 380px; padding: 10px 14px; border-radius: 6px; font-size: 13px; line-height: 1.6; color: #333; background: #fff; border-left: 4px solid #1677ff; box-shadow: 0 6px 16px rgba(0,0,0,0.12); white-space: pre-wrap; word-break: break-all; opacity: 0; transform: translateX(16px); transition: opacity 0.25s ease, transform 0.25s ease; }
+.toast.show { opacity: 1; transform: none; }
+.toast.success { border-left-color: #52c41a; }
+.toast.error { border-left-color: #ff4d4f; }
+.toast.warn { border-left-color: #faad14; }
 </style>
 </head>
 <body>
@@ -114,6 +120,25 @@ tr:hover { background: #fafafa; }
 {literal}
 <script>
 (function(){var origSend=XMLHttpRequest.prototype.send;XMLHttpRequest.prototype.send=function(body){var xhr=this;var origReady=xhr.onreadystatechange;xhr.onreadystatechange=function(){try{if(xhr.readyState==4){var ct=xhr.getResponseHeader('content-type')||'';if(ct.indexOf('application/json')!==-1){var res=JSON.parse(xhr.responseText);if(res&&res.code==-1){localStorage.removeItem('admin_token');document.cookie='admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';window.location.href='/admin/login';return;}}}}catch(e){}if(origReady)origReady.apply(xhr,arguments);};origSend.call(xhr,body);};})();
+function showToast(message, type, duration) {
+    var box = document.getElementById('toastBox');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'toastBox';
+        box.className = 'toast-box';
+        document.body.appendChild(box);
+    }
+    var el = document.createElement('div');
+    el.className = 'toast ' + (type || 'info');
+    el.textContent = message;
+    box.appendChild(el);
+    requestAnimationFrame(function() { el.classList.add('show'); });
+    setTimeout(function() {
+        el.classList.remove('show');
+        setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 300);
+    }, duration || 3000);
+    return el;
+}
 function toggleGroup(el){el.classList.toggle("open");el.nextElementSibling.classList.toggle("open");}
 function doLogout(){if(!confirm('确定要退出登录吗？')) return;var xhr=new XMLHttpRequest();xhr.open('POST','/admin/login/logout',true);xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded');xhr.setRequestHeader('admin-token',localStorage.getItem('admin_token'));xhr.onreadystatechange=function(){if(xhr.readyState==4){localStorage.removeItem('admin_token');document.cookie='admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';window.location.href='/admin/login';}};xhr.send();}
 function gotoPage(baseUrl, extraQuery){var page=document.getElementById("gotoPageInput").value;if(!page) return;window.location.href=baseUrl + "?page=" + page + extraQuery;}

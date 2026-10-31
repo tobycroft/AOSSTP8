@@ -188,7 +188,8 @@ class CertIkuai extends CommonController
         try {
             $sess = IkuaiAction::login($item->toArray());
         } catch (Exception $e) {
-            Ret::Fail(500, null, '登录失败: ' . $e->getMessage());
+            // 异常信息已带「爱快登录失败」前缀，不再重复拼装
+            Ret::Fail(500, null, $e->getMessage());
         }
 
         Ret::Success(0, [
