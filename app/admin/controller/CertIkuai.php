@@ -9,6 +9,7 @@ use app\v1\cert\action\IkuaiAction;
 use BaseController\CommonController;
 use Exception;
 use Input;
+use Ikuai\Ikuai;
 use Ret;
 
 class CertIkuai extends CommonController
@@ -78,6 +79,13 @@ class CertIkuai extends CommonController
         if ($api === '') {
             Ret::Fail(400, null, '路由器地址不能为空');
         }
+
+        // 统一整理用户手填的地址（缺协议、结尾斜杠/反斜杠、误粘贴路径等）
+        try {
+            $api = Ikuai::normalizeBaseUrl($api);
+        } catch (Exception $e) {
+            Ret::Fail(400, null, $e->getMessage());
+        }
         if ($username === '') {
             Ret::Fail(400, null, '登录用户名不能为空');
         }
@@ -116,6 +124,11 @@ class CertIkuai extends CommonController
             $api = trim(Input::Post('api', false));
             if ($api === '') {
                 Ret::Fail(400, null, '路由器地址不能为空');
+            }
+            try {
+                $api = Ikuai::normalizeBaseUrl($api);
+            } catch (Exception $e) {
+                Ret::Fail(400, null, $e->getMessage());
             }
             $data['api'] = $api;
         }

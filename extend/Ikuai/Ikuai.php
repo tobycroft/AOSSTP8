@@ -76,10 +76,55 @@ class Ikuai
      */
     public function __construct(string $baseUrl, string $sessKey = '', int $timeout = 15, bool $verifyCertificate = false)
     {
-        $this->baseUrl = rtrim(trim($baseUrl), '/');
+        $this->baseUrl = self::normalizeBaseUrl($baseUrl);
         $this->sessKey = $sessKey;
         $this->timeout = $timeout;
         $this->verifyCertificate = $verifyCertificate;
+    }
+
+    /**
+     * 规范化路由器地址
+     *
+     * 兼容用户在后台手填的常见写法：缺少协议、结尾多余斜杠/反斜杠、
+     * 整段粘贴带路径的地址（如 http://10.0.0.125:9600/#/system-setting/security），
+     * 统一整理为 scheme://host[:port]
+     *
+     * @throws Exception
+     */
+    public static function normalizeBaseUrl(string $baseUrl): string
+    {
+        $url = trim($baseUrl);
+        if ($url === '') {
+            throw new Exception('路由器地址不能为空');
+        }
+
+        // 反斜杠统一按斜杠处理，兼容 Windows 习惯的粘贴
+        $url = str_replace('\\', '/', $url);
+
+        // 未填写协议时默认 http
+        if (!preg_match('~^[a-z][a-z0-9+.-]*://~i', $url)) {
+            $url = 'http://' . $url;
+        }
+
+        $parts = parse_url($url);
+        if ($parts === false || empty($parts['host'])) {
+            throw new Exception('路由器地址格式不正确: ' . $baseUrl);
+        }
+
+        $scheme = strtolower($parts['scheme'] ?? 'http');
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            throw new Exception('路由器地址仅支持 http/https: ' . $baseUrl);
+        }
+
+        $host = $parts['host'];
+        // IPv6 地址补回中括号
+        if (str_contains($host, ':') && !str_starts_with($host, '[')) {
+            $host = '[' . $host . ']';
+        }
+
+        $port = isset($parts['port']) ? ':' . $parts['port'] : '';
+
+        return $scheme . '://' . $host . $port;
     }
 
     public function getError(): string
