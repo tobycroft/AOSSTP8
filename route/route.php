@@ -49,6 +49,7 @@
     \think\facade\Route::any('admin/cert_url/autoSSL', '\app\admin\controller\CertUrl@autoSSL');
     \think\facade\Route::any('admin/cert_url/autoMailSSL', '\app\admin\controller\CertUrl@autoMailSSL');
     \think\facade\Route::any('admin/cert_url/deployIkuai', '\app\admin\controller\CertUrl@deployIkuai');
+    \think\facade\Route::any('admin/cert_url/deployPve', '\app\admin\controller\CertUrl@deployPve');
     \think\facade\Route::any('admin/cert_url', '\app\admin\controller\CertUrl@index');
     \think\facade\Route::any('admin/cert_website/batchDelete', '\app\admin\controller\CertWebsite@batchDelete');
     \think\facade\Route::any('admin/cert_website/toggleStatus', '\app\admin\controller\CertWebsite@toggleStatus');
@@ -59,6 +60,13 @@
     \think\facade\Route::any('admin/cert_ikuai/toggleStatus', '\app\admin\controller\CertIkuai@toggleStatus');
     \think\facade\Route::any('admin/cert_ikuai/batchDelete', '\app\admin\controller\CertIkuai@batchDelete');
     \think\facade\Route::any('admin/cert_ikuai', '\app\admin\controller\CertIkuai@index');
+    \think\facade\Route::any('admin/cert_pve/testConnection', '\app\admin\controller\CertPve@testConnection');
+    \think\facade\Route::any('admin/cert_pve/deploy', '\app\admin\controller\CertPve@deploy');
+    \think\facade\Route::any('admin/cert_pve/deployAll', '\app\admin\controller\CertPve@deployAll');
+    \think\facade\Route::any('admin/cert_pve/toggleStatus', '\app\admin\controller\CertPve@toggleStatus');
+    \think\facade\Route::any('admin/cert_pve/batchDelete', '\app\admin\controller\CertPve@batchDelete');
+    \think\facade\Route::any('admin/cert_pve/certificate', '\app\admin\controller\CertPve@certificate');
+    \think\facade\Route::any('admin/cert_pve', '\app\admin\controller\CertPve@index');
     \think\facade\Route::any('admin/cert_log', '\app\admin\controller\CertLog@index');
     \think\facade\Route::any('admin/attachment', '\app\admin\controller\Attachment@index');
     \think\facade\Route::any('admin/attachment_token', '\app\admin\controller\AttachmentToken@index');

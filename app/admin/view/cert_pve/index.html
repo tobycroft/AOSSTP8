@@ -1,0 +1,493 @@
+{extend name="layout/base" /}
+{block name="content"}
+<style>
+.modal-box-wide { width: 640px; max-width: 95%; }
+.cert-preview { max-height: 30vh; overflow: auto; background: #f7f8fa; padding: 12px; border-radius: 6px; font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+.form-hint { color: #999; font-size: 12px; line-height: 1.6; margin-top: 4px; }
+</style>
+<div class="toolbar">
+    <h2>Proxmox VE 证书</h2>
+    <div>
+        <button class="btn btn-danger" onclick="doBatchDelete()" style="display:none;" id="batchDeleteBtn">批量删除</button>
+        <button class="btn btn-success" onclick="doDeployAll(this)" id="deployAllBtn">一键下发</button>
+        <button class="btn btn-primary" onclick="openCreate()">新增节点</button>
+    </div>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+            <th>ID</th>
+            <th>API 地址</th>
+            <th>节点</th>
+            <th>Token 标识</th>
+            <th>密钥</th>
+            <th>绑定证书</th>
+            <th>上次下发</th>
+            <th>最近错误</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td><input type="checkbox" class="item-checkbox" value="{$item.id}" onchange="updateBatchDeleteBtn()"></td>
+            <td>{$item.id}</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item.api}</td>
+            <td>{$item.node}</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item.token_id}</td>
+            <td>{if $item.has_secret}<span class="status-badge active">已配置</span>{else/}<span class="status-badge inactive">未配置</span>{/if}</td>
+            <td>{$item.cert_name}</td>
+            <td>
+                {$item.last_deploy_time}
+                {if $item.last_deploy_status == 1}
+                <span class="status-badge success">成功</span>
+                {elseif $item.last_deploy_status == 0}
+                <span class="status-badge fail">失败</span>
+                {/if}
+            </td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.last_error}">{$item.last_error}</td>
+            <td>
+                <span class="status-badge {if $item.status==1}active{else/}inactive{/if}" data-id="{$item.id}" onclick="toggleStatus(this)" style="cursor:pointer;">
+                    {if $item.status==1}启用{else/}禁用{/if}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-success" data-id="{$item.id}" onclick="doDeploy(this)">下发证书</button>
+                <button class="btn btn-sm btn-primary" data-id="{$item.id}" onclick="doTest(this)">测试连接</button>
+                <button class="btn btn-sm btn-edit" data-id="{$item.id}" onclick="doCertificate(this)">查看证书</button>
+                <button class="btn btn-sm btn-edit" data-id="{$item.id}" data-api="{$item.api}" data-node="{$item.node}" data-token-id="{$item.token_id}" data-cert-name="{$item.cert_name}" data-verify-tls="{$item.verify_tls}" data-restart-proxy="{$item.restart_proxy}" data-status="{$item.status}" onclick="openEdit(this)">编辑</button>
+                <button class="btn btn-sm btn-edit" data-api="{$item.api}" data-node="{$item.node}" data-token-id="{$item.token_id}" data-cert-name="{$item.cert_name}" data-verify-tls="{$item.verify_tls}" data-restart-proxy="{$item.restart_proxy}" data-status="{$item.status}" onclick="copyNode(this)">复制</button>
+                <button class="btn btn-sm btn-del" data-id="{$item.id}" onclick="doDelete(this)">删除</button>
+            </td>
+        </tr>
+        {/foreach}
+        {if empty($list)}
+        <tr>
+            <td colspan="11" style="text-align:center;color:#999;">暂无节点，点击右上角"新增节点"添加 Proxmox VE 节点</td>
+        </tr>
+        {/if}
+    </tbody>
+</table>
+{if $totalPages > 1}
+<div class="pagination">
+    {if $page > 1}
+    <a href="/admin/cert_pve?page={$prevPage}">上一页</a>
+    {else/}
+    <a class="disabled">上一页</a>
+    {/if}
+    <span class="ellipsis">{$page} / {$totalPages}（共 {$total} 条）</span>
+    {if $page < $totalPages}
+    <a href="/admin/cert_pve?page={$nextPage}">下一页</a>
+    {else/}
+    <a class="disabled">下一页</a>
+    {/if}
+</div>
+{/if}
+<div class="modal" id="pveModal">
+    <div class="modal-box">
+        <h3 id="modalTitle">新增节点</h3>
+        <input type="hidden" id="editId" value="">
+        <div class="form-group">
+            <label>API 地址</label>
+            <input type="text" id="formApi" placeholder="https://10.0.0.10:8006">
+            <div class="form-hint">填 PVE 管理地址，缺协议时按 https 处理；不要填 /api2/json 等接口路径。</div>
+        </div>
+        <div class="form-group">
+            <label>节点名称</label>
+            <input type="text" id="formNode" placeholder="pve">
+            <div class="form-hint">对应 PVE 集群中的节点名，如 pve、node1。</div>
+        </div>
+        <div class="form-group">
+            <label>API Token 标识</label>
+            <input type="text" id="formTokenId" placeholder="root@pam!cert-token">
+            <div class="form-hint">格式为 user@realm!tokenid，在 PVE「数据中心 - 权限 - API 令牌」中创建。</div>
+        </div>
+        <div class="form-group">
+            <label>API Token 密钥</label>
+            <input type="password" id="formTokenSecret" placeholder="编辑时留空表示不修改">
+            <div class="form-hint">鉴权头为 Authorization: PVEAPIToken=&lt;标识&gt;=&lt;密钥&gt;；Token 需具备对应节点的 Sys.Modify 权限。</div>
+        </div>
+        <div class="form-group">
+            <label>绑定证书</label>
+            <select id="formCertName">
+                <option value="">不绑定（仅保存配置）</option>
+                {foreach $certs as $cert}
+                <option value="{$cert}">{$cert}</option>
+                {/foreach}
+            </select>
+            <div class="form-hint">证书内容取自「证书URL」中的 publickey/privatekey。</div>
+        </div>
+        <div class="form-group">
+            <label>校验 PVE 证书</label>
+            <select id="formVerifyTls">
+                <option value="0">否（PVE 自签证书选此项）</option>
+                <option value="1">是（证书受信时可选）</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>下发后重启 pveproxy</label>
+            <select id="formRestartProxy">
+                <option value="1">是（使证书立即生效）</option>
+                <option value="0">否</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>状态</label>
+            <select id="formStatus">
+                <option value="1">启用</option>
+                <option value="0">禁用</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn btn-primary" onclick="submitForm()">确定</button>
+        </div>
+    </div>
+</div>
+<div class="modal" id="certModal">
+    <div class="modal-box modal-box-wide">
+        <h3 id="certModalTitle">证书内容</h3>
+        <div style="margin-bottom:8px;font-size:13px;color:#555;">证书链（publickey）</div>
+        <pre class="cert-preview" id="certPublic"></pre>
+        <div style="margin:16px 0 8px;font-size:13px;color:#555;">私钥（privatekey）</div>
+        <pre class="cert-preview" id="certPrivate"></pre>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeCertModal()">关闭</button>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{literal}
+<script>
+function closeModal() {
+    document.getElementById('pveModal').classList.remove('show');
+}
+function closeCertModal() {
+    document.getElementById('certModal').classList.remove('show');
+}
+function fillCertSelect(value) {
+    var select = document.getElementById('formCertName');
+    var found = false;
+    for (var i = 0; i < select.options.length; i++) {
+        if (select.options[i].value === value) {
+            found = true;
+            break;
+        }
+    }
+    if (!found && value) {
+        var option = document.createElement('option');
+        option.value = value;
+        option.textContent = value + '（证书URL中不存在）';
+        select.appendChild(option);
+    }
+    select.value = value;
+}
+function resetForm() {
+    document.getElementById('formApi').value = '';
+    document.getElementById('formNode').value = '';
+    document.getElementById('formTokenId').value = '';
+    document.getElementById('formTokenSecret').value = '';
+    document.getElementById('formTokenSecret').placeholder = '编辑时留空表示不修改';
+    fillCertSelect('');
+    document.getElementById('formVerifyTls').value = '0';
+    document.getElementById('formRestartProxy').value = '1';
+    document.getElementById('formStatus').value = '1';
+}
+function openCreate() {
+    document.getElementById('modalTitle').textContent = '新增节点';
+    document.getElementById('editId').value = '';
+    resetForm();
+    document.getElementById('pveModal').classList.add('show');
+}
+function openEdit(btn) {
+    document.getElementById('modalTitle').textContent = '编辑节点';
+    document.getElementById('editId').value = btn.getAttribute('data-id');
+    document.getElementById('formApi').value = btn.getAttribute('data-api');
+    document.getElementById('formNode').value = btn.getAttribute('data-node');
+    document.getElementById('formTokenId').value = btn.getAttribute('data-token-id');
+    document.getElementById('formTokenSecret').value = '';
+    document.getElementById('formTokenSecret').placeholder = '编辑时留空表示不修改';
+    fillCertSelect(btn.getAttribute('data-cert-name'));
+    document.getElementById('formVerifyTls').value = btn.getAttribute('data-verify-tls');
+    document.getElementById('formRestartProxy').value = btn.getAttribute('data-restart-proxy');
+    document.getElementById('formStatus').value = btn.getAttribute('data-status');
+    document.getElementById('pveModal').classList.add('show');
+}
+function copyNode(btn) {
+    document.getElementById('modalTitle').textContent = '复制新增（修改地址、节点与密钥后保存）';
+    document.getElementById('editId').value = '';
+    document.getElementById('formApi').value = btn.getAttribute('data-api');
+    document.getElementById('formNode').value = btn.getAttribute('data-node');
+    document.getElementById('formTokenId').value = btn.getAttribute('data-token-id');
+    document.getElementById('formTokenSecret').value = '';
+    document.getElementById('formTokenSecret').placeholder = '复制后需重新输入 Token 密钥';
+    fillCertSelect(btn.getAttribute('data-cert-name'));
+    document.getElementById('formVerifyTls').value = btn.getAttribute('data-verify-tls');
+    document.getElementById('formRestartProxy').value = btn.getAttribute('data-restart-proxy');
+    document.getElementById('formStatus').value = btn.getAttribute('data-status');
+    document.getElementById('pveModal').classList.add('show');
+    document.getElementById('formApi').focus();
+}
+function submitForm() {
+    var id = document.getElementById('editId').value;
+    var api = document.getElementById('formApi').value;
+    var node = document.getElementById('formNode').value;
+    var tokenId = document.getElementById('formTokenId').value;
+    var tokenSecret = document.getElementById('formTokenSecret').value;
+    var certName = document.getElementById('formCertName').value;
+    var verifyTls = document.getElementById('formVerifyTls').value;
+    var restartProxy = document.getElementById('formRestartProxy').value;
+    var status = document.getElementById('formStatus').value;
+
+    if (!api) { showToast('PVE API 地址不能为空', 'warn', 2500); return; }
+    if (!node) { showToast('PVE 节点名称不能为空', 'warn', 2500); return; }
+    if (!tokenId) { showToast('API Token 标识不能为空', 'warn', 2500); return; }
+    if (!id && !tokenSecret) { showToast('API Token 密钥不能为空', 'warn', 2500); return; }
+
+    var xhr = new XMLHttpRequest();
+    var method = id ? 'POST' : 'PUT';
+    xhr.open(method, '/admin/cert_pve', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = null;
+            try { res = JSON.parse(xhr.responseText); } catch (e) {}
+            if (!res) { showToast('请求失败，请稍后重试', 'error', 5000); return; }
+            if (res.code == 0) {
+                showToast('保存成功', 'success', 1500);
+                setTimeout(function() { location.reload(); }, 800);
+            } else {
+                showToast(res.echo || '保存失败', 'error', 5000);
+            }
+        }
+    };
+    var params = 'api=' + encodeURIComponent(api)
+        + '&node=' + encodeURIComponent(node)
+        + '&token_id=' + encodeURIComponent(tokenId)
+        + '&token_secret=' + encodeURIComponent(tokenSecret)
+        + '&cert_name=' + encodeURIComponent(certName)
+        + '&verify_tls=' + verifyTls
+        + '&restart_proxy=' + restartProxy
+        + '&status=' + status;
+    if (id) params += '&id=' + id;
+    xhr.send(params);
+}
+function doDeploy(btn) {
+    var id = btn.getAttribute('data-id');
+    var label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '下发中...';
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert_pve/deploy', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            btn.disabled = false;
+            btn.textContent = label;
+            var res = null;
+            try { res = JSON.parse(xhr.responseText); } catch (e) {}
+            if (!res) { showToast('请求失败，请稍后重试', 'error', 5000); return; }
+            if (res.code == 0) {
+                showToast('证书「' + res.data.cert_name + '」已下发到节点 ' + res.data.node, 'success', 2500);
+                setTimeout(function() { location.reload(); }, 1000);
+            } else {
+                showToast(res.echo || '下发失败', 'error', 6000);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function doDeployAll(btn) {
+    var label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '下发中...';
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert_pve/deployAll', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            btn.disabled = false;
+            btn.textContent = label;
+            var res = null;
+            try { res = JSON.parse(xhr.responseText); } catch (e) {}
+            if (!res) { showToast('请求失败，请稍后重试', 'error', 5000); return; }
+            if (res.code == 0) {
+                var msg = '一键下发完成\n成功: ' + res.data.success + ' | 失败: ' + res.data.fail;
+                var detail = res.data.detail || [];
+                var shown = 0;
+                for (var i = 0; i < detail.length && shown < 3; i++) {
+                    if (!detail[i].success) {
+                        msg += '\n  [XX] ' + detail[i].api + ' (' + detail[i].node + ') - ' + detail[i].error;
+                        shown++;
+                    }
+                }
+                showToast(msg, res.data.fail > 0 ? 'warn' : 'success', 7000);
+                if (res.data.success > 0) {
+                    setTimeout(function() { location.reload(); }, 1800);
+                }
+            } else {
+                showToast(res.echo || '下发失败', 'error', 6000);
+            }
+        }
+    };
+    xhr.send('');
+}
+function doTest(btn) {
+    var id = btn.getAttribute('data-id');
+    var label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '查询中...';
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert_pve/testConnection', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            btn.disabled = false;
+            btn.textContent = label;
+            var res = null;
+            try { res = JSON.parse(xhr.responseText); } catch (e) {}
+            if (!res) { showToast('请求失败，请稍后重试', 'error', 5000); return; }
+            if (res.code == 0) {
+                var msg = '连接成功，节点 ' + res.data.node + ' 共 ' + res.data.count + ' 个证书';
+                var items = res.data.items || [];
+                for (var i = 0; i < items.length && i < 3; i++) {
+                    msg += '\n' + (items[i].filename || '-')
+                        + '\n  主题: ' + (items[i].subject || '-')
+                        + '\n  到期: ' + (items[i].notafter || '-');
+                }
+                showToast(msg, 'success', 8000);
+            } else {
+                showToast(res.echo || '连接失败', 'error', 7000);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function doCertificate(btn) {
+    var id = btn.getAttribute('data-id');
+    document.getElementById('certModalTitle').textContent = '证书内容';
+    document.getElementById('certPublic').textContent = '加载中...';
+    document.getElementById('certPrivate').textContent = '加载中...';
+    document.getElementById('certModal').classList.add('show');
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert_pve/certificate', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = null;
+            try { res = JSON.parse(xhr.responseText); } catch (e) {}
+            if (!res) {
+                document.getElementById('certPublic').textContent = '请求失败，请稍后重试';
+                document.getElementById('certPrivate').textContent = '';
+                return;
+            }
+            if (res.code == 0) {
+                document.getElementById('certModalTitle').textContent = '证书内容：' + res.data.cert_name;
+                document.getElementById('certPublic').textContent = res.data.publickey || '(空)';
+                document.getElementById('certPrivate').textContent = res.data.privatekey || '(空)';
+            } else {
+                document.getElementById('certPublic').textContent = res.echo || '获取失败';
+                document.getElementById('certPrivate').textContent = '';
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function doDelete(btn) {
+    if (!confirm('确定要删除该节点吗？')) return;
+    var id = btn.getAttribute('data-id');
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/cert_pve', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                showToast('删除成功', 'success', 1500);
+                setTimeout(function() { location.reload(); }, 800);
+            } else {
+                showToast(res.echo || '删除失败', 'error', 5000);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function toggleStatus(el) {
+    var id = el.getAttribute('data-id');
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert_pve/toggleStatus', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                if (res.data.status == 1) {
+                    el.textContent = '启用';
+                    el.className = 'status-badge active';
+                    showToast('已启用', 'success', 1500);
+                } else {
+                    el.textContent = '禁用';
+                    el.className = 'status-badge inactive';
+                    showToast('已禁用', 'warn', 1500);
+                }
+            } else {
+                showToast(res.echo || '操作失败', 'error', 5000);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function toggleSelectAll() {
+    var checked = document.getElementById('selectAll').checked;
+    var boxes = document.querySelectorAll('.item-checkbox');
+    for (var i = 0; i < boxes.length; i++) {
+        boxes[i].checked = checked;
+    }
+    updateBatchDeleteBtn();
+}
+function updateBatchDeleteBtn() {
+    var checked = document.querySelectorAll('.item-checkbox:checked');
+    var btn = document.getElementById('batchDeleteBtn');
+    btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
+}
+function doBatchDelete() {
+    var checked = document.querySelectorAll('.item-checkbox:checked');
+    if (checked.length === 0) {
+        showToast('请先勾选要删除的节点', 'warn', 2500);
+        return;
+    }
+    if (!confirm('确定要删除选中的 ' + checked.length + ' 个节点吗？')) return;
+    var ids = [];
+    for (var i = 0; i < checked.length; i++) {
+        ids.push(checked[i].value);
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/cert_pve/batchDelete', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                showToast('删除成功', 'success', 1500);
+                setTimeout(function() { location.reload(); }, 800);
+            } else {
+                showToast(res.echo || '删除失败', 'error', 5000);
+            }
+        }
+    };
+    xhr.send('ids=' + encodeURIComponent(JSON.stringify(ids)));
+}
+</script>
+{/literal}
+{/block}

@@ -4,6 +4,7 @@ namespace app\v1\cert\controller;
 
 use app\v1\cert\action\ConfigAction;
 use app\v1\cert\action\IkuaiAction;
+use app\v1\cert\action\PveAction;
 use app\v1\cert\action\SiteAction;
 use app\v1\cert\model\CertLogModel;
 use app\v1\cert\model\CertModel;
@@ -227,6 +228,23 @@ class bt extends CommonController
             ];
         }
 
+        // Proxmox VE 节点：按绑定的证书名称下发，单台失败不影响其他面板结果
+        try {
+            $pveRets = PveAction::autossl($name);
+            $rets['success'] += $pveRets['success'];
+            $rets['fail'] += $pveRets['fail'];
+            $rets['detail'] = array_merge($rets['detail'], $pveRets['detail']);
+        } catch (Exception $e) {
+            $rets['fail']++;
+            $rets['detail'][] = [
+                'type' => 'pve',
+                'api' => '',
+                'cert_name' => $name,
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+
         \Ret::Success(0, $rets);
     }
 
@@ -246,6 +264,24 @@ class bt extends CommonController
         }
 
         \Ret::Success(0, IkuaiAction::autossl($name));
+    }
+
+    /**
+     * 下发证书到所有绑定了该证书的 Proxmox VE 节点
+     */
+    public function savepvesll()
+    {
+        $name = Input::Get('cert');
+        if (!CertUrlModel::where('cert', $name)->find()) {
+            \Ret::Fail(404, null, '未找到证书项目');
+        }
+        try {
+            SiteAction::updatessl($name);
+        } catch (Exception $e) {
+            \Ret::Fail('500', null, $e->getMessage());
+        }
+
+        \Ret::Success(0, PveAction::autossl($name));
     }
 
     public function savepanelssl()

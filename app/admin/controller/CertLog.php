@@ -17,6 +17,7 @@ class CertLog extends CommonController
         'mail' => 'Mail',
         'panel' => 'Panel',
         'ikuai' => '爱快',
+        'pve' => 'Proxmox VE',
     ];
 
     public function initialize()
@@ -112,6 +113,17 @@ class CertLog extends CommonController
                     return '登录失败：' . ($data['error'] ?? '未知错误');
                 case 'auto_relogin':
                     return '鉴权失效，已自动重新登录（第 ' . intval($data['attempt'] ?? 1) . ' 次）';
+            }
+
+            return $success === 1 ? '成功' : '失败：' . ($data['error'] ?? '未知错误');
+        }
+
+        if ($type === 'pve') {
+            switch ($event) {
+                case 'save_cert':
+                    return $success === 1
+                        ? '证书下发成功'
+                        : '证书下发失败：' . ($data['error'] ?? '未知错误');
             }
 
             return $success === 1 ? '成功' : '失败：' . ($data['error'] ?? '未知错误');

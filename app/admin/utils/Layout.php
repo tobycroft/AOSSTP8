@@ -17,6 +17,7 @@ class Layout
                 'cert_url' => ['label' => '证书URL', 'url' => '/admin/cert_url'],
                 'cert_website' => ['label' => '证书站点', 'url' => '/admin/cert_website'],
                 'cert_ikuai' => ['label' => '爱快路由器', 'url' => '/admin/cert_ikuai'],
+                'cert_pve' => ['label' => 'Proxmox VE', 'url' => '/admin/cert_pve'],
                 'cert_log' => ['label' => '操作日志', 'url' => '/admin/cert_log'],
             ],
         ],
