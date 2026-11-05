@@ -20,6 +20,7 @@
             <th>ID</th>
             <th>API 地址</th>
             <th>节点</th>
+            <th>备注</th>
             <th>Token 标识</th>
             <th>密钥</th>
             <th>绑定证书</th>
@@ -36,6 +37,7 @@
             <td>{$item.id}</td>
             <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item.api}</td>
             <td>{$item.node}</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.remark}">{$item.remark}</td>
             <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{$item.token_id}</td>
             <td>{if $item.has_secret}<span class="status-badge active">已配置</span>{else/}<span class="status-badge inactive">未配置</span>{/if}</td>
             <td>{$item.cert_name}</td>
@@ -57,15 +59,15 @@
                 <button class="btn btn-sm btn-success" data-id="{$item.id}" onclick="doDeploy(this)">下发证书</button>
                 <button class="btn btn-sm btn-primary" data-id="{$item.id}" onclick="doTest(this)">测试连接</button>
                 <button class="btn btn-sm btn-edit" data-id="{$item.id}" onclick="doCertificate(this)">查看证书</button>
-                <button class="btn btn-sm btn-edit" data-id="{$item.id}" data-api="{$item.api}" data-node="{$item.node}" data-token-id="{$item.token_id}" data-cert-name="{$item.cert_name}" data-verify-tls="{$item.verify_tls}" data-restart-proxy="{$item.restart_proxy}" data-status="{$item.status}" onclick="openEdit(this)">编辑</button>
-                <button class="btn btn-sm btn-edit" data-api="{$item.api}" data-node="{$item.node}" data-token-id="{$item.token_id}" data-cert-name="{$item.cert_name}" data-verify-tls="{$item.verify_tls}" data-restart-proxy="{$item.restart_proxy}" data-status="{$item.status}" onclick="copyNode(this)">复制</button>
+                <button class="btn btn-sm btn-edit" data-id="{$item.id}" data-api="{$item.api}" data-node="{$item.node}" data-remark="{$item.remark}" data-token-id="{$item.token_id}" data-cert-name="{$item.cert_name}" data-verify-tls="{$item.verify_tls}" data-restart-proxy="{$item.restart_proxy}" data-status="{$item.status}" onclick="openEdit(this)">编辑</button>
+                <button class="btn btn-sm btn-edit" data-api="{$item.api}" data-node="{$item.node}" data-remark="{$item.remark}" data-token-id="{$item.token_id}" data-cert-name="{$item.cert_name}" data-verify-tls="{$item.verify_tls}" data-restart-proxy="{$item.restart_proxy}" data-status="{$item.status}" onclick="copyNode(this)">复制</button>
                 <button class="btn btn-sm btn-del" data-id="{$item.id}" onclick="doDelete(this)">删除</button>
             </td>
         </tr>
         {/foreach}
         {if empty($list)}
         <tr>
-            <td colspan="11" style="text-align:center;color:#999;">暂无节点，点击右上角"新增节点"添加 Proxmox VE 节点</td>
+            <td colspan="12" style="text-align:center;color:#999;">暂无节点，点击右上角"新增节点"添加 Proxmox VE 节点</td>
         </tr>
         {/if}
     </tbody>
@@ -98,6 +100,10 @@
             <label>节点名称</label>
             <input type="text" id="formNode" placeholder="pve">
             <div class="form-hint">对应 PVE 集群中的节点名，如 pve、node1。</div>
+        </div>
+        <div class="form-group">
+            <label>节点备注</label>
+            <input type="text" id="formRemark" placeholder="请输入备注">
         </div>
         <div class="form-group">
             <label>API Token 标识</label>
@@ -188,6 +194,7 @@ function fillCertSelect(value) {
 function resetForm() {
     document.getElementById('formApi').value = '';
     document.getElementById('formNode').value = '';
+    document.getElementById('formRemark').value = '';
     document.getElementById('formTokenId').value = '';
     document.getElementById('formTokenSecret').value = '';
     document.getElementById('formTokenSecret').placeholder = '编辑时留空表示不修改';
@@ -207,6 +214,7 @@ function openEdit(btn) {
     document.getElementById('editId').value = btn.getAttribute('data-id');
     document.getElementById('formApi').value = btn.getAttribute('data-api');
     document.getElementById('formNode').value = btn.getAttribute('data-node');
+    document.getElementById('formRemark').value = btn.getAttribute('data-remark');
     document.getElementById('formTokenId').value = btn.getAttribute('data-token-id');
     document.getElementById('formTokenSecret').value = '';
     document.getElementById('formTokenSecret').placeholder = '编辑时留空表示不修改';
@@ -221,6 +229,7 @@ function copyNode(btn) {
     document.getElementById('editId').value = '';
     document.getElementById('formApi').value = btn.getAttribute('data-api');
     document.getElementById('formNode').value = btn.getAttribute('data-node');
+    document.getElementById('formRemark').value = btn.getAttribute('data-remark');
     document.getElementById('formTokenId').value = btn.getAttribute('data-token-id');
     document.getElementById('formTokenSecret').value = '';
     document.getElementById('formTokenSecret').placeholder = '复制后需重新输入 Token 密钥';
@@ -235,6 +244,7 @@ function submitForm() {
     var id = document.getElementById('editId').value;
     var api = document.getElementById('formApi').value;
     var node = document.getElementById('formNode').value;
+    var remark = document.getElementById('formRemark').value;
     var tokenId = document.getElementById('formTokenId').value;
     var tokenSecret = document.getElementById('formTokenSecret').value;
     var certName = document.getElementById('formCertName').value;
@@ -267,6 +277,7 @@ function submitForm() {
     };
     var params = 'api=' + encodeURIComponent(api)
         + '&node=' + encodeURIComponent(node)
+        + '&remark=' + encodeURIComponent(remark)
         + '&token_id=' + encodeURIComponent(tokenId)
         + '&token_secret=' + encodeURIComponent(tokenSecret)
         + '&cert_name=' + encodeURIComponent(certName)

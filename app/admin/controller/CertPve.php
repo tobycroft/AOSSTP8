@@ -53,6 +53,7 @@ class CertPve extends CommonController
                 'id' => $item['id'],
                 'api' => $item['api'],
                 'node' => $item['node'],
+                'remark' => $item['remark'],
                 'token_id' => $item['token_id'],
                 'cert_name' => $item['cert_name'],
                 'has_secret' => (string)$item['token_secret'] !== '',
@@ -214,6 +215,7 @@ class CertPve extends CommonController
         return [
             'api' => $read('api', ''),
             'node' => $read('node', ''),
+            'remark' => $read('remark', ''),
             'token_id' => $read('token_id', ''),
             'token_secret' => $read('token_secret', ''),
             'cert_name' => $read('cert_name', ''),

@@ -312,6 +312,7 @@ class CertPveService
         $data = [
             'api' => $api,
             'node' => $node,
+            'remark' => trim((string)($input['remark'] ?? '')),
             'token_id' => $tokenId,
             'cert_name' => trim((string)($input['cert_name'] ?? '')),
             'verify_tls' => intval($input['verify_tls'] ?? 0) ? 1 : 0,
