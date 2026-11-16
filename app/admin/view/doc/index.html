@@ -93,6 +93,7 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
         <a class="sub" href="#doc-portal-register">注册</a>
         <a href="#doc-sign">签名与加密</a>
         <a class="sub" href="#doc-sign-tls">传输加密</a>
+        <a class="sub" href="#doc-sign-envelope">v3 凭证信封</a>
         <a class="sub" href="#doc-sign-md5">MD5 签名</a>
         <a class="sub" href="#doc-sign-rsa">RSA 签名</a>
         <a class="sub" href="#doc-sign-cert">证书私钥</a>
@@ -108,7 +109,7 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
             <h1>开放接口文档</h1>
             <p>本文档说明系统对外接口的<strong style="color:#fff;">访问方式</strong>（凭据与鉴权）、<strong style="color:#fff;">链接方式</strong>（地址拼装与路由规则）、<strong style="color:#fff;">加密方式</strong>（签名与密钥），以及各业务域的接口清单、统一响应结构与证书接口链路。内容按现有代码实现整理。</p>
             <div class="meta">
-                <span>版本 v1.1</span>
+                <span>版本 v1.3</span>
                 <span>更新 2026-11-16</span>
                 <span>接口域名 aoss.tuuz.cc</span>
                 <span>默认时区 Asia/Shanghai</span>
@@ -137,7 +138,7 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
                 <tbody>
                     <tr><td>文件 / 短信 / 存储</td><td>项目令牌（<code class="inline">ao_oss.token</code>）</td><td>文件类：URL 参数 <code class="inline">token</code>；短信：POST 参数 <code class="inline">name</code></td><td><code class="inline">OssModel::api_find_token</code></td></tr>
                     <tr><td>证书管理</td><td><code class="inline">appname</code> + <code class="inline">appkey</code>（<code class="inline">ao_cert</code>）</td><td>GET / POST 参数</td><td><code class="inline">/v1/cert/*</code> 初始化</td></tr>
-                    <tr><td>AI 能力</td><td>AI 接口配置中的项目 token</td><td><code class="inline">token</code> 参数（GET / POST 均可）</td><td><code class="inline">AiModel::api_find_token</code></td></tr>
+                    <tr><td>AI 能力</td><td>项目 Secret（<code class="inline">ao_ai.secret</code>，服务端签发的 64 位随机串），同时作为信封加密密钥</td><td>请求头 <code class="inline">X-Aoss-Ts</code> / <code class="inline">X-Aoss-Kid</code> / <code class="inline">X-Aoss-Auth</code>，secret 不出现在请求中</td><td><code class="inline">AiModel::api_find_kid</code> + <code class="inline">Aoss\Envelope::open</code></td></tr>
                     <tr><td>抖店</td><td><code class="inline">appid</code> + <code class="inline">appsecret</code> + <code class="inline">salt</code> + <code class="inline">sign</code>，或 <code class="inline">token</code></td><td>POST / GET 参数</td><td><code class="inline">/v2/doudian/*</code> 初始化</td></tr>
                     <tr><td>上传服务</td><td>一次性临时令牌</td><td>URL 参数 <code class="inline">token</code></td><td><code class="inline">ao_file_token</code></td></tr>
                 </tbody>
@@ -228,11 +229,12 @@ Route::any(':version/:module/:controller/:function',
             <table>
                 <thead><tr><th style="width:150px;">能力</th><th style="width:400px;">方法与链接</th><th>关键参数</th></tr></thead>
                 <tbody>
-                    <tr><td>对话补全</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/chat/completions?token={AI令牌}</code></td><td><code class="inline">messages, model, temperature, max_tokens, tools</code></td></tr>
-                    <tr><td>Responses</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/responses/index?token={AI令牌}</code></td><td>按上游接口透传</td></tr>
-                    <tr><td>Messages</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/messages/index?token={AI令牌}</code></td><td>按上游接口透传</td></tr>
+                    <tr><td>对话补全</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/chat/completions</code></td><td><code class="inline">messages, model, temperature, max_tokens, tools</code></td></tr>
+                    <tr><td>Responses</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/responses/index</code></td><td>按上游接口透传</td></tr>
+                    <tr><td>Messages</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/messages/index</code></td><td>按上游接口透传</td></tr>
                 </tbody>
             </table>
+            <div class="note warn"><strong>v3 已废弃 <code class="inline">?token=</code> 明文传参</strong>：请求必须携带 <code class="inline">X-Aoss-Ts</code>、<code class="inline">X-Aoss-Kid</code>、<code class="inline">X-Aoss-Auth</code> 三个鉴权字段，<code class="inline">auth</code> 为 <code class="inline">secret|ts</code> 的 AES-256-GCM 密文。协议与代码示例见 <a href="#doc-sign-envelope" style="color:#1677ff;">v3 凭证信封</a>。无法设置请求头的调用方可改用同名表单参数 <code class="inline">ts</code> / <code class="inline">kid</code> / <code class="inline">auth</code>。</div>
 
             <h3 id="doc-api-hook">Hook</h3>
             <table>
@@ -280,7 +282,46 @@ Route::any(':version/:module/:controller/:function',
             <h2>签名与加密</h2>
 
             <h3 id="doc-sign-tls">传输加密</h3>
-            <p>所有生产入口强制 HTTPS：接口与后台 <code class="inline">aoss.tuuz.cc</code>、上传服务 <code class="inline">upload.tuuz.cc:433</code>、图片服务 <code class="inline">image.tuuz.cc:444</code>。系统未启用应用层对称加密（无 AES 封装），敏感数据依赖传输层加密与访问控制。</p>
+            <p>所有生产入口强制 HTTPS：接口与后台 <code class="inline">aoss.tuuz.cc</code>、上传服务 <code class="inline">upload.tuuz.cc:433</code>、图片服务 <code class="inline">image.tuuz.cc:444</code>。除 v3 的凭证信封外，其余接口以传输层加密与访问控制为主，未启用应用层加密。</p>
+
+            <h3 id="doc-sign-envelope">v3 凭证信封</h3>
+            <p>v3 接口不存在「项目 token」这一概念：<code class="inline">ao_ai.name</code> 只是人类可读标签，<code class="inline">ao_ai.secret</code> 是服务端签发的<strong>唯一凭证</strong>（64 位十六进制，32 字节熵），同时作为信封加密密钥。调用方据此派生密钥，将「<code class="inline">secret|ts</code>」加密为单段密文提交，服务端解密后校验。请求链路上只出现 secret 的哈希前缀与密文，凭证全程不落 URL、请求体与访问日志。</p>
+            <table>
+                <thead><tr><th style="width:170px;">字段</th><th style="width:330px;">内容</th><th>说明</th></tr></thead>
+                <tbody>
+                    <tr><td><code class="inline">X-Aoss-Ts</code></td><td>秒级 Unix 时间戳，每次请求动态生成</td><td>与服务端偏差超过 <strong>300 秒</strong>即拒绝</td></tr>
+                    <tr><td><code class="inline">X-Aoss-Kid</code></td><td><code class="inline">substr(sha256(secret), 0, 8)</code></td><td>仅用于服务端定位记录，不可逆推 secret</td></tr>
+                    <tr><td><code class="inline">X-Aoss-Auth</code></td><td><code class="inline">v1.base64url(iv ‖ ciphertext ‖ tag)</code></td><td>AES-256-GCM 密文，明文为 <code class="inline">secret|ts</code></td></tr>
+                </tbody>
+            </table>
+            <ul>
+                <li>密钥派生：<code class="inline">key = hash_hkdf('sha256', secret, 32, 'aoss.v3.envelope')</code>，与记录一一对应，更换 secret 即更换密钥。</li>
+                <li>IV 每次随机 12 字节，同一 secret 的密文逐次不同；GCM 认证标签保证密文不可篡改；版本号 <code class="inline">v1</code> 同时作为 AAD 绑定。</li>
+                <li>服务端依次校验：时间窗 → <code class="inline">kid</code> 定位记录 → 解密并验证标签 → 密文内 secret 与记录完全一致 → 内层 <code class="inline">ts</code> 与外层一致 → 状态启用。</li>
+                <li>服务端实现：<code class="inline">extend/Aoss/Envelope.php</code>；调用方可直接复用该类的 <code class="inline">seal()</code> 方法。</li>
+            </ul>
+            <pre class="code"><span class="lang">PHP</span>use Aoss\Envelope;
+
+$secret = '项目Secret';  // ao_ai.secret，后台「复制」取得，同时是加密密钥
+$ts     = time();
+
+$headers = [
+    'X-Aoss-Ts'   => (string)$ts,
+    'X-Aoss-Kid'  => Envelope::kid($secret),
+    'X-Aoss-Auth' => Envelope::seal($secret, $ts),
+];
+
+// POST https://aoss.tuuz.cc/v3/ai/chat/completions
+// body: messages=[{"role":"user","content":"你好"}]</pre>
+            <pre class="code"><span class="lang">cURL</span>TS=$(date +%s)
+# AUTH 由 Envelope::seal($secret, $ts) 生成
+curl -s https://aoss.tuuz.cc/v3/ai/chat/completions \
+  -H "X-Aoss-Ts: $TS" \
+  -H "X-Aoss-Kid: 9f2c1a7b" \
+  -H "X-Aoss-Auth: v1.xxxxxxxx" \
+  -d 'messages=[{"role":"user","content":"你好"}]'</pre>
+            <div class="note">时间窗依赖服务端时钟，客户端需启用 NTP；返回 <code class="inline">401</code> 且 <code class="inline">data.server_time</code> 有值时，按该值校准客户端时间。secret 泄露时在后台「AI接口配置」点击「重置Secret」，旧 secret 与旧 <code class="inline">kid</code> 立即失效，调用方需重新分发。</div>
+            <div class="note warn">secret 由<strong>服务端签发</strong>，不接受人工指定——信封的机密性上限等于 secret 的熵，64 位十六进制（32 字节）是强制格式。信封只保证凭证不落地明文与不可篡改；相同的 <code class="inline">auth</code> 在 300 秒窗口内理论上可被重放一次，若需彻底封堵，应在网关层叠加请求去重。</div>
 
             <h3 id="doc-sign-md5">MD5 签名</h3>
             <p>现有三处签名统一为<strong>小写 32 位 MD5</strong>，用于防篡改与防重放，不承担加密职责：</p>

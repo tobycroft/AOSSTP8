@@ -97,6 +97,7 @@
 
     // AI管理
     \think\facade\Route::any('admin/ai/test', '\app\admin\controller\Ai@test');
+    \think\facade\Route::any('admin/ai/resetSecret', '\app\admin\controller\Ai@resetSecret');
     \think\facade\Route::any('admin/ai', '\app\admin\controller\Ai@index');
 
     \think\facade\Route::any('admin', '\app\admin\controller\Index@index');

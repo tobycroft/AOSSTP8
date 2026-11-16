@@ -4,7 +4,7 @@
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <h2>AI接口配置</h2>
         <div class="search-box">
-            <input type="text" id="searchInput" placeholder="搜索项目名称/Token" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 220px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
+            <input type="text" id="searchInput" placeholder="搜索项目名称，或粘贴 Secret 精确定位" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 280px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
             <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
         </div>
         <button class="btn btn-primary" onclick="openCreate()">新增项目</button>
@@ -15,7 +15,8 @@
         <tr>
             <th>ID</th>
             <th>项目名称</th>
-            <th>项目Token</th>
+            <th>Secret（v3 凭证）</th>
+            <th>kid</th>
             <th>模型</th>
             <th>API密钥</th>
             <th>Base URL</th>
@@ -28,14 +29,19 @@
         <tr>
             <td>{$item.id}</td>
             <td>{$item.name}</td>
-            <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.project}">{$item.project}</td>
+            <td style="white-space:nowrap;">
+                <span style="font-family:monospace;font-size:12px;{if !$item.secret_strong}color:#fa541c;{/if}" title="{$item.secret}">{$item.secret_mask}</span>
+                <button class="btn btn-sm" style="background:#595959;color:#fff;margin-left:4px;padding:2px 8px;font-size:12px;" onclick="copySecret('{$item.secret}')">复制</button>
+            </td>
+            <td style="font-family:monospace;font-size:12px;color:#8c8c8c;">{$item.kid}</td>
             <td>{$item.model}</td>
             <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.api_key}">{$item.api_key_short}</td>
             <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.base_url}">{$item.base_url}</td>
             <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
             <td>
-                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', '{$item.project|addslashes}', '{$item.api_key|addslashes}', '{$item.base_url|addslashes}', '{$item.model|addslashes}', {$item.status})">编辑</button>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', '{$item.api_key|addslashes}', '{$item.base_url|addslashes}', '{$item.model|addslashes}', {$item.status})">编辑</button>
                 <button class="btn btn-sm" style="background:#722ed1;color:#fff;margin-right:4px;" onclick="openTest({$item.id}, '{$item.name|addslashes}')">测试</button>
+                <button class="btn btn-sm" style="background:#fa8c16;color:#fff;margin-right:4px;" onclick="doResetSecret({$item.id})">重置Secret</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
         </tr>
@@ -49,11 +55,13 @@
         <input type="hidden" id="editId" value="">
         <div class="form-group">
             <label>项目名称</label>
-            <input type="text" id="formName" placeholder="请输入项目名称">
+            <input type="text" id="formName" placeholder="人类可读的标签，例如「前端客服」">
         </div>
-        <div class="form-group">
-            <label>项目Token</label>
-            <input type="text" id="formProject" placeholder="调用接口时的token参数">
+        <div class="form-group" id="secretNote" style="display:none;">
+            <label>v3 凭证（Secret）</label>
+            <div style="padding:8px 10px;border:1px solid #ffe58f;background:#fffbe6;border-radius:4px;font-size:13px;color:#874d00;">
+                凭证由服务端自动签发，创建后仅展示一次；如需更换请在列表点「重置Secret」。凭证本身不可手动指定。
+            </div>
         </div>
         <div class="form-group">
             <label>API 密钥</label>
@@ -110,6 +118,18 @@ function doSearch() {
     if (search) url += '&search=' + encodeURIComponent(search);
     window.location.href = url;
 }
+function copySecret(secret) {
+    if (!secret) { alert('该记录没有 secret'); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(secret).then(function() {
+            showToast('Secret 已复制', 'success');
+        }, function() {
+            prompt('请手动复制：', secret);
+        });
+    } else {
+        prompt('请手动复制：', secret);
+    }
+}
 function closeModal() {
     document.getElementById('aiModal').classList.remove('show');
 }
@@ -117,34 +137,32 @@ function openCreate() {
     document.getElementById('modalTitle').textContent = '新增项目';
     document.getElementById('editId').value = '';
     document.getElementById('formName').value = '';
-    document.getElementById('formProject').value = '';
     document.getElementById('formApiKey').value = '';
     document.getElementById('formModel').value = defaultModel;
     document.getElementById('formBaseUrl').value = defaultBaseUrl;
     document.getElementById('formStatus').value = '1';
+    document.getElementById('secretNote').style.display = '';
     document.getElementById('aiModal').classList.add('show');
 }
-function openEdit(id, name, project, apiKey, baseUrl, model, status) {
+function openEdit(id, name, apiKey, baseUrl, model, status) {
     document.getElementById('modalTitle').textContent = '编辑项目';
     document.getElementById('editId').value = id;
     document.getElementById('formName').value = name;
-    document.getElementById('formProject').value = project;
     document.getElementById('formApiKey').value = apiKey;
     document.getElementById('formModel').value = model;
     document.getElementById('formBaseUrl').value = baseUrl;
     document.getElementById('formStatus').value = status;
+    document.getElementById('secretNote').style.display = 'none';
     document.getElementById('aiModal').classList.add('show');
 }
 function submitForm() {
     var id = document.getElementById('editId').value;
     var name = document.getElementById('formName').value;
-    var project = document.getElementById('formProject').value;
     var apiKey = document.getElementById('formApiKey').value;
     var model = document.getElementById('formModel').value;
     var baseUrl = document.getElementById('formBaseUrl').value;
     var status = document.getElementById('formStatus').value;
     if (!name) { alert('项目名称不能为空'); return; }
-    if (!project) { alert('项目Token不能为空'); return; }
     var xhr = new XMLHttpRequest();
     var method = id ? 'POST' : 'PUT';
     xhr.open(method, '/admin/ai', true);
@@ -152,15 +170,19 @@ function submitForm() {
     xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4) {
-            var res = JSON.parse(xhr.responseText);
+            var res;
+            try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
             if (res.code == 0) {
+                if (!id && res.data && res.data.secret) {
+                    prompt('项目已创建，Secret 仅此处展示一次（关闭后可在列表点「重置Secret」重新签发）：', res.data.secret);
+                }
                 location.reload();
             } else {
                 alert(res.echo);
             }
         }
     };
-    var params = 'name=' + encodeURIComponent(name) + '&project=' + encodeURIComponent(project) + '&api_key=' + encodeURIComponent(apiKey) + '&model=' + encodeURIComponent(model) + '&base_url=' + encodeURIComponent(baseUrl) + '&status=' + status;
+    var params = 'name=' + encodeURIComponent(name) + '&api_key=' + encodeURIComponent(apiKey) + '&model=' + encodeURIComponent(model) + '&base_url=' + encodeURIComponent(baseUrl) + '&status=' + status;
     if (id) params += '&id=' + id;
     xhr.send(params);
 }
@@ -207,6 +229,26 @@ function runTest() {
         }
     };
     xhr.send('id=' + id + '&prompt=' + encodeURIComponent(prompt));
+}
+function doResetSecret(id) {
+    if (!confirm('重置后旧 Secret 与旧 kid 立即失效，调用方必须同步更换，否则 v3 接口将全部鉴权失败。确定继续？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/ai/resetSecret', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res;
+            try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            if (res.code == 0 && res.data) {
+                prompt('新 Secret / kid 已签发（请立即复制交付调用方）：\nSecret: ' + res.data.secret + '\nkid: ' + res.data.kid, res.data.secret);
+                location.reload();
+            } else {
+                alert(res.echo || '重置失败');
+            }
+        }
+    };
+    xhr.send('id=' + id);
 }
 function doDelete(id) {
     if (!confirm('确定要删除该项目吗？')) return;
