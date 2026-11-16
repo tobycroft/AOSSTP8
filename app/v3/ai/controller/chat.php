@@ -32,6 +32,15 @@ class chat extends index
         if (request()->has('stream', 'post')) {
             $options['stream'] = Input::PostBool('stream');
         }
+        if (request()->has('tools', 'post')) {
+            $options['tools'] = Input::PostJson('tools');
+        }
+        if (request()->has('tool_choice', 'post')) {
+            $options['tool_choice'] = json_decode(Input::Post('tool_choice'), true) ?: Input::Post('tool_choice');
+        }
+        if (request()->has('chat_template_kwargs', 'post')) {
+            $options['chat_template_kwargs'] = Input::PostJson('chat_template_kwargs');
+        }
 
         try {
             $data = AiAction::chatCompletions($this->proc, $messages, $options);

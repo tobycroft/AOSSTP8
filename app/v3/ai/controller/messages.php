@@ -20,6 +20,9 @@ class messages extends index
         if (request()->has('model', 'post')) {
             $options['model'] = Input::Post('model');
         }
+        if (request()->has('system', 'post')) {
+            $options['system'] = Input::Post('system');
+        }
         if (request()->has('temperature', 'post')) {
             $options['temperature'] = Input::PostFloat('temperature');
         }
@@ -31,6 +34,9 @@ class messages extends index
         }
         if (request()->has('stream', 'post')) {
             $options['stream'] = Input::PostBool('stream');
+        }
+        if (request()->has('chat_template_kwargs', 'post')) {
+            $options['chat_template_kwargs'] = Input::PostJson('chat_template_kwargs');
         }
 
         try {

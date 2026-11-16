@@ -42,6 +42,9 @@ class responses extends index
         if (request()->has('stream', 'post')) {
             $options['stream'] = Input::PostBool('stream');
         }
+        if (request()->has('chat_template_kwargs', 'post')) {
+            $options['chat_template_kwargs'] = Input::PostJson('chat_template_kwargs');
+        }
 
         try {
             $data = AiAction::responses($this->proc, $input_data, $options);

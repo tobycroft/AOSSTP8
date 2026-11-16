@@ -33,21 +33,30 @@ class AiAction
         if (isset($options['temperature'])) {
             $payload['temperature'] = $options['temperature'];
         }
-        if (isset($options['max_tokens'])) {
-            $payload['max_tokens'] = (int)$options['max_tokens'];
-        }
         if (isset($options['top_p'])) {
             $payload['top_p'] = $options['top_p'];
         }
+        if (isset($options['max_tokens'])) {
+            $payload['max_tokens'] = (int)$options['max_tokens'];
+        }
         if (isset($options['stream'])) {
             $payload['stream'] = (bool)$options['stream'];
+        }
+        if (!empty($options['tools'])) {
+            $payload['tools'] = $options['tools'];
+        }
+        if (!empty($options['tool_choice'])) {
+            $payload['tool_choice'] = $options['tool_choice'];
+        }
+        if (!empty($options['chat_template_kwargs'])) {
+            $payload['chat_template_kwargs'] = $options['chat_template_kwargs'];
         }
         if (!empty($options['extra']) && is_array($options['extra'])) {
             $payload = array_merge($payload, $options['extra']);
         }
 
         $url = rtrim($base_url, '/') . '/chat/completions';
-        return self::postJson($url, $api_key, $payload);
+        return self::postOpenAI($url, $api_key, $payload);
     }
 
     public static function responses(array $proc, $input, array $options = []): array
@@ -61,11 +70,11 @@ class AiAction
             'input' => $input,
         ];
 
-        if (isset($options['temperature'])) {
-            $payload['temperature'] = $options['temperature'];
-        }
         if (isset($options['max_output_tokens'])) {
             $payload['max_output_tokens'] = (int)$options['max_output_tokens'];
+        }
+        if (isset($options['temperature'])) {
+            $payload['temperature'] = $options['temperature'];
         }
         if (isset($options['top_p'])) {
             $payload['top_p'] = $options['top_p'];
@@ -76,12 +85,15 @@ class AiAction
         if (!empty($options['instructions'])) {
             $payload['instructions'] = $options['instructions'];
         }
+        if (!empty($options['chat_template_kwargs'])) {
+            $payload['chat_template_kwargs'] = $options['chat_template_kwargs'];
+        }
         if (!empty($options['extra']) && is_array($options['extra'])) {
             $payload = array_merge($payload, $options['extra']);
         }
 
         $url = rtrim($base_url, '/') . '/responses';
-        return self::postJson($url, $api_key, $payload);
+        return self::postOpenAI($url, $api_key, $payload);
     }
 
     public static function messages(array $proc, array $messages, array $options = []): array
@@ -92,14 +104,15 @@ class AiAction
 
         $payload = [
             'model' => $model,
+            'max_tokens' => (int)($options['max_tokens'] ?? 1024),
             'messages' => $messages,
         ];
 
+        if (!empty($options['system'])) {
+            $payload['system'] = $options['system'];
+        }
         if (isset($options['temperature'])) {
             $payload['temperature'] = $options['temperature'];
-        }
-        if (isset($options['max_tokens'])) {
-            $payload['max_tokens'] = (int)$options['max_tokens'];
         }
         if (isset($options['top_p'])) {
             $payload['top_p'] = $options['top_p'];
@@ -107,21 +120,38 @@ class AiAction
         if (isset($options['stream'])) {
             $payload['stream'] = (bool)$options['stream'];
         }
+        if (!empty($options['chat_template_kwargs'])) {
+            $payload['chat_template_kwargs'] = $options['chat_template_kwargs'];
+        }
         if (!empty($options['extra']) && is_array($options['extra'])) {
             $payload = array_merge($payload, $options['extra']);
         }
 
         $url = rtrim($base_url, '/') . '/messages';
-        return self::postJson($url, $api_key, $payload);
+        return self::postAnthropic($url, $api_key, $payload);
     }
 
-    protected static function postJson(string $url, string $api_key, array $payload): array
+    protected static function postOpenAI(string $url, string $api_key, array $payload): array
     {
         $headers = [
             'Content-Type: application/json',
             'Authorization: Bearer ' . $api_key,
         ];
+        return self::postJson($url, $headers, $payload);
+    }
 
+    protected static function postAnthropic(string $url, string $api_key, array $payload): array
+    {
+        $headers = [
+            'Content-Type: application/json',
+            'x-api-key: ' . $api_key,
+            'anthropic-version: 2023-06-01',
+        ];
+        return self::postJson($url, $headers, $payload);
+    }
+
+    protected static function postJson(string $url, array $headers, array $payload): array
+    {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
