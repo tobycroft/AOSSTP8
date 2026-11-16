@@ -7,6 +7,7 @@ use think\Model;
 /*
 CREATE TABLE `ao_ai` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(64) DEFAULT NULL COMMENT '项目名称',
   `project` varchar(64) DEFAULT NULL COMMENT '项目token',
   `api_key` varchar(255) DEFAULT NULL COMMENT 'API密钥',
   `base_url` varchar(255) DEFAULT 'https://apihub.agnes-ai.com/v1' COMMENT 'API地址',

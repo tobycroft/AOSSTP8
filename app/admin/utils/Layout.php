@@ -70,6 +70,12 @@ class Layout
                 'sms_log' => ['label' => '发送日志', 'url' => '/admin/sms_log'],
             ],
         ],
+        'ai' => [
+            'title' => 'AI管理',
+            'items' => [
+                'ai' => ['label' => 'AI接口配置', 'url' => '/admin/ai'],
+            ],
+        ],
     ];
 
     private static function css(): string
