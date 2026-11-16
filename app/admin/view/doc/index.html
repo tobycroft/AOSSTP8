@@ -113,7 +113,7 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
             <div class="meta">
                 <span>版本 v1.4</span>
                 <span>更新 2026-11-16</span>
-                <span>接口域名 aoss.tuuz.cc</span>
+                <span>接口域名 upload.tuuz.cc:433</span>
                 <span>默认时区 Asia/Shanghai</span>
             </div>
         </div>
@@ -122,7 +122,7 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
             <h2>接口概览</h2>
             <p>系统对外提供三类接口入口，彼此独立鉴权，令牌不可混用：</p>
             <div class="doc-grid">
-                <div class="cell"><b>开放接口</b><span>业务系统调用，四段式路径 <code class="inline">/{version}/{module}/{controller}/{action}</code>，域名根 <code class="inline">aoss.tuuz.cc</code>。</span></div>
+                <div class="cell"><b>开放接口</b><span>业务系统调用，四段式路径 <code class="inline">/{version}/{module}/{controller}/{action}</code>，域名根 <code class="inline">upload.tuuz.cc:433</code>。</span></div>
                 <div class="cell"><b>上传服务</b><span>独立主机 <code class="inline">https://upload.tuuz.cc:433</code>，使用一次性临时令牌，避免长期令牌暴露。</span></div>
                 <div class="cell"><b>证书下发</b><span>面向宝塔面板、爱快路由器、Proxmox VE 与宝塔邮局，按证书名称串联拉取与部署。</span></div>
             </div>
@@ -186,7 +186,7 @@ Route::any(':version/:module/:controller/:function',
 
         <section class="doc-section" id="doc-api">
             <h2>接口清单</h2>
-            <p>下表为当前已上线的开放接口，除特别说明外均以 <code class="inline">https://aoss.tuuz.cc</code> 为域名根。</p>
+            <p>下表为当前已上线的开放接口，除特别说明外均以 <code class="inline">https://upload.tuuz.cc:433</code> 为域名根。</p>
 
             <h3 id="doc-api-file">文件与上传</h3>
             <table>
@@ -225,7 +225,7 @@ Route::any(':version/:module/:controller/:function',
                     <tr><td>邮件证书下发</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/mail/setssl?...&amp;cert={证书名}&amp;website={域名}</code></td><td><code class="inline">cert, website</code></td></tr>
                 </tbody>
             </table>
-            <pre class="code"><span class="lang">cURL</span>curl -s "https://aoss.tuuz.cc/v1/cert/bt/pullssl?appname=demo&amp;appkey=demo-key&amp;cert=aerofsx.com"</pre>
+            <pre class="code"><span class="lang">cURL</span>curl -s "https://upload.tuuz.cc:433/v1/cert/bt/pullssl?appname=demo&amp;appkey=demo-key&amp;cert=aerofsx.com"</pre>
 
             <h3 id="doc-api-ai">AI</h3>
             <table>
@@ -247,13 +247,13 @@ Route::any(':version/:module/:controller/:function',
                 </tbody>
             </table>
             <pre class="code"><span class="lang">cURL</span># 带推理：chat/completions（OpenAI 格式）
-curl -s https://aoss.tuuz.cc/v3/ai/chat/completions \
+curl -s https://upload.tuuz.cc:433/v3/ai/chat/completions \
   -H "X-Aoss-Ts: $TS" -H "X-Aoss-Kid: $KID" -H "X-Aoss-Auth: $AUTH" \
   --data-urlencode 'messages=[{"role":"user","content":"规划这个仓库任务的实现步骤"}]' \
   --data-urlencode 'chat_template_kwargs={"enable_thinking":true}'
 
 # 带推理：messages（Anthropic 格式）
-curl -s https://aoss.tuuz.cc/v3/ai/messages/index \
+curl -s https://upload.tuuz.cc:433/v3/ai/messages/index \
   -H "X-Aoss-Ts: $TS" -H "X-Aoss-Kid: $KID" -H "X-Aoss-Auth: $AUTH" \
   --data-urlencode 'messages=[{"role":"user","content":"规划这个仓库任务的实现步骤"}]' \
   --data-urlencode 'max_tokens=2048' \
@@ -278,7 +278,7 @@ curl -s https://aoss.tuuz.cc/v3/ai/messages/index \
             </table>
             <div class="note warn"><strong>易错点</strong>：<code class="inline">response_format</code> 只接受放在 <code class="inline">extra_body.response_format</code>，请勿在请求体顶层放置（顶层即便误传也会被服务端下沉纠正）。<code class="inline">1920x1080</code> / <code class="inline">2560x1440</code> 不是原生输出尺寸，会被标准化（例如 <code class="inline">16:9</code> 的 <code class="inline">1K</code> 为 <code class="inline">1312x736</code>）；需要精确画布请用 <code class="inline">size=2K&amp;ratio=16:9</code> 后自行裁剪缩放。图生图无需传 <code class="inline">tags:["img2img"]</code>。</div>
             <pre class="code"><span class="lang">cURL</span># 文生图：URL 输出（返回 2624x1472）
-curl -s https://aoss.tuuz.cc/v3/ai/images/generations \
+curl -s https://upload.tuuz.cc:433/v3/ai/images/generations \
   -H "X-Aoss-Ts: $TS" -H "X-Aoss-Kid: $KID" -H "X-Aoss-Auth: $AUTH" \
   --data-urlencode 'prompt=A luminous floating city above a misty canyon at sunrise' \
   --data-urlencode 'size=2K' \
@@ -286,7 +286,7 @@ curl -s https://aoss.tuuz.cc/v3/ai/images/generations \
   --data-urlencode 'response_format=url'
 
 # 图生图：Base64 输出
-curl -s https://aoss.tuuz.cc/v3/ai/images/generations \
+curl -s https://upload.tuuz.cc:433/v3/ai/images/generations \
   -H "X-Aoss-Ts: $TS" -H "X-Aoss-Kid: $KID" -H "X-Aoss-Auth: $AUTH" \
   --data-urlencode 'prompt=Keep the composition, repaint in watercolor' \
   --data-urlencode 'size=1K' \
@@ -340,7 +340,7 @@ curl -s https://aoss.tuuz.cc/v3/ai/images/generations \
             <h2>签名与加密</h2>
 
             <h3 id="doc-sign-tls">传输加密</h3>
-            <p>所有生产入口强制 HTTPS：接口与后台 <code class="inline">aoss.tuuz.cc</code>、上传服务 <code class="inline">upload.tuuz.cc:433</code>、图片服务 <code class="inline">image.tuuz.cc:444</code>。除 v3 的凭证信封外，其余接口以传输层加密与访问控制为主，未启用应用层加密。</p>
+            <p>所有对外生产入口强制 HTTPS：开放接口与上传服务 <code class="inline">upload.tuuz.cc:433</code>、图片服务 <code class="inline">image.tuuz.cc:444</code>。除 v3 的凭证信封外，其余接口以传输层加密与访问控制为主，未启用应用层加密。</p>
 
             <h3 id="doc-sign-envelope">v3 凭证信封</h3>
             <p>v3 接口不存在「项目 token」这一概念：<code class="inline">ao_ai.name</code> 只是人类可读标签，<code class="inline">ao_ai.secret</code> 是服务端签发的<strong>唯一凭证</strong>（64 位十六进制，32 字节熵），同时作为信封加密密钥。调用方据此派生密钥，将「<code class="inline">secret|ts</code>」加密为单段密文提交，服务端解密后校验。请求链路上只出现 secret 的哈希前缀与密文，凭证全程不落 URL、请求体与访问日志。</p>
@@ -369,11 +369,11 @@ $headers = [
     'X-Aoss-Auth' => Envelope::seal($secret, $ts),
 ];
 
-// POST https://aoss.tuuz.cc/v3/ai/chat/completions
+// POST https://upload.tuuz.cc:433/v3/ai/chat/completions
 // body: messages=[{"role":"user","content":"你好"}]</pre>
             <pre class="code"><span class="lang">cURL</span>TS=$(date +%s)
 # AUTH 由 Envelope::seal($secret, $ts) 生成
-curl -s https://aoss.tuuz.cc/v3/ai/chat/completions \
+curl -s https://upload.tuuz.cc:433/v3/ai/chat/completions \
   -H "X-Aoss-Ts: $TS" \
   -H "X-Aoss-Kid: 9f2c1a7b" \
   -H "X-Aoss-Auth: v1.xxxxxxxx" \
