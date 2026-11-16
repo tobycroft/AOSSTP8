@@ -2,6 +2,7 @@
 
 namespace app\index\utils;
 
+use think\facade\Db;
 use think\facade\Log;
 
 /**
@@ -10,48 +11,35 @@ use think\facade\Log;
  * 规则：
  *   1. 同一 IP 在窗口期内登录失败 ≥ 1 次，后续登录必须输入验证码；
  *   2. 任意一次登录成功后立即清除该 IP 的失败状态，下次登录不再需要验证码；
- *   3. 失败状态有效期 2 小时，每次失败重新计时（滑动窗口）。
+ *   3. 失败状态窗口 2 小时，每次失败重新计时（滑动窗口）。
  *
- * 存储：Redis，键 aoss:login_fail:{md5(ip)}，值为失败次数。
- * 容错：Redis 未安装/不可用时降级为“不需要验证码”并写 warning 日志，
- *      避免缓存故障直接阻断正常登录（可用性优先）。
+ * 存储：数据表 ao_login_fail（每个 IP 一行，登录成功即删除该行），
+ *      建表脚本见 sql/20261116_create_ao_login_fail.sql。
+ * 容错：表缺失或数据库异常时降级为“不需要验证码”并写一条 warning 日志，
+ *      避免存储故障直接阻断正常登录（可用性优先）。
  */
 class LoginGuard
 {
-    /** 失败状态有效期（秒），每次失败重新计时 */
+    /** 失败状态窗口（秒），每次失败重新计时 */
     const TTL = 7200;
 
-    /** Redis 键前缀 */
-    const PREFIX = 'aoss:login_fail:';
-
-    /** @var \Redis|null 请求级复用连接 */
-    private static $handler = null;
-
-    /** 是否已尝试过连接（避免同一请求重复连接） */
-    private static $attempted = false;
+    /** 失败状态表 */
+    const TABLE = 'ao_login_fail';
 
     /** 本次请求是否已写过降级日志（避免刷日志） */
     private static $logged = false;
 
     /**
-     * 生成指定 IP 的失败计数键
-     */
-    public static function key(string $ip): string
-    {
-        return self::PREFIX . md5($ip);
-    }
-
-    /**
-     * 读取该 IP 的失败次数
+     * 读取该 IP 在窗口期内的失败次数
      */
     public static function failCount(string $ip): int
     {
-        $redis = self::redis();
-        if (!$redis) {
-            return 0;
-        }
         try {
-            return intval($redis->get(self::key($ip)));
+            $count = Db::table(self::TABLE)
+                ->where('ip', '=', $ip)
+                ->where('last_fail', '>=', date('Y-m-d H:i:s', time() - self::TTL))
+                ->value('fail_count');
+            return intval($count);
         } catch (\Throwable $e) {
             self::degrade($e);
             return 0;
@@ -67,19 +55,25 @@ class LoginGuard
     }
 
     /**
-     * 记录一次登录失败，返回累计失败次数
+     * 记录一次登录失败，返回窗口期内的累计失败次数
+     *
+     * 用单条 upsert 完成“新增或累加”，并发安全；窗口超期后重新从 1 计。
      */
     public static function markFail(string $ip): int
     {
-        $redis = self::redis();
-        if (!$redis) {
-            return 0;
-        }
         try {
-            $key = self::key($ip);
-            $count = intval($redis->incr($key));
-            $redis->expire($key, self::TTL);
-            return $count;
+            $now = date('Y-m-d H:i:s');
+            $windowStart = date('Y-m-d H:i:s', time() - self::TTL);
+            Db::execute(
+                'INSERT INTO `' . self::TABLE . '` (`ip`, `fail_count`, `last_fail`, `change_date`, `date`) '
+                . 'VALUES (?, 1, ?, ?, ?) '
+                . 'ON DUPLICATE KEY UPDATE '
+                . '`fail_count` = IF(`last_fail` < ?, 1, `fail_count` + 1), '
+                . '`last_fail` = ?, `change_date` = ?',
+                [$ip, $now, $now, $now, $windowStart, $now, $now]
+            );
+            $count = Db::table(self::TABLE)->where('ip', '=', $ip)->value('fail_count');
+            return intval($count);
         } catch (\Throwable $e) {
             self::degrade($e);
             return 0;
@@ -91,62 +85,15 @@ class LoginGuard
      */
     public static function clear(string $ip): void
     {
-        $redis = self::redis();
-        if (!$redis) {
-            return;
-        }
         try {
-            $redis->del(self::key($ip));
+            Db::table(self::TABLE)->where('ip', '=', $ip)->delete();
         } catch (\Throwable $e) {
             self::degrade($e);
         }
     }
 
     /**
-     * 获取 Redis 连接（延迟连接，失败返回 null）
-     *
-     * @return \Redis|null
-     */
-    private static function redis()
-    {
-        if (self::$attempted) {
-            return self::$handler;
-        }
-        self::$attempted = true;
-
-        if (!extension_loaded('redis')) {
-            self::degrade(new \RuntimeException('未安装 redis 扩展'));
-            return null;
-        }
-
-        try {
-            $redis = new \Redis();
-            $host = (string)env('REDIS_HOST', '127.0.0.1');
-            $port = intval(env('REDIS_PORT', 6379));
-            $timeout = floatval(env('REDIS_TIMEOUT', 0.5));
-            if (!$redis->connect($host, $port, $timeout)) {
-                self::degrade(new \RuntimeException('无法连接 ' . $host . ':' . $port));
-                return null;
-            }
-            $password = (string)env('REDIS_PASSWORD', '');
-            if ($password !== '') {
-                $redis->auth($password);
-            }
-            $db = intval(env('REDIS_SELECT', 0));
-            if ($db > 0) {
-                $redis->select($db);
-            }
-            self::$handler = $redis;
-        } catch (\Throwable $e) {
-            self::degrade($e);
-            return null;
-        }
-
-        return self::$handler;
-    }
-
-    /**
-     * Redis 不可用时记录一次降级日志
+     * 存储不可用时记录一次降级日志
      */
     private static function degrade(\Throwable $e): void
     {
@@ -154,6 +101,6 @@ class LoginGuard
             return;
         }
         self::$logged = true;
-        Log::warning('[LoginGuard] Redis 不可用，登录验证码策略降级（不强制验证码）：' . $e->getMessage());
+        Log::warning('[LoginGuard] 登录失败状态表不可用，验证码策略降级（不强制验证码）：' . $e->getMessage());
     }
 }

@@ -249,7 +249,7 @@ Route::any(':version/:module/:controller/:function',
             <p>门户（console）的登录与注册接口位于域名根路径，不使用四段式路由；两者共用验证码图片接口 <code class="inline">GET /captcha/gif</code>（4 位数字，答案 hash 写入 cookie <code class="inline">user_captcha</code>，有效期 300 秒）。</p>
 
             <h3 id="doc-portal-login">登录验证码策略</h3>
-            <p>登录验证码按 IP 自适应：无失败记录时默认不需要验证码；一旦该 IP 登录失败 ≥1 次，在 2 小时窗口内（每次失败重新计时）强制校验验证码；任意一次登录成功立即解除，下次登录恢复免验证码。</p>
+            <p>登录验证码按 IP 自适应：无失败记录时默认不需要验证码；一旦该 IP 登录失败 ≥1 次，在 2 小时窗口内（每次失败重新计时）强制校验验证码；任意一次登录成功立即解除，下次登录恢复免验证码。失败状态存于数据表 <code class="inline">ao_login_fail</code>（每个 IP 一行，登录成功即删除），建表脚本见 <code class="inline">sql/20261116_create_ao_login_fail.sql</code>。</p>
             <table>
                 <thead><tr><th style="width:150px;">能力</th><th style="width:400px;">方法与链接</th><th>关键参数</th></tr></thead>
                 <tbody>
@@ -262,7 +262,7 @@ Route::any(':version/:module/:controller/:function',
                 <thead><tr><th style="width:220px;">失败响应 data 字段</th><th>含义</th></tr></thead>
                 <tbody>
                     <tr><td><code class="inline">need_captcha: true</code></td><td>该 IP 已进入验证码强制状态，前端需展示验证码并随下一次提交带上 <code class="inline">code</code></td></tr>
-                    <tr><td><code class="inline">need_captcha: false</code></td><td>未触发验证码策略（含 Redis 不可用时的降级）</td></tr>
+                    <tr><td><code class="inline">need_captcha: false</code></td><td>未触发验证码策略（含状态表不可用时的降级）</td></tr>
                 </tbody>
             </table>
 
