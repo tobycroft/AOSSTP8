@@ -13,6 +13,12 @@ use think\facade\View;
 
 class Register extends CommonController
 {
+    /** 注册页默认邀请码 */
+    const DEFAULT_INVITE_CODE = 'tuuz';
+
+    /** 邀请码不足时的联系方式 */
+    const CONTACT_URL = 'https://t.me/gvnull';
+
     public function index()
     {
         $method = request()->method();
@@ -29,6 +35,7 @@ class Register extends CommonController
     {
         View::assign([
             'title' => '注册',
+            'invite_code' => self::DEFAULT_INVITE_CODE,
         ]);
         return response(View::fetch('register/index'));
     }
@@ -48,7 +55,7 @@ class Register extends CommonController
             Ret::Fail(400, null, '密码至少6位');
         }
         if (empty($invite_code)) {
-            Ret::Fail(400, null, '请输入邀请码');
+            Ret::Fail(400, null, '请输入邀请码，若没有可用邀请码可询问站长是否还有：' . self::CONTACT_URL);
         }
 
         // 验证验证码（从 cookie 读取 hash）
@@ -79,7 +86,7 @@ class Register extends CommonController
                 'used_time' => date('Y-m-d H:i:s'),
             ]);
         if (empty($claimed)) {
-            Ret::Fail(400, null, '邀请码无效、已禁用或可用次数已用完');
+            Ret::Fail(400, null, '邀请码无效、已禁用或可用次数已用完，若邀请码不足可询问站长是否还有：' . self::CONTACT_URL);
         }
 
         $token = UserAuth::generateToken();
