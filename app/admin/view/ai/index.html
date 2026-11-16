@@ -150,6 +150,17 @@
             <label>输入图像（可选，图生图/多图合成，JSON 数组）</label>
             <input type="text" id="imageTestImages" placeholder='例如 ["https://example.com/a.png"] 留空为文生图' style="width:100%;padding:8px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;outline:none;">
         </div>
+        <div class="form-group" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:6px;">
+                <label style="margin:0;">缓存有效期（小时）</label>
+                <input type="number" id="imageTestTtl" value="24" min="0.02" max="720" step="0.5" style="width:90px;padding:6px 8px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;outline:none;">
+                <span style="font-size:12px;color:#8c8c8c;">期内重复测试秒回，到期后自动重新生成</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <input type="checkbox" id="imageTestForce" style="cursor:pointer;">
+                <label for="imageTestForce" style="margin:0;cursor:pointer;font-size:14px;">强制刷新（忽略缓存重新生成）</label>
+            </div>
+        </div>
         <div class="form-group">
             <label>测试结果</label>
             <div id="imageTestResult" style="width:100%;min-height:120px;padding:8px 10px;border:1px solid #e8e8e8;border-radius:4px;font-size:14px;background:#fafafa;white-space:pre-wrap;word-break:break-all;color:#666;">点击「开始测试」查看结果</div>
@@ -323,11 +334,16 @@ function runImageTest() {
     resultBox.style.color = '#faad14';
     preview.innerHTML = '';
     btn.disabled = true;
+    var ttlHours = parseFloat(document.getElementById('imageTestTtl').value);
+    if (isNaN(ttlHours) || ttlHours <= 0) ttlHours = 24;
+    var force = document.getElementById('imageTestForce').checked ? 1 : 0;
     var params = 'id=' + id
         + '&prompt=' + encodeURIComponent(prompt)
         + '&size=' + encodeURIComponent(size)
         + '&ratio=' + encodeURIComponent(ratio)
-        + '&response_format=' + encodeURIComponent(format);
+        + '&response_format=' + encodeURIComponent(format)
+        + '&cache_ttl=' + Math.round(ttlHours * 3600)
+        + '&force=' + force;
     if (imageArr) params += '&image=' + encodeURIComponent(JSON.stringify(imageArr));
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/admin/ai/testImage', true);
@@ -346,10 +362,15 @@ function runImageTest() {
             try { res = JSON.parse(xhr.responseText); } catch(e) { resultBox.textContent = '响应解析失败'; resultBox.style.color = '#ff4d4f'; return; }
             if (res.code == 0 && res.data) {
                 var d = res.data;
-                var meta = '生成成功';
+                var meta = d.cache_hit ? '命中本地缓存（秒回，未请求上游）' : '生成成功并已缓存';
+                if (d.cache) {
+                    meta += '\n缓存文件: ' + (d.cache.path || '-');
+                    if (d.cache.expires_at) meta += '\n到期时间: ' + new Date(d.cache.expires_at * 1000).toLocaleString();
+                    if (d.cache.hit && d.cache.age != null) meta += '\n已缓存: ' + Math.round(d.cache.age / 60) + ' 分钟';
+                }
                 if (d.created) meta += ' · created=' + d.created;
                 resultBox.textContent = meta;
-                resultBox.style.color = '#333';
+                resultBox.style.color = d.cache_hit ? '#13a8a8' : '#333';
                 if (d.url) {
                     var img = document.createElement('img');
                     img.src = d.url;

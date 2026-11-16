@@ -1,0 +1,10 @@
+# 后台图片测试本地缓存产物（由 Ai@testImage 运行时生成）
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.bmp
+*.json
+*.lock
+*.tmp.*

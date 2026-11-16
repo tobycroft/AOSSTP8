@@ -4,6 +4,7 @@ namespace app\admin\controller;
 
 use app\admin\model\AdminAiModel;
 use app\admin\utils\AdminAuth;
+use app\admin\utils\ImageCache;
 use app\admin\utils\Layout;
 use app\v3\ai\action\AiAction;
 use Aoss\Envelope;
@@ -237,10 +238,13 @@ class Ai extends CommonController
     }
 
     /**
-     * 图片生成测试：调用 agnes 图片接口验证配置可用性
+     * 图片生成测试：调用 agnes 图片接口验证配置可用性（带本地缓存）
      *
      * 与 v3 图片接口共用 AiAction::imageGenerations，默认模型 agnes-image-2.5-flash，
      * 不读取项目的对话模型。response_format / image 由 AiAction 统一归入 extra_body。
+     *
+     * 缓存：结果按参数指纹落到 public/ai/，TTL 内命中直接返回本地 URL（不请求上游）；
+     * 过期或 force=true 时重新生成并覆盖。cache_ttl 单位为秒，缺省 24 小时。
      */
     public function testImage()
     {
@@ -264,6 +268,36 @@ class Ai extends CommonController
             $prompt = 'A luminous floating city above a misty canyon at sunrise, cinematic realism';
         }
         $size = Input::Post('size', false) ?: '1K';
+        $ratio = request()->has('ratio', 'post') ? Input::Post('ratio') : '';
+        $responseFormat = request()->has('response_format', 'post') ? Input::Post('response_format') : '';
+
+        $image = [];
+        if (request()->has('image', 'post')) {
+            $raw = request()->post('image');
+            $imageArr = is_array($raw) ? $raw : json_decode((string)$raw, true);
+            if (is_array($imageArr)) {
+                $image = array_values($imageArr);
+            }
+        }
+
+        $ttl = ImageCache::normalizeTtl(Input::Post('cache_ttl', false));
+        $force = Input::PostBool('force', false);
+        $params = [
+            'prompt' => $prompt,
+            'size' => $size,
+            'ratio' => $ratio,
+            'response_format' => $responseFormat,
+            'image' => $image,
+        ];
+        $key = ImageCache::key($id, $params);
+
+        // 快路径：命中未过期缓存直接返回，不请求上游
+        if (!$force) {
+            $hit = ImageCache::get($key, $ttl);
+            if ($hit !== null) {
+                Ret::Success(0, $hit, '命中本地缓存');
+            }
+        }
 
         $proc = [
             'base_url' => $item['base_url'] ?: 'https://apihub.agnes-ai.com/v1',
@@ -271,31 +305,42 @@ class Ai extends CommonController
         ];
 
         $options = [];
-        if (request()->has('ratio', 'post')) {
-            $options['ratio'] = Input::Post('ratio');
+        if ($ratio !== '') {
+            $options['ratio'] = $ratio;
         }
-        if (request()->has('response_format', 'post')) {
-            $options['response_format'] = Input::Post('response_format');
+        if ($responseFormat !== '') {
+            $options['response_format'] = $responseFormat;
         }
-        if (request()->has('image', 'post')) {
-            $image = request()->post('image');
-            $imageArr = is_array($image) ? $image : json_decode((string)$image, true);
-            if (is_array($imageArr) && !empty($imageArr)) {
-                $options['image'] = $imageArr;
-            }
+        if (!empty($image)) {
+            $options['image'] = $image;
         }
 
+        // 加独占锁并二次校验：等锁期间可能已被其它请求生成，避免重复调用上游
+        $lock = ImageCache::getLock($key);
+        $error = null;
+        $result = null;
+        $echo = $force ? '已强制刷新并缓存' : '测试成功并已缓存';
         try {
-            $data = AiAction::imageGenerations($proc, $prompt, $size, $options);
+            if (!$force) {
+                $hit = ImageCache::get($key, $ttl);
+                if ($hit !== null) {
+                    $result = $hit;
+                    $echo = '命中本地缓存';
+                }
+            }
+            if ($result === null) {
+                $data = AiAction::imageGenerations($proc, $prompt, $size, $options);
+                $result = ImageCache::put($key, $data, $params, $ttl);
+            }
         } catch (Exception $e) {
-            Ret::Fail(500, null, '测试失败: ' . $e->getMessage());
+            $error = $e->getMessage();
+        } finally {
+            ImageCache::releaseLock($lock);
         }
 
-        $first = $data['data'][0] ?? [];
-        Ret::Success(0, [
-            'url' => $first['url'] ?? null,
-            'b64_json' => $first['b64_json'] ?? null,
-            'created' => $data['created'] ?? null,
-        ], '测试成功');
+        if ($error !== null) {
+            Ret::Fail(500, null, '测试失败: ' . $error);
+        }
+        Ret::Success(0, $result, $echo);
     }
 }
