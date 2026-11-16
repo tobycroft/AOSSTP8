@@ -104,6 +104,14 @@ class AiAction
         return self::postOpenAI($url, $api_key, $payload);
     }
 
+    /**
+     * Messages API（Anthropic-compatible）
+     *
+     * 推理开关按上游 Anthropic 兼容格式使用 thinking 字段：
+     *   {"type": "enabled", "budget_tokens": 2048}
+     * 不传 thinking 即为不带推理模式，与 chat/responses 的
+     * chat_template_kwargs（OpenAI 格式）相互独立，切勿混用。
+     */
     public static function messages(array $proc, array $messages, array $options = []): array
     {
         $base_url = $proc['base_url'] ?: self::$default_base_url;
@@ -130,6 +138,10 @@ class AiAction
         }
         if (!empty($options['chat_template_kwargs'])) {
             $payload['chat_template_kwargs'] = $options['chat_template_kwargs'];
+        }
+        // Thinking 模式（Anthropic-compatible）：{"type":"enabled","budget_tokens":2048}
+        if (!empty($options['thinking'])) {
+            $payload['thinking'] = $options['thinking'];
         }
         if (!empty($options['extra']) && is_array($options['extra'])) {
             $payload = array_merge($payload, $options['extra']);

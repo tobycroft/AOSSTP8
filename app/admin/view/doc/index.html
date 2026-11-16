@@ -87,6 +87,7 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
         <a class="sub" href="#doc-api-sms">短信</a>
         <a class="sub" href="#doc-api-cert">证书</a>
         <a class="sub" href="#doc-api-ai">AI</a>
+        <a class="sub" href="#doc-api-ai-thinking">推理模式（Thinking）</a>
         <a class="sub" href="#doc-api-ai-image">图片生成</a>
         <a class="sub" href="#doc-api-hook">Hook</a>
         <a href="#doc-portal">门户登录与注册</a>
@@ -230,12 +231,34 @@ Route::any(':version/:module/:controller/:function',
             <table>
                 <thead><tr><th style="width:150px;">能力</th><th style="width:400px;">方法与链接</th><th>关键参数</th></tr></thead>
                 <tbody>
-                    <tr><td>对话补全</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/chat/completions</code></td><td><code class="inline">messages, model, temperature, max_tokens, tools</code></td></tr>
-                    <tr><td>Responses</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/responses/index</code></td><td>按上游接口透传</td></tr>
-                    <tr><td>Messages</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/messages/index</code></td><td>按上游接口透传</td></tr>
+                    <tr><td>对话补全</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/chat/completions</code></td><td><code class="inline">messages, model, temperature, max_tokens, tools, chat_template_kwargs</code></td></tr>
+                    <tr><td>Responses</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/responses/index</code></td><td>按上游接口透传（含 <code class="inline">chat_template_kwargs</code>）</td></tr>
+                    <tr><td>Messages</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/messages/index</code></td><td>按上游接口透传（含 <code class="inline">thinking</code> / <code class="inline">chat_template_kwargs</code>）</td></tr>
                     <tr><td>图片生成</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/images/generations</code></td><td><code class="inline">prompt, size, ratio, model, image, response_format, return_base64, extra_body</code></td></tr>
                 </tbody>
             </table>
+            <h4 id="doc-api-ai-thinking">推理模式（Thinking）</h4>
+            <p>三个文本接口均兼容「带推理」与「不带推理」两种模式：不传推理开关即为<strong>不带推理</strong>（默认）；按下表传入对应字段即开启<strong>带推理</strong>。两类字段不可混用——<code class="inline">chat_template_kwargs</code> 属于 OpenAI 兼容格式，<code class="inline">thinking</code> 属于 Anthropic 兼容格式。</p>
+            <table>
+                <thead><tr><th style="width:150px;">接口</th><th style="width:110px;">格式</th><th>开启推理（JSON 字符串提交）</th></tr></thead>
+                <tbody>
+                    <tr><td><code class="inline">chat/completions</code>、<code class="inline">responses</code></td><td>OpenAI</td><td><code class="inline">chat_template_kwargs={"enable_thinking":true}</code></td></tr>
+                    <tr><td><code class="inline">messages</code></td><td>Anthropic</td><td><code class="inline">thinking={"type":"enabled","budget_tokens":2048}</code></td></tr>
+                </tbody>
+            </table>
+            <pre class="code"><span class="lang">cURL</span># 带推理：chat/completions（OpenAI 格式）
+curl -s https://aoss.tuuz.cc/v3/ai/chat/completions \
+  -H "X-Aoss-Ts: $TS" -H "X-Aoss-Kid: $KID" -H "X-Aoss-Auth: $AUTH" \
+  --data-urlencode 'messages=[{"role":"user","content":"规划这个仓库任务的实现步骤"}]' \
+  --data-urlencode 'chat_template_kwargs={"enable_thinking":true}'
+
+# 带推理：messages（Anthropic 格式）
+curl -s https://aoss.tuuz.cc/v3/ai/messages/index \
+  -H "X-Aoss-Ts: $TS" -H "X-Aoss-Kid: $KID" -H "X-Aoss-Auth: $AUTH" \
+  --data-urlencode 'messages=[{"role":"user","content":"规划这个仓库任务的实现步骤"}]' \
+  --data-urlencode 'max_tokens=2048' \
+  --data-urlencode 'thinking={"type":"enabled","budget_tokens":2048}'</pre>
+            <div class="note">推理内容由上游返回（如 <code class="inline">reasoning_content</code> / <code class="inline">thinking</code> 块），本服务按上游结构原样透传；关闭推理只需不传上述字段。</div>
             <div class="note warn"><strong>v3 已废弃 <code class="inline">?token=</code> 明文传参</strong>：请求必须携带 <code class="inline">X-Aoss-Ts</code>、<code class="inline">X-Aoss-Kid</code>、<code class="inline">X-Aoss-Auth</code> 三个鉴权字段，<code class="inline">auth</code> 为 <code class="inline">secret|ts</code> 的 AES-256-GCM 密文。协议与代码示例见 <a href="#doc-sign-envelope" style="color:#1677ff;">v3 凭证信封</a>。无法设置请求头的调用方可改用同名表单参数 <code class="inline">ts</code> / <code class="inline">kid</code> / <code class="inline">auth</code>。</div>
 
             <h3 id="doc-api-ai-image">图片生成</h3>

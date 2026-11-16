@@ -38,6 +38,10 @@ class messages extends index
         if (request()->has('chat_template_kwargs', 'post')) {
             $options['chat_template_kwargs'] = Input::PostJson('chat_template_kwargs');
         }
+        // Thinking 模式（Anthropic-compatible）：thinking={"type":"enabled","budget_tokens":2048}
+        if (request()->has('thinking', 'post')) {
+            $options['thinking'] = Input::PostJson('thinking');
+        }
 
         try {
             $data = AiAction::messages($this->proc, $messages, $options);
