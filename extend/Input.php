@@ -95,6 +95,66 @@ class Input
         }
     }
 
+    public static function Put(string $name, bool $must_have = true, bool $xss = false): string
+    {
+        if (!Request::has($name, "put") && $must_have) {
+            Ret::Fail(400, null, "Input-Put:[" . $name . "]");
+        }
+        if ($xss) {
+            return strval(request()->put($name, '', 'strip_tags'));
+        } else {
+            return strval(request()->put($name));
+        }
+    }
+
+    public static function PutInt(string $name, bool $must_have = true): int
+    {
+        $in = Request::put($name, null, 'int');
+        if ($in === null) {
+            if ($must_have) {
+                Ret::Fail(400, null, 'Input-Put-Int:[' . $name . ']');
+            }
+            return 0;
+        } elseif (!is_int($in)) {
+            Ret::Fail(400, null, 'Input-Put-Int:[' . $name . '] is not integer');
+            return 0;
+        } else {
+            return $in;
+        }
+    }
+
+    public static function PutFloat(string $name, bool $must_have = true): float
+    {
+        $in = Request::put($name, null, 'float');
+        if ($in === null) {
+            if ($must_have) {
+                Ret::Fail(400, null, 'Input-Put-Float:[' . $name . ']');
+            }
+            return 0;
+        } elseif (!is_float($in) && !is_int($in)) {
+            Ret::Fail(400, null, 'Input-Put-Float:[' . $name . '] is not float');
+            return 0;
+        } else {
+            return (float)$in;
+        }
+    }
+
+    public static function PutBool(string $name, bool $must_have = true): bool
+    {
+        $in = Request::put($name, null, 'bool');
+        if ($in === null) {
+            if ($must_have) {
+                Ret::Fail(400, null, 'Input-Put-Bool:[' . $name . ']');
+            }
+            return false;
+        } elseif (!is_bool($in)) {
+            Ret::Fail(400, null, 'Input-Put-Bool:[' . $name . '] is not boolean');
+            return false;
+        } else {
+            return $in;
+        }
+    }
+
     public static function Combi(string $name, bool $must_have = true, bool $xss = false): string
     {
         if (Request::has($name, "post")) {
