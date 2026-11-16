@@ -165,7 +165,6 @@ class AiAction
         $response = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error = curl_error($ch);
-        curl_close($ch);
 
         if ($response === false) {
             throw new Exception('AI接口请求失败: ' . $error);
