@@ -1,0 +1,454 @@
+{extend name="layout/base" /}
+{block name="content"}
+{literal}
+<style>
+.doc-layout { display: flex; gap: 20px; align-items: flex-start; }
+.doc-toc { width: 220px; flex: 0 0 220px; position: sticky; top: 88px; background: #fff; border-radius: 8px; padding: 14px 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); max-height: calc(100vh - 112px); overflow-y: auto; }
+.doc-toc .toc-title { font-size: 13px; color: #999; padding: 4px 10px 10px; letter-spacing: 1px; }
+.doc-toc a { display: block; padding: 7px 10px; border-radius: 4px; color: #555; font-size: 13px; text-decoration: none; line-height: 1.4; }
+.doc-toc a:hover { background: #f0f5ff; color: #1677ff; }
+.doc-toc a.active { background: #e6f4ff; color: #1677ff; font-weight: 500; }
+.doc-toc a.sub { padding-left: 24px; font-size: 12.5px; color: #777; }
+.doc-body { flex: 1; min-width: 0; }
+.doc-hero { background: linear-gradient(120deg, #001529 0%, #10365c 100%); border-radius: 8px; padding: 26px 28px; color: #fff; margin-bottom: 16px; }
+.doc-hero h1 { font-size: 22px; font-weight: 500; margin-bottom: 10px; }
+.doc-hero p { font-size: 13px; line-height: 1.9; color: rgba(255,255,255,0.72); }
+.doc-hero .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.doc-hero .meta span { font-size: 12px; padding: 3px 10px; border-radius: 10px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); }
+.doc-section { background: #fff; border-radius: 8px; padding: 22px 26px 26px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); scroll-margin-top: 84px; }
+.doc-section h2 { font-size: 18px; color: #1f2329; font-weight: 600; padding-left: 11px; border-left: 4px solid #1677ff; line-height: 1.3; margin-bottom: 14px; }
+.doc-section h3 { font-size: 15px; color: #1f2329; font-weight: 600; margin: 22px 0 10px; scroll-margin-top: 84px; }
+.doc-section h3:first-of-type { margin-top: 6px; }
+.doc-section p { color: #444; font-size: 13.5px; line-height: 1.95; margin-bottom: 10px; }
+.doc-section ul, .doc-section ol { padding-left: 22px; margin-bottom: 10px; }
+.doc-section li { color: #444; font-size: 13.5px; line-height: 1.95; margin-bottom: 4px; }
+.doc-section strong { color: #1f2329; font-weight: 600; }
+.doc-section a { color: #1677ff; text-decoration: none; }
+.doc-section a:hover { text-decoration: underline; }
+.doc-section table { width: 100%; border-collapse: collapse; box-shadow: none; border: 1px solid #ebedf0; border-radius: 6px; overflow: hidden; margin: 10px 0 14px; }
+.doc-section th { background: #f7f8fa; color: #4e5969; font-size: 12.5px; font-weight: 600; padding: 9px 12px; border-bottom: 1px solid #ebedf0; white-space: nowrap; }
+.doc-section td { font-size: 12.5px; color: #333; padding: 9px 12px; border-bottom: 1px solid #f2f3f5; vertical-align: top; line-height: 1.7; }
+.doc-section tr:last-child td { border-bottom: none; }
+.doc-section tr:hover td { background: #fafbfc; }
+pre.code { position: relative; background: #1e2430; color: #dbe4ee; border-radius: 6px; padding: 13px 16px; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 12.5px; line-height: 1.75; overflow-x: auto; margin: 10px 0 14px; }
+pre.code .lang { position: absolute; top: 0; right: 0; padding: 2px 8px; font-size: 11px; color: #8a96a8; background: #262e3c; border-radius: 0 6px 0 6px; letter-spacing: 0.5px; }
+pre.code .copy-btn { position: absolute; top: 6px; right: 56px; padding: 3px 9px; font-size: 11px; color: #c8d3e0; background: #2c3543; border: 1px solid #3a4554; border-radius: 3px; cursor: pointer; font-family: inherit; }
+pre.code .copy-btn:hover { background: #1677ff; border-color: #1677ff; color: #fff; }
+code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radius: 3px; font-size: 12.5px; font-family: "SFMono-Regular", Consolas, Menlo, monospace; word-break: break-all; }
+.note { border-left: 3px solid #1677ff; background: #f0f7ff; color: #1c4f8f; padding: 10px 14px; border-radius: 4px; font-size: 13px; line-height: 1.8; margin: 12px 0; }
+.note.warn { border-left-color: #faad14; background: #fffbe6; color: #8a6100; }
+.note.danger { border-left-color: #ff4d4f; background: #fff2f0; color: #a8071a; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11.5px; line-height: 1.7; white-space: nowrap; }
+.pill.blue { background: #e6f4ff; color: #1677ff; }
+.pill.green { background: #f6ffed; color: #389e0d; }
+.pill.orange { background: #fff7e6; color: #d46b08; }
+.pill.red { background: #fff2f0; color: #cf1322; }
+.pill.gray { background: #f2f3f5; color: #595959; }
+.doc-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 12px 0 4px; }
+.doc-grid .cell { border: 1px solid #ebedf0; border-radius: 6px; padding: 14px 16px; }
+.doc-grid .cell b { display: block; font-size: 13.5px; color: #1f2329; margin-bottom: 6px; }
+.doc-grid .cell span { font-size: 12.5px; color: #6b7280; line-height: 1.75; }
+.doc-footer { text-align: center; color: #b0b4bb; font-size: 12px; padding: 8px 0 4px; }
+@media (max-width: 1100px) { .doc-toc { display: none; } .doc-layout { display: block; } .doc-grid { grid-template-columns: 1fr; } .doc-section { overflow-x: auto; } .doc-section table { min-width: 740px; } }
+</style>
+<div class="doc-layout">
+    <aside class="doc-toc" id="docToc">
+        <div class="toc-title">目录</div>
+        <a href="#doc-overview">概览</a>
+        <a href="#doc-access">访问方式</a>
+        <a class="sub" href="#doc-access-admin">后台管理</a>
+        <a class="sub" href="#doc-access-api">开放接口</a>
+        <a class="sub" href="#doc-access-upload">上传服务</a>
+        <a class="sub" href="#doc-access-cors">请求头与跨域</a>
+        <a href="#doc-url">链接方式</a>
+        <a class="sub" href="#doc-url-rule">路由规则</a>
+        <a class="sub" href="#doc-url-open">开放接口链接清单</a>
+        <a class="sub" href="#doc-url-admin">后台链接清单</a>
+        <a class="sub" href="#doc-url-params">参数约定</a>
+        <a href="#doc-crypto">加密方式</a>
+        <a class="sub" href="#doc-crypto-tls">传输加密</a>
+        <a class="sub" href="#doc-crypto-md5">MD5 签名</a>
+        <a class="sub" href="#doc-crypto-rsa">RSA 签名</a>
+        <a class="sub" href="#doc-crypto-password">口令与验证码</a>
+        <a class="sub" href="#doc-crypto-cert">证书与私钥</a>
+        <a href="#doc-response">响应与错误码</a>
+        <a href="#doc-cert">证书管理专项</a>
+        <a href="#doc-ops">运维与安全建议</a>
+        <a href="#doc-changelog">变更记录</a>
+    </aside>
+    <div class="doc-body">
+        <div class="doc-hero">
+            <h1>AOSS 平台使用文档</h1>
+            <p>本页整理当前系统的三种核心接入信息：<strong style="color:#fff;">链接方式</strong>（请求地址如何拼装）、<strong style="color:#fff;">加密方式</strong>（签名与密钥）、<strong style="color:#fff;">访问方式</strong>（凭据与鉴权）。内容依据现有代码实现整理，适用于后台管理、开放接口与证书下发三条链路。</p>
+            <div class="meta">
+                <span>版本 v1.0</span>
+                <span>更新 2026-11-16</span>
+                <span>后台域名 aoss.tuuz.cc</span>
+                <span>默认时区 Asia/Shanghai</span>
+            </div>
+        </div>
+
+        <section class="doc-section" id="doc-overview">
+            <h2>概览</h2>
+            <p>系统对外提供三类入口，彼此独立鉴权，请勿混用令牌：</p>
+            <div class="doc-grid">
+                <div class="cell"><b>后台管理</b><span>面向管理员，固定路径 <code class="inline">/admin/...</code>，使用登录令牌 <code class="inline">admin-token</code>。</span></div>
+                <div class="cell"><b>开放接口</b><span>面向业务系统，统一路径 <code class="inline">/{version}/.../{action}</code>，使用项目令牌或 <code class="inline">appname+appkey</code>。</span></div>
+                <div class="cell"><b>证书下发</b><span>面向宝塔面板、爱快路由器、Proxmox VE，按证书名称串联拉取与部署。</span></div>
+            </div>
+            <div class="note">本页与代码同步维护：路由在 <code class="inline">route/route.php</code>，鉴权在 <code class="inline">app/admin/utils/AdminAuth.php</code> 与各模块 <code class="inline">initialize()</code>，签名规则在对应控制器内。调整上述实现时请同步更新本页。</div>
+        </section>
+
+        <section class="doc-section" id="doc-access">
+            <h2>访问方式</h2>
+
+            <h3 id="doc-access-admin">后台管理</h3>
+            <p>后台通过域名绑定开放，仅 <code class="inline">aoss.tuuz.cc</code> 主机头可命中管理路由，域名根路径直接进入后台首页。</p>
+            <ul>
+                <li>登录页：<code class="inline">https://aoss.tuuz.cc/admin/login</code></li>
+                <li>验证码：先请求 <code class="inline">/admin/captcha/gif</code> 获取图形码，验证码哈希写入 <code class="inline">admin_captcha</code> Cookie。</li>
+                <li>登录提交：<code class="inline">POST /admin/login/index</code>，参数 <code class="inline">username</code>、<code class="inline">password</code>、<code class="inline">code</code>。</li>
+                <li>令牌下发：登录成功返回 64 位十六进制 token，服务端写入 <code class="inline">ao_admin_user.token</code>，同时写入 <code class="inline">admin_token</code> Cookie（有效期 24 小时）。</li>
+            </ul>
+            <p>后续请求可任选一种方式携带令牌，服务端按以下顺序读取：</p>
+            <table>
+                <thead><tr><th style="width:150px;">携带方式</th><th>写法</th><th style="width:180px;">说明</th></tr></thead>
+                <tbody>
+                    <tr><td>请求头</td><td><code class="inline">admin-token: {登录令牌}</code></td><td>推荐，AJAX 统一使用</td></tr>
+                    <tr><td>Cookie</td><td><code class="inline">admin_token={登录令牌}</code></td><td>登录后自动写入</td></tr>
+                    <tr><td>请求参数</td><td><code class="inline">admin_token={登录令牌}</code></td><td>兼容表单直传</td></tr>
+                </tbody>
+            </table>
+            <p>所有后台控制器在 <code class="inline">initialize()</code> 中调用 <code class="inline">AdminAuth::requireLogin()</code>：GET 请求未登录直接跳转登录页，非 GET 请求返回 <code class="inline">{"code":-1}</code>，前端拦截到 -1 后清理令牌并跳转 <code class="inline">/admin/login</code>。</p>
+
+            <h3 id="doc-access-api">开放接口</h3>
+            <table>
+                <thead><tr><th style="width:120px;">业务域</th><th style="width:230px;">凭据</th><th>传递方式</th><th style="width:200px;">校验位置</th></tr></thead>
+                <tbody>
+                    <tr><td>文件 / 短信 / 存储</td><td>项目令牌（<code class="inline">ao_oss.token</code>）</td><td>文件类：URL 参数 <code class="inline">token</code>；短信：POST 参数 <code class="inline">name</code></td><td><code class="inline">OssModel::api_find_token</code></td></tr>
+                    <tr><td>证书管理</td><td><code class="inline">appname</code> + <code class="inline">appkey</code>（<code class="inline">ao_cert</code>）</td><td>GET / POST 参数</td><td><code class="inline">/v1/cert/*</code> 初始化</td></tr>
+                    <tr><td>AI 能力</td><td>AI 接口配置中的项目 token</td><td><code class="inline">token</code> 参数（GET / POST 均可）</td><td><code class="inline">AiModel::api_find_token</code></td></tr>
+                    <tr><td>抖店</td><td><code class="inline">appid</code> + <code class="inline">appsecret</code> + <code class="inline">salt</code> + <code class="inline">sign</code>，或 <code class="inline">token</code></td><td>POST / GET 参数</td><td><code class="inline">/v2/doudian/*</code> 初始化</td></tr>
+                    <tr><td>上传服务</td><td>一次性临时令牌</td><td>URL 参数 <code class="inline">token</code></td><td><code class="inline">ao_file_token</code></td></tr>
+                </tbody>
+            </table>
+            <div class="note warn">令牌即身份，请勿写入前端源码或公开仓库。证书接口的 <code class="inline">appkey</code> 泄露等同于该证书项目的全部下发权限。</div>
+
+            <h3 id="doc-access-upload">上传服务</h3>
+            <p>上传使用独立主机与端口，避免 OSS 长期令牌暴露：</p>
+            <ol>
+                <li>换取临时令牌：<code class="inline">POST https://upload.tuuz.cc:433/v2/file/index/token</code>，参数 <code class="inline">token</code>（项目令牌）、<code class="inline">timestamp</code>（秒级时间戳）、<code class="inline">sign</code>、可选 <code class="inline">ip</code>。</li>
+                <li>使用令牌上传：<code class="inline">https://upload.tuuz.cc:433/v2/file/index/upfull?token={临时令牌}</code> 返回完整文件信息；<code class="inline">uphash</code> 仅返回 MD5，需再调 <code class="inline">POST /v2/file/token/hash_query</code> 取得文件详情。</li>
+            </ol>
+            <p>临时令牌默认 300 秒过期，写入 <code class="inline">ao_file_token</code> 并以 <code class="inline">is_used</code> 标记一次性使用；<code class="inline">upload_url</code> 与 <code class="inline">upload_url_hash</code> 会在返回值中直接给出上传地址。</p>
+
+            <h3 id="doc-access-cors">请求头与跨域</h3>
+            <ul>
+                <li>全局响应跨域头：<code class="inline">Access-Control-Allow-Origin: *</code>、<code class="inline">Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS</code>、<code class="inline">Allow-Headers: *</code>、<code class="inline">Max-Age: 86400</code>。</li>
+                <li>预检请求 <code class="inline">OPTIONS</code> 由路由前置中间件直接放行，不进入业务逻辑。</li>
+                <li>普通接口按 <code class="inline">application/x-www-form-urlencoded</code> 提交；AI 的 <code class="inline">messages</code>、<code class="inline">tools</code> 等结构化字段以 JSON 字符串提交，由 <code class="inline">Input::PostJson</code> 解析。</li>
+            </ul>
+        </section>
+
+        <section class="doc-section" id="doc-url">
+            <h2>链接方式</h2>
+
+            <h3 id="doc-url-rule">路由规则</h3>
+            <p>开放接口采用「版本 / 模块 / 控制器 / 方法」四段式路径，由 <code class="inline">route/route.php</code> 的兜底规则统一解析：</p>
+            <pre class="code"><span class="lang">URL</span>https://{host}/{version}/{module}/{controller}/{action}</pre>
+            <pre class="code"><span class="lang">PHP</span>// route/route.php
+Route::any(':version/:module/:controller/:function',
+    '\app\:version\:module\controller\:controller@:function');</pre>
+            <p>映射到物理文件 <code class="inline">app/{version}/{module}/controller/{controller}.php</code> 的 <code class="inline">{action}</code> 方法。未命中任何规则的请求由兜底闭包原样返回请求 URL。</p>
+            <div class="note">该规则固定四段路径，控制器默认方法需显式写出：<code class="inline">/v3/ai/responses/index</code> 可命中，省略 <code class="inline">/index</code> 的三段路径不会命中任何规则。</div>
+            <p>后台管理不使用兜底规则，全部为显式注册的固定路径；同一路径按 HTTP 方法分派：</p>
+            <table>
+                <thead><tr><th style="width:110px;">方法</th><th style="width:150px;">语义</th><th>示例</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="pill blue">GET</span></td><td>列表 / 详情页</td><td><code class="inline">GET /admin/cert_url</code></td></tr>
+                    <tr><td><span class="pill green">POST</span></td><td>更新记录</td><td><code class="inline">POST /admin/cert_url</code> + <code class="inline">id</code></td></tr>
+                    <tr><td><span class="pill orange">PUT</span></td><td>新增记录</td><td><code class="inline">PUT /admin/cert_url</code></td></tr>
+                    <tr><td><span class="pill red">DELETE</span></td><td>删除记录</td><td><code class="inline">DELETE /admin/cert_url</code> + <code class="inline">id</code></td></tr>
+                </tbody>
+            </table>
+
+            <h3 id="doc-url-open">开放接口链接清单</h3>
+            <table>
+                <thead><tr><th style="width:110px;">能力</th><th style="width:430px;">方法与链接</th><th>关键参数</th></tr></thead>
+                <tbody>
+                    <tr><td>文件上传</td><td><span class="pill blue">POST</span> <code class="inline">/v1/file/index/up?token={项目令牌}</code></td><td><code class="inline">file</code>（multipart）</td></tr>
+                    <tr><td>文件秒传查询</td><td><span class="pill blue">GET</span> <code class="inline">/v1/file/index/md5?token={项目令牌}&amp;md5={文件MD5}</code></td><td><code class="inline">md5</code></td></tr>
+                    <tr><td>短信单发</td><td><span class="pill green">POST</span> <code class="inline">/v1/sms/single/push</code></td><td><code class="inline">name, ts, sign, phone, quhao, text, ip</code></td></tr>
+                    <tr><td>证书站点列表</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/bt/getlist?appname={appname}&amp;appkey={appkey}</code></td><td>—</td></tr>
+                    <tr><td>拉取证书</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/bt/pullssl?...&amp;cert={证书名}</code></td><td><code class="inline">cert</code></td></tr>
+                    <tr><td>单站点下发</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/bt/setssl?...&amp;cert={证书名}&amp;website={站点域名}</code></td><td><code class="inline">cert, website</code></td></tr>
+                    <tr><td>自动下发（网站/面板/爱快/PVE）</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/bt/autossl?...&amp;cert={证书名}</code></td><td><code class="inline">cert</code>（要求 <code class="inline">auto=1</code>）</td></tr>
+                    <tr><td>下发爱快</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/bt/saveikuaisll?...&amp;cert={证书名}</code></td><td><code class="inline">cert</code></td></tr>
+                    <tr><td>下发 Proxmox VE</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/bt/savepvesll?...&amp;cert={证书名}</code></td><td><code class="inline">cert</code></td></tr>
+                    <tr><td>下发宝塔面板</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/bt/savepanelssl?...&amp;cert={证书名}</code></td><td><code class="inline">cert</code></td></tr>
+                    <tr><td>邮件证书列表</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/mail/getlist?...</code></td><td>—</td></tr>
+                    <tr><td>邮件证书下发</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/mail/setssl?...&amp;cert=..&amp;website=..</code></td><td><code class="inline">cert, website</code></td></tr>
+                    <tr><td>AI 对话补全</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/chat/completions?token={AI令牌}</code></td><td><code class="inline">messages</code>、<code class="inline">model</code>、<code class="inline">temperature</code>、<code class="inline">max_tokens</code>、<code class="inline">tools</code></td></tr>
+                    <tr><td>AI Responses</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/responses/index?token={AI令牌}</code></td><td>按上游接口透传</td></tr>
+                    <tr><td>AI Messages</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/messages/index?token={AI令牌}</code></td><td>按上游接口透传</td></tr>
+                    <tr><td>Hook 单推</td><td><span class="pill blue">GET</span> <code class="inline">/v1/hook/push/single?tag={标签}&amp;param={参数}</code></td><td><code class="inline">tag, param</code></td></tr>
+                    <tr><td>GitHub Webhook</td><td><span class="pill green">POST</span> <code class="inline">/hook</code> 或 <code class="inline">/github</code></td><td><code class="inline">payload</code></td></tr>
+                </tbody>
+            </table>
+            <pre class="code"><span class="lang">cURL</span>curl -s "https://aoss.tuuz.cc/v1/cert/bt/pullssl?appname=demo&amp;appkey=demo-key&amp;cert=aerofsx.com"</pre>
+
+            <h3 id="doc-url-admin">后台链接清单</h3>
+            <table>
+                <thead><tr><th style="width:130px;">分组</th><th style="width:260px;">链接</th><th>说明</th></tr></thead>
+                <tbody>
+                    <tr><td>工作台</td><td><code class="inline">/admin/console</code></td><td>控制台与管理员信息</td></tr>
+                    <tr><td rowspan="6">证书管理</td><td><code class="inline">/admin/cert</code></td><td>证书项目（宝塔 API 地址与密钥）</td></tr>
+                    <tr><td><code class="inline">/admin/cert_url</code></td><td>证书 URL 与证书内容缓存</td></tr>
+                    <tr><td><code class="inline">/admin/cert_website</code></td><td>证书站点绑定</td></tr>
+                    <tr><td><code class="inline">/admin/cert_ikuai</code></td><td>爱快路由器节点</td></tr>
+                    <tr><td><code class="inline">/admin/cert_pve</code></td><td>Proxmox VE 节点</td></tr>
+                    <tr><td><code class="inline">/admin/cert_log</code></td><td>下发与更新日志</td></tr>
+                    <tr><td>项目</td><td><code class="inline">/admin/project</code></td><td>项目、appsecret 与开放令牌</td></tr>
+                    <tr><td>门户用户</td><td><code class="inline">/admin/invite_code</code></td><td>注册邀请码</td></tr>
+                    <tr><td rowspan="2">存储</td><td><code class="inline">/admin/oss</code></td><td>存储项目</td></tr>
+                    <tr><td><code class="inline">/admin/oss_aliyun</code></td><td>阿里云 OSS 配置</td></tr>
+                    <tr><td rowspan="3">Hook</td><td><code class="inline">/admin/hook</code></td><td>Hook 配置</td></tr>
+                    <tr><td><code class="inline">/admin/hook_log</code></td><td>Hook 日志</td></tr>
+                    <tr><td><code class="inline">/admin/excel</code></td><td>Excel 缓存</td></tr>
+                    <tr><td rowspan="8">短信</td><td><code class="inline">/admin/sms</code></td><td>短信项目</td></tr>
+                    <tr><td><code class="inline">/admin/sms_aliyun</code></td><td>阿里云短信</td></tr>
+                    <tr><td><code class="inline">/admin/sms_tencent</code></td><td>腾讯云短信</td></tr>
+                    <tr><td><code class="inline">/admin/sms_lc</code></td><td>LC 短信</td></tr>
+                    <tr><td><code class="inline">/admin/sms_wlwx</code></td><td>网路万象短信</td></tr>
+                    <tr><td><code class="inline">/admin/sms_blacklist</code></td><td>号码黑名单</td></tr>
+                    <tr><td><code class="inline">/admin/sms_intercept</code></td><td>拦截规则</td></tr>
+                    <tr><td><code class="inline">/admin/sms_log</code></td><td>发送日志</td></tr>
+                    <tr><td>AI</td><td><code class="inline">/admin/ai</code></td><td>AI 接口配置与在线测试</td></tr>
+                    <tr><td rowspan="4">管理员</td><td><code class="inline">/admin/user</code></td><td>用户管理</td></tr>
+                    <tr><td><code class="inline">/admin/role</code></td><td>角色管理</td></tr>
+                    <tr><td><code class="inline">/admin/menu</code></td><td>菜单管理</td></tr>
+                    <tr><td><code class="inline">/admin/login_log</code></td><td>后台登录日志</td></tr>
+                    <tr><td>文档</td><td><code class="inline">/admin/doc</code></td><td>本页，右上角「文档」入口</td></tr>
+                </tbody>
+            </table>
+            <p>子操作路由与列表页分离，例如 <code class="inline">/admin/cert_url/updateSSL</code>、<code class="inline">/admin/cert_url/updateAllSSL</code>、<code class="inline">/admin/cert_url/getKey</code>、<code class="inline">/admin/cert_url/autoSSL</code>、<code class="inline">/admin/cert_url/autoMailSSL</code>、<code class="inline">/admin/cert_url/deployIkuai</code>、<code class="inline">/admin/cert_url/deployPve</code>、<code class="inline">/admin/cert/updateSite</code>。</p>
+
+            <h3 id="doc-url-params">参数约定</h3>
+            <ul>
+                <li>参数名大小写敏感，布尔值统一使用 <code class="inline">1 / 0</code>。</li>
+                <li>列表分页参数为 <code class="inline">page</code>（从 1 开始）与 <code class="inline">search</code>，每页 15 条。</li>
+                <li>时间戳统一为秒级 Unix 时间，服务端时区 <code class="inline">Asia/Shanghai</code>。</li>
+                <li>路径参数在证书接口中同时作为业务主键使用（如 <code class="inline">cert</code>），需与 <code class="inline">ao_cert_url.cert</code> 完全一致。</li>
+            </ul>
+        </section>
+
+        <section class="doc-section" id="doc-crypto">
+            <h2>加密方式</h2>
+
+            <h3 id="doc-crypto-tls">传输加密</h3>
+            <p>所有生产入口强制 HTTPS：管理后台 <code class="inline">aoss.tuuz.cc</code>、上传服务 <code class="inline">upload.tuuz.cc:433</code>、图片服务 <code class="inline">image.tuuz.cc:444</code>。系统未启用应用层对称加密（无 AES 封装），敏感数据依赖传输层加密与访问控制。</p>
+
+            <h3 id="doc-crypto-md5">MD5 签名</h3>
+            <p>现有三处签名统一为<strong>小写 32 位 MD5</strong>，用于防篡改与防重放，不承担加密职责：</p>
+            <table>
+                <thead><tr><th style="width:140px;">场景</th><th style="width:300px;">签名公式</th><th style="width:190px;">时效</th><th>校验位置</th></tr></thead>
+                <tbody>
+                    <tr><td>短信单发</td><td><code class="inline">sign = md5(code + ts)</code></td><td>无强制窗口，由业务侧控制</td><td><code class="inline">/v1/sms/single</code></td></tr>
+                    <tr><td>上传临时令牌</td><td><code class="inline">sign = md5(token + timestamp)</code></td><td>±300 秒，令牌 300 秒过期</td><td><code class="inline">/v2/file/token</code></td></tr>
+                    <tr><td>抖店</td><td><code class="inline">sign = md5(appid+appsecret+salt)</code></td><td><code class="inline">salt</code> 由调用方随机生成</td><td><code class="inline">/v2/doudian</code></td></tr>
+                </tbody>
+            </table>
+            <pre class="code"><span class="lang">PHP</span>// 短信：code 为 ao_oss 项目密钥，ts 为秒级时间戳
+$ts   = time();
+$sign = md5($project['code'] . $ts);
+
+// 上传临时令牌
+$timestamp = time();
+$sign      = md5($projectToken . $timestamp);</pre>
+            <div class="note warn">MD5 仅用于签名校验。拼接顺序、大小写与是否补零必须严格一致，否则返回 <code class="inline">401 签名不正确</code>。时间戳校验依赖服务器时钟，部署时请启用 NTP 同步。</div>
+
+            <h3 id="doc-crypto-rsa">RSA 签名</h3>
+            <p><code class="inline">/v1/rsa/index/index</code> 与 <code class="inline">/v1/rsa/index/index2</code> 提供 SHA256 摘要、<code class="inline">openssl_sign</code> 签名（Base64 输出）与 <code class="inline">openssl_verify</code> 验签能力。当前公私钥为占位常量，需替换为实际 PEM 后使用；该能力属于预留组件，不参与现有接口鉴权。</p>
+
+            <h3 id="doc-crypto-password">口令与验证码</h3>
+            <ul>
+                <li>用户密码使用 <code class="inline">password_hash(PASSWORD_DEFAULT)</code> 存储，登录以 <code class="inline">password_verify</code> 校验，数据库不保存明文。</li>
+                <li>图形验证码以 <code class="inline">password_hash</code> 结果写入 <code class="inline">admin_captcha</code> Cookie，比对时统一转小写，校验后立即清除。</li>
+                <li>后台登录令牌为 <code class="inline">bin2hex(random_bytes(32))</code> 生成的 64 位十六进制串，登出时服务端令牌清空。</li>
+            </ul>
+
+            <h3 id="doc-crypto-cert">证书与私钥</h3>
+            <ul>
+                <li>证书全文与私钥保存在 <code class="inline">ao_cert_url.publickey</code> / <code class="inline">privatekey</code>，来源为 <code class="inline">url_crt</code> / <code class="inline">url_key</code> 指向的 HTTP(S) 链接。</li>
+                <li>后台读取接口：<code class="inline">POST /admin/cert_url/getKey</code>，参数 <code class="inline">id</code>，需登录；返回明文证书与私钥，前端不得落盘或写入日志。</li>
+                <li>宝塔 API 密钥（<code class="inline">bt_key</code>）、爱快账号密码、PVE API Token 均以明文存储在对应配置表中，仅通过后台管理，不下发到前端页面。</li>
+            </ul>
+            <div class="note danger">私钥泄露等同于证书被完全接管。建议限制 <code class="inline">getKey</code> 的调用角色，并定期轮换宝塔 API 密钥与 PVE Token。</div>
+        </section>
+
+        <section class="doc-section" id="doc-response">
+            <h2>响应与错误码</h2>
+            <p>除后台页面渲染（HTML）外，接口统一返回 JSON：</p>
+            <pre class="code"><span class="lang">JSON</span>{
+  "code": 0,
+  "data": {},
+  "echo": "成功"
+}</pre>
+            <table>
+                <thead><tr><th style="width:100px;">code</th><th style="width:160px;">含义</th><th>典型场景</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="pill green">0</span></td><td>成功</td><td>业务正常返回，数据在 <code class="inline">data</code></td></tr>
+                    <tr><td><span class="pill red">-1</span></td><td>登录失效</td><td>后台令牌无效，前端跳转登录</td></tr>
+                    <tr><td><span class="pill orange">400</span></td><td>参数错误</td><td>缺少必填参数、长度或格式不符</td></tr>
+                    <tr><td><span class="pill red">401</span></td><td>鉴权失败</td><td>令牌不存在、签名不正确、自动下发未启用</td></tr>
+                    <tr><td><span class="pill red">403</span></td><td>权限不足</td><td>账号禁用、拒绝的操作</td></tr>
+                    <tr><td><span class="pill orange">404</span></td><td>未找到数据</td><td>证书项目、站点或记录不存在</td></tr>
+                    <tr><td><span class="pill orange">406 / 407</span></td><td>数据不符合期待</td><td>上下游返回结构异常</td></tr>
+                    <tr><td><span class="pill red">500</span></td><td>服务端错误</td><td>数据库异常、上游接口调用失败</td></tr>
+                </tbody>
+            </table>
+            <p><code class="inline">echo</code> 为可直接展示的中文提示；<code class="inline">data</code> 在失败时通常为空数组或错误明细。</p>
+        </section>
+
+        <section class="doc-section" id="doc-cert">
+            <h2>证书管理专项</h2>
+
+            <h3 id="doc-cert-data">数据链路</h3>
+            <table>
+                <thead><tr><th style="width:180px;">数据表</th><th style="width:230px;">职责</th><th>关键字段</th></tr></thead>
+                <tbody>
+                    <tr><td><code class="inline">ao_cert</code></td><td>证书项目（宝塔面板接入）</td><td><code class="inline">appname, appkey, bt_api, bt_key, status</code></td></tr>
+                    <tr><td><code class="inline">ao_cert_url</code></td><td>证书来源与内容缓存</td><td><code class="inline">cert, url_crt, url_key, publickey, privatekey, auto, remark</code></td></tr>
+                    <tr><td><code class="inline">ao_cert_website</code></td><td>站点绑定</td><td><code class="inline">type(web/panel/mail), website, cert_name, api, key, status</code></td></tr>
+                    <tr><td><code class="inline">ao_cert_ikuai</code></td><td>爱快路由器节点</td><td><code class="inline">api, cert_name, username, password, status</code></td></tr>
+                    <tr><td><code class="inline">ao_cert_pve</code></td><td>Proxmox VE 节点</td><td><code class="inline">api, node, token_id, token_secret, cert_name, verify_tls, restart_proxy, status</code></td></tr>
+                    <tr><td><code class="inline">ao_cert_log</code></td><td>下发日志</td><td><code class="inline">appname, type, website, success, recv</code></td></tr>
+                </tbody>
+            </table>
+
+            <h3 id="doc-cert-link">证书链接与缓存</h3>
+            <ol>
+                <li><code class="inline">url_crt</code> / <code class="inline">url_key</code> 保存证书与私钥的下载链接，服务端使用 <code class="inline">file_get_contents</code> 拉取，因此必须是服务器可访问的 HTTP(S) 地址（自签证书或需鉴权的地址会失败）。</li>
+                <li>单条刷新：<code class="inline">POST /admin/cert_url/updateSSL</code>（参数 <code class="inline">id</code>）；全量刷新：<code class="inline">POST /admin/cert_url/updateAllSSL</code>。</li>
+                <li>下发前会先尝试刷新一次证书，刷新失败则沿用数据库中已缓存的 <code class="inline">publickey</code> / <code class="inline">privatekey</code>，避免上游短暂不可用导致下发中断。</li>
+            </ol>
+
+            <h3 id="doc-cert-bind">站点绑定规则</h3>
+            <p>站点与证书通过 <code class="inline">cert_name</code> 关联，绑定策略如下（忽略大小写、剥离 <code class="inline">*.</code> 前缀与结尾点）：</p>
+            <ol>
+                <li>取站点域名的<strong>主域名</strong>，即末两段：<code class="inline">124.tuuz.ltd → tuuz.ltd</code>、<code class="inline">aria.aerofsx.com → aerofsx.com</code>。</li>
+                <li>若 <code class="inline">ao_cert_url</code> 中存在与主域名<strong>完全同名</strong>的证书，则绑定该证书名称。</li>
+                <li>否则绑定主域名本身（即使该名称暂无对应证书），由后续人工或自动补录。</li>
+                <li>子域名证书（<code class="inline">shop.example.com</code>）不视为覆盖根域名（<code class="inline">example.com</code>），避免误绑定。</li>
+                <li>查询站点时同时匹配证书名与规整名两种取值，兼容历史以根域名写入的数据。</li>
+            </ol>
+
+            <h3 id="doc-cert-deploy">下发通道</h3>
+            <table>
+                <thead><tr><th style="width:110px;">通道</th><th style="width:120px;">目标</th><th style="width:300px;">后台入口</th><th>开放接口</th></tr></thead>
+                <tbody>
+                    <tr><td>宝塔网站</td><td>网站 SSL</td><td><code class="inline">POST /admin/cert_url/autoSSL</code></td><td><code class="inline">/v1/cert/bt/setssl</code></td></tr>
+                    <tr><td>宝塔面板</td><td>面板 SSL</td><td>同上（<code class="inline">type=panel</code>）</td><td><code class="inline">/v1/cert/bt/savepanelssl</code></td></tr>
+                    <tr><td>宝塔邮局</td><td>邮件 SSL</td><td><code class="inline">POST /admin/cert_url/autoMailSSL</code></td><td><code class="inline">/v1/cert/mail/setssl</code></td></tr>
+                    <tr><td>爱快</td><td>路由器证书</td><td><code class="inline">POST /admin/cert_url/deployIkuai</code></td><td><code class="inline">/v1/cert/bt/saveikuaisll</code></td></tr>
+                    <tr><td>Proxmox VE</td><td>节点证书</td><td><code class="inline">POST /admin/cert_url/deployPve</code></td><td><code class="inline">/v1/cert/bt/savepvesll</code></td></tr>
+                </tbody>
+            </table>
+            <p>自动下发要求 <code class="inline">ao_cert_url.auto = 1</code>，否则返回 <code class="inline">401 本证书自动下发功能不可用</code>。单台节点失败不影响其他节点，结果统一写入 <code class="inline">ao_cert_log</code>。</p>
+        </section>
+
+        <section class="doc-section" id="doc-ops">
+            <h2>运维与安全建议</h2>
+            <ul>
+                <li><strong>关闭调试模式</strong>：上线前确认 <code class="inline">.env</code> 中 <code class="inline">APP_DEBUG=false</code>，避免异常堆栈暴露路径与 SQL。</li>
+                <li><strong>时钟同步</strong>：签名与令牌均依赖时间戳，服务器需启用 NTP；时钟偏差超过 300 秒会导致上传令牌校验失败。</li>
+                <li><strong>跨域收敛</strong>：当前 <code class="inline">Allow-Origin: *</code> 与 <code class="inline">Allow-Credentials: true</code> 同时开启，浏览器会忽略凭证跨域请求；如前端独立部署，建议改为域名白名单。</li>
+                <li><strong>签名强度</strong>：MD5 仅适合防误传，建议后续接口迁移至 <code class="inline">HMAC-SHA256</code> 并加入随机数与重放缓存。</li>
+                <li><strong>权限最小化</strong>：<code class="inline">getKey</code>、证书下发、<code class="inline">updateAllSSL</code> 属于高危操作，应仅对受信管理员开放。</li>
+                <li><strong>日志留存</strong>：<code class="inline">ao_cert_log</code> 记录下发结果与上游返回片段，排障时优先查看该表。</li>
+            </ul>
+        </section>
+
+        <section class="doc-section" id="doc-changelog">
+            <h2>变更记录</h2>
+            <table>
+                <thead><tr><th style="width:120px;">日期</th><th style="width:100px;">版本</th><th>说明</th></tr></thead>
+                <tbody>
+                    <tr><td>2026-11-16</td><td>v1.0</td><td>初版：整理访问方式、链接方式、加密方式、响应码与证书下发链路，入口置于后台右上角。</td></tr>
+                </tbody>
+            </table>
+            <p class="doc-footer">AOSS 后台管理 · 使用文档</p>
+        </section>
+    </div>
+</div>
+{/literal}
+{/block}
+{block name="script"}
+{literal}
+<script>
+(function () {
+    var toc = document.getElementById('docToc');
+    if (!toc) return;
+    var links = Array.prototype.slice.call(toc.querySelectorAll('a[href^="#"]'));
+    var targets = links.map(function (a) {
+        return document.getElementById(a.getAttribute('href').slice(1));
+    }).filter(Boolean);
+
+    function setActive(id) {
+        links.forEach(function (a) {
+            if (a.getAttribute('href') === '#' + id) {
+                a.classList.add('active');
+            } else {
+                a.classList.remove('active');
+            }
+        });
+    }
+
+    function onScroll() {
+        var offset = 100;
+        var current = targets.length ? targets[0].id : '';
+        for (var i = 0; i < targets.length; i++) {
+            if (targets[i].getBoundingClientRect().top <= offset) {
+                current = targets[i].id;
+            }
+        }
+        if (current) setActive(current);
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    document.querySelectorAll('pre.code').forEach(function (pre) {
+        var btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.type = 'button';
+        btn.textContent = '复制';
+        btn.addEventListener('click', function () {
+            var clone = pre.cloneNode(true);
+            var copyBtn = clone.querySelector('.copy-btn');
+            var lang = clone.querySelector('.lang');
+            if (copyBtn) copyBtn.remove();
+            if (lang) lang.remove();
+            var text = clone.textContent.replace(/^\s+|\s+$/g, '');
+            var done = function () {
+                btn.textContent = '已复制';
+                setTimeout(function () { btn.textContent = '复制'; }, 1600);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(done, done);
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (e) {}
+                document.body.removeChild(ta);
+                done();
+            }
+        });
+        pre.appendChild(btn);
+    });
+})();
+</script>
+{/literal}
+{/block}
