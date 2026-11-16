@@ -355,7 +355,7 @@ curl -s https://aoss.tuuz.cc/v3/ai/chat/completions \
   -H "X-Aoss-Kid: 9f2c1a7b" \
   -H "X-Aoss-Auth: v1.xxxxxxxx" \
   -d 'messages=[{"role":"user","content":"你好"}]'</pre>
-            <div class="note">时间窗依赖服务端时钟，客户端需启用 NTP；返回 <code class="inline">401</code> 且 <code class="inline">data.server_time</code> 有值时，按该值校准客户端时间。secret 泄露时在后台「AI接口配置」点击「重置Secret」，旧 secret 与旧 <code class="inline">kid</code> 立即失效，调用方需重新分发。</div>
+            <div class="note">时间窗依赖服务端时钟，客户端需启用 NTP；返回 <code class="inline">401</code> 且 <code class="inline">data.server_time</code> 有值时，按该值校准客户端时间。secret 泄露时在后台「agnes」点击「重置Secret」，旧 secret 与旧 <code class="inline">kid</code> 立即失效，调用方需重新分发。</div>
             <div class="note warn">secret 由<strong>服务端签发</strong>，不接受人工指定——信封的机密性上限等于 secret 的熵，64 位十六进制（32 字节）是强制格式。信封只保证凭证不落地明文与不可篡改；相同的 <code class="inline">auth</code> 在 300 秒窗口内理论上可被重放一次，若需彻底封堵，应在网关层叠加请求去重。</div>
 
             <h3 id="doc-sign-md5">MD5 签名</h3>

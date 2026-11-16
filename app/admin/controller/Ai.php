@@ -78,7 +78,7 @@ class Ai extends CommonController
             'list' => $items,
             'search' => $search,
             'pagination' => $pagination,
-        ], 'AI接口配置', 'ai', 'ai');
+        ], 'agnes', 'ai', 'ai');
     }
 
     /**
@@ -233,6 +233,69 @@ class Ai extends CommonController
         Ret::Success(0, [
             'reply' => $content,
             'usage' => $usage,
+        ], '测试成功');
+    }
+
+    /**
+     * 图片生成测试：调用 agnes 图片接口验证配置可用性
+     *
+     * 与 v3 图片接口共用 AiAction::imageGenerations，默认模型 agnes-image-2.5-flash，
+     * 不读取项目的对话模型。response_format / image 由 AiAction 统一归入 extra_body。
+     */
+    public function testImage()
+    {
+        $id = Input::PostInt('id');
+        if (!$id) {
+            Ret::Fail(400, null, '缺少参数[id]');
+        }
+
+        $model = new AdminAiModel();
+        $item = $model->findOrEmpty($id);
+        if ($item->isEmpty()) {
+            Ret::Fail(404, null, '项目不存在');
+        }
+
+        if ((string)$item['api_key'] === '') {
+            Ret::Fail(400, null, '未配置API密钥');
+        }
+
+        $prompt = Input::Post('prompt', false);
+        if ($prompt === '') {
+            $prompt = 'A luminous floating city above a misty canyon at sunrise, cinematic realism';
+        }
+        $size = Input::Post('size', false) ?: '1K';
+
+        $proc = [
+            'base_url' => $item['base_url'] ?: 'https://apihub.agnes-ai.com/v1',
+            'api_key' => $item['api_key'],
+        ];
+
+        $options = [];
+        if (request()->has('ratio', 'post')) {
+            $options['ratio'] = Input::Post('ratio');
+        }
+        if (request()->has('response_format', 'post')) {
+            $options['response_format'] = Input::Post('response_format');
+        }
+        if (request()->has('image', 'post')) {
+            $image = request()->post('image');
+            $imageArr = is_array($image) ? $image : json_decode((string)$image, true);
+            if (is_array($imageArr) && !empty($imageArr)) {
+                $options['image'] = $imageArr;
+            }
+        }
+
+        try {
+            $data = AiAction::imageGenerations($proc, $prompt, $size, $options);
+        } catch (Exception $e) {
+            Ret::Fail(500, null, '测试失败: ' . $e->getMessage());
+        }
+
+        $first = $data['data'][0] ?? [];
+        Ret::Success(0, [
+            'url' => $first['url'] ?? null,
+            'b64_json' => $first['b64_json'] ?? null,
+            'created' => $data['created'] ?? null,
         ], '测试成功');
     }
 }

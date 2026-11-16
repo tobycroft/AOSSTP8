@@ -95,8 +95,9 @@
     \think\facade\Route::any('admin/invite_code/batchDelete', '\app\admin\controller\InviteCode@batchDelete');
     \think\facade\Route::any('admin/invite_code', '\app\admin\controller\InviteCode@index');
 
-    // AI管理
+    // agnes（AI 接口）
     \think\facade\Route::any('admin/ai/test', '\app\admin\controller\Ai@test');
+    \think\facade\Route::any('admin/ai/testImage', '\app\admin\controller\Ai@testImage');
     \think\facade\Route::any('admin/ai/resetSecret', '\app\admin\controller\Ai@resetSecret');
     \think\facade\Route::any('admin/ai', '\app\admin\controller\Ai@index');
 

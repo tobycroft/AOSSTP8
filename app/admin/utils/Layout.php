@@ -71,9 +71,9 @@ class Layout
             ],
         ],
         'ai' => [
-            'title' => 'AI管理',
+            'title' => 'agnes',
             'items' => [
-                'ai' => ['label' => 'AI接口配置', 'url' => '/admin/ai'],
+                'ai' => ['label' => 'agnes', 'url' => '/admin/ai'],
             ],
         ],
     ];

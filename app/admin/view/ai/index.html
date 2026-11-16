@@ -2,7 +2,7 @@
 {block name="content"}
 <div class="toolbar">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <h2>AI接口配置</h2>
+        <h2>agnes</h2>
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="搜索项目名称，或粘贴 Secret 精确定位" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 280px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
             <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
@@ -40,7 +40,8 @@
             <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
             <td>
                 <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', '{$item.api_key|addslashes}', '{$item.base_url|addslashes}', '{$item.model|addslashes}', {$item.status})">编辑</button>
-                <button class="btn btn-sm" style="background:#722ed1;color:#fff;margin-right:4px;" onclick="openTest({$item.id}, '{$item.name|addslashes}')">测试</button>
+                <button class="btn btn-sm" style="background:#722ed1;color:#fff;margin-right:4px;" onclick="openTest({$item.id}, '{$item.name|addslashes}')">对话测试</button>
+                <button class="btn btn-sm" style="background:#13a8a8;color:#fff;margin-right:4px;" onclick="openImageTest({$item.id}, '{$item.name|addslashes}')">图片测试</button>
                 <button class="btn btn-sm" style="background:#fa8c16;color:#fff;margin-right:4px;" onclick="doResetSecret({$item.id})">重置Secret</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
@@ -103,6 +104,60 @@
         <div class="modal-actions">
             <button class="btn btn-cancel" onclick="closeTest()">关闭</button>
             <button class="btn btn-primary" id="testSubmit" onclick="runTest()">开始测试</button>
+        </div>
+    </div>
+</div>
+<div class="modal" id="imageTestModal">
+    <div class="modal-box" style="width:600px;">
+        <h3 id="imageTestTitle">图片生成测试</h3>
+        <input type="hidden" id="imageTestId" value="">
+        <div class="form-group">
+            <label>提示词（prompt）</label>
+            <textarea id="imageTestPrompt" rows="3" style="width:100%;padding:8px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;outline:none;resize:vertical;">A luminous floating city above a misty canyon at sunrise, cinematic realism</textarea>
+        </div>
+        <div class="form-group" style="display:flex;gap:12px;">
+            <div style="flex:1;">
+                <label>尺寸（size）</label>
+                <select id="imageTestSize" style="width:100%;padding:8px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;">
+                    <option value="1K">1K</option>
+                    <option value="2K">2K</option>
+                    <option value="3K">3K</option>
+                    <option value="4K">4K</option>
+                </select>
+            </div>
+            <div style="flex:1;">
+                <label>宽高比（ratio）</label>
+                <select id="imageTestRatio" style="width:100%;padding:8px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;">
+                    <option value="1:1">1:1</option>
+                    <option value="3:4">3:4</option>
+                    <option value="4:3">4:3</option>
+                    <option value="16:9">16:9</option>
+                    <option value="9:16">9:16</option>
+                    <option value="2:3">2:3</option>
+                    <option value="3:2">3:2</option>
+                    <option value="21:9">21:9</option>
+                </select>
+            </div>
+            <div style="flex:1;">
+                <label>输出格式</label>
+                <select id="imageTestFormat" style="width:100%;padding:8px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;">
+                    <option value="url">URL</option>
+                    <option value="b64_json">Base64</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>输入图像（可选，图生图/多图合成，JSON 数组）</label>
+            <input type="text" id="imageTestImages" placeholder='例如 ["https://example.com/a.png"] 留空为文生图' style="width:100%;padding:8px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;outline:none;">
+        </div>
+        <div class="form-group">
+            <label>测试结果</label>
+            <div id="imageTestResult" style="width:100%;min-height:120px;padding:8px 10px;border:1px solid #e8e8e8;border-radius:4px;font-size:14px;background:#fafafa;white-space:pre-wrap;word-break:break-all;color:#666;">点击「开始测试」查看结果</div>
+            <div id="imageTestPreview" style="margin-top:10px;"></div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeImageTest()">关闭</button>
+            <button class="btn btn-primary" id="imageTestSubmit" onclick="runImageTest()">开始测试</button>
         </div>
     </div>
 </div>
@@ -229,6 +284,103 @@ function runTest() {
         }
     };
     xhr.send('id=' + id + '&prompt=' + encodeURIComponent(prompt));
+}
+function openImageTest(id, name) {
+    document.getElementById('imageTestTitle').textContent = '图片生成测试 - ' + name;
+    document.getElementById('imageTestId').value = id;
+    document.getElementById('imageTestResult').textContent = '准备就绪，点击「开始测试」';
+    document.getElementById('imageTestResult').style.color = '#666';
+    document.getElementById('imageTestPreview').innerHTML = '';
+    document.getElementById('imageTestSubmit').disabled = false;
+    document.getElementById('imageTestModal').classList.add('show');
+}
+function closeImageTest() {
+    document.getElementById('imageTestModal').classList.remove('show');
+}
+function runImageTest() {
+    var id = document.getElementById('imageTestId').value;
+    var prompt = document.getElementById('imageTestPrompt').value;
+    var size = document.getElementById('imageTestSize').value;
+    var ratio = document.getElementById('imageTestRatio').value;
+    var format = document.getElementById('imageTestFormat').value;
+    var images = document.getElementById('imageTestImages').value.trim();
+    if (!id) { alert('缺少项目ID'); return; }
+    if (!prompt) { alert('提示词不能为空'); return; }
+    var imageArr = null;
+    if (images) {
+        try {
+            imageArr = JSON.parse(images);
+            if (!Array.isArray(imageArr)) throw new Error('not array');
+        } catch (e) {
+            alert('输入图像须为 JSON 数组，例如 ["https://example.com/a.png"]');
+            return;
+        }
+    }
+    var resultBox = document.getElementById('imageTestResult');
+    var preview = document.getElementById('imageTestPreview');
+    var btn = document.getElementById('imageTestSubmit');
+    resultBox.textContent = '正在生成图片，请稍候（可能需要 1-2 分钟）...';
+    resultBox.style.color = '#faad14';
+    preview.innerHTML = '';
+    btn.disabled = true;
+    var params = 'id=' + id
+        + '&prompt=' + encodeURIComponent(prompt)
+        + '&size=' + encodeURIComponent(size)
+        + '&ratio=' + encodeURIComponent(ratio)
+        + '&response_format=' + encodeURIComponent(format);
+    if (imageArr) params += '&image=' + encodeURIComponent(JSON.stringify(imageArr));
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/ai/testImage', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.timeout = 180000;
+    xhr.ontimeout = function () {
+        btn.disabled = false;
+        resultBox.textContent = '请求超时（图片生成较慢），请稍后重试';
+        resultBox.style.color = '#ff4d4f';
+    };
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status !== 0) {
+            btn.disabled = false;
+            var res;
+            try { res = JSON.parse(xhr.responseText); } catch(e) { resultBox.textContent = '响应解析失败'; resultBox.style.color = '#ff4d4f'; return; }
+            if (res.code == 0 && res.data) {
+                var d = res.data;
+                var meta = '生成成功';
+                if (d.created) meta += ' · created=' + d.created;
+                resultBox.textContent = meta;
+                resultBox.style.color = '#333';
+                if (d.url) {
+                    var img = document.createElement('img');
+                    img.src = d.url;
+                    img.alt = '生成结果';
+                    img.style.cssText = 'max-width:100%;max-height:360px;border-radius:4px;border:1px solid #e8e8e8;';
+                    preview.innerHTML = '';
+                    preview.appendChild(img);
+                    var link = document.createElement('a');
+                    link.href = d.url;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.textContent = d.url;
+                    link.style.cssText = 'display:block;margin-top:8px;font-size:12px;word-break:break-all;color:#1677ff;';
+                    preview.appendChild(link);
+                } else if (d.b64_json) {
+                    var img2 = document.createElement('img');
+                    img2.src = 'data:image/png;base64,' + d.b64_json;
+                    img2.alt = '生成结果';
+                    img2.style.cssText = 'max-width:100%;max-height:360px;border-radius:4px;border:1px solid #e8e8e8;';
+                    preview.innerHTML = '';
+                    preview.appendChild(img2);
+                    resultBox.textContent += '\n（Base64 输出，长度 ' + d.b64_json.length + '）';
+                }
+                showToast('图片生成成功', 'success');
+            } else {
+                resultBox.textContent = res.echo || '测试失败';
+                resultBox.style.color = '#ff4d4f';
+            }
+        }
+    };
+    xhr.send(params);
 }
 function doResetSecret(id) {
     if (!confirm('重置后旧 Secret 与旧 kid 立即失效，调用方必须同步更换，否则 v3 接口将全部鉴权失败。确定继续？')) return;
