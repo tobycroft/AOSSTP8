@@ -5,7 +5,9 @@ namespace app\admin\controller;
 use app\admin\model\AdminAiModel;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
+use app\v3\ai\action\AiAction;
 use BaseController\CommonController;
+use Exception;
 use Input;
 use Ret;
 
@@ -135,5 +137,55 @@ class Ai extends CommonController
 
         $item->delete();
         Ret::Success(0, [], '删除成功');
+    }
+
+    /**
+     * 在线测试：调用一次 chat/completions 验证配置可用性
+     */
+    public function test()
+    {
+        $id = Input::PostInt('id');
+        if (!$id) {
+            Ret::Fail(400, null, '缺少参数[id]');
+        }
+
+        $model = new AdminAiModel();
+        $item = $model->findOrEmpty($id);
+        if ($item->isEmpty()) {
+            Ret::Fail(404, null, '项目不存在');
+        }
+
+        if ((string)$item['api_key'] === '') {
+            Ret::Fail(400, null, '未配置API密钥');
+        }
+
+        $prompt = Input::Post('prompt', '用一句话介绍你自己。');
+        if ($prompt === '') {
+            $prompt = '用一句话介绍你自己。';
+        }
+
+        $proc = [
+            'base_url' => $item['base_url'] ?: 'https://apihub.agnes-ai.com/v1',
+            'model' => $item['model'] ?: 'agnes-3.0-flash',
+            'api_key' => $item['api_key'],
+        ];
+
+        try {
+            $data = AiAction::chatCompletions($proc, [
+                ['role' => 'user', 'content' => $prompt],
+            ], [
+                'max_tokens' => 256,
+            ]);
+        } catch (Exception $e) {
+            Ret::Fail(500, null, '测试失败: ' . $e->getMessage());
+        }
+
+        $content = $data['choices'][0]['message']['content'] ?? '';
+        $usage = $data['usage'] ?? [];
+
+        Ret::Success(0, [
+            'reply' => $content,
+            'usage' => $usage,
+        ], '测试成功');
     }
 }

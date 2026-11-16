@@ -95,6 +95,7 @@
     \think\facade\Route::any('admin/invite_code', '\app\admin\controller\InviteCode@index');
 
     // AI管理
+    \think\facade\Route::any('admin/ai/test', '\app\admin\controller\Ai@test');
     \think\facade\Route::any('admin/ai', '\app\admin\controller\Ai@index');
 
     \think\facade\Route::any('admin', '\app\admin\controller\Index@index');

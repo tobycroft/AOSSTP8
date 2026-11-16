@@ -35,6 +35,7 @@
             <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
             <td>
                 <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', '{$item.project|addslashes}', '{$item.api_key|addslashes}', '{$item.base_url|addslashes}', '{$item.model|addslashes}', {$item.status})">编辑</button>
+                <button class="btn btn-sm" style="background:#722ed1;color:#fff;margin-right:4px;" onclick="openTest({$item.id}, '{$item.name|addslashes}')">测试</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
         </tr>
@@ -76,6 +77,24 @@
         <div class="modal-actions">
             <button class="btn btn-cancel" onclick="closeModal()">取消</button>
             <button class="btn btn-primary" id="modalSubmit" onclick="submitForm()">确定</button>
+        </div>
+    </div>
+</div>
+<div class="modal" id="testModal">
+    <div class="modal-box" style="width:560px;">
+        <h3 id="testTitle">在线测试</h3>
+        <input type="hidden" id="testId" value="">
+        <div class="form-group">
+            <label>测试提示词</label>
+            <textarea id="testPrompt" rows="3" style="width:100%;padding:8px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;outline:none;resize:vertical;">用一句话介绍你自己。</textarea>
+        </div>
+        <div class="form-group">
+            <label>测试结果</label>
+            <div id="testResult" style="width:100%;min-height:100px;padding:8px 10px;border:1px solid #e8e8e8;border-radius:4px;font-size:14px;background:#fafafa;white-space:pre-wrap;word-break:break-all;color:#666;">点击「开始测试」查看结果</div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeTest()">关闭</button>
+            <button class="btn btn-primary" id="testSubmit" onclick="runTest()">开始测试</button>
         </div>
     </div>
 </div>
@@ -144,6 +163,50 @@ function submitForm() {
     var params = 'name=' + encodeURIComponent(name) + '&project=' + encodeURIComponent(project) + '&api_key=' + encodeURIComponent(apiKey) + '&model=' + encodeURIComponent(model) + '&base_url=' + encodeURIComponent(baseUrl) + '&status=' + status;
     if (id) params += '&id=' + id;
     xhr.send(params);
+}
+function openTest(id, name) {
+    document.getElementById('testTitle').textContent = '在线测试 - ' + name;
+    document.getElementById('testId').value = id;
+    document.getElementById('testPrompt').value = '用一句话介绍你自己。';
+    document.getElementById('testResult').textContent = '准备就绪，点击「开始测试」';
+    document.getElementById('testResult').style.color = '#666';
+    document.getElementById('testSubmit').disabled = false;
+    document.getElementById('testModal').classList.add('show');
+}
+function closeTest() {
+    document.getElementById('testModal').classList.remove('show');
+}
+function runTest() {
+    var id = document.getElementById('testId').value;
+    var prompt = document.getElementById('testPrompt').value;
+    if (!id) { alert('缺少项目ID'); return; }
+    var resultBox = document.getElementById('testResult');
+    var btn = document.getElementById('testSubmit');
+    resultBox.textContent = '正在请求模型，请稍候...';
+    resultBox.style.color = '#faad14';
+    btn.disabled = true;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/ai/test', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            btn.disabled = false;
+            var res;
+            try { res = JSON.parse(xhr.responseText); } catch(e) { resultBox.textContent = '响应解析失败'; resultBox.style.color = '#ff4d4f'; return; }
+            if (res.code == 0 && res.data) {
+                var usage = res.data.usage || {};
+                var usageText = Object.keys(usage).length ? ('\n\n[Token用量] 输入:' + (usage.prompt_tokens||0) + ' 输出:' + (usage.completion_tokens||0) + ' 总计:' + (usage.total_tokens||0)) : '';
+                resultBox.textContent = res.data.reply + usageText;
+                resultBox.style.color = '#333';
+                showToast('测试成功', 'success');
+            } else {
+                resultBox.textContent = res.echo || '测试失败';
+                resultBox.style.color = '#ff4d4f';
+            }
+        }
+    };
+    xhr.send('id=' + id + '&prompt=' + encodeURIComponent(prompt));
 }
 function doDelete(id) {
     if (!confirm('确定要删除该项目吗？')) return;
