@@ -5,6 +5,7 @@ namespace app\admin\controller;
 use app\admin\utils\AdminAuth;
 use BaseController\CommonController;
 use Ret;
+use think\facade\View;
 
 class Doc extends CommonController
 {
@@ -20,6 +21,9 @@ class Doc extends CommonController
             Ret::Fail(405, null, '不支持的请求方法');
         }
 
-        return $this->renderPage('doc/index', [], '使用文档', null, 'doc');
+        // 接口文档为独立页面，不套用后台框架，避免与文档目录形成双侧边栏
+        View::assign('title', '接口文档');
+
+        return response(View::fetch('doc/index'));
     }
 }

@@ -177,7 +177,7 @@ CSS;
         // Header
         $html .= '<div class="header"><h1>AOSS 后台管理</h1>';
         $html .= '<div class="user-info">';
-        $html .= '<a class="btn-doc" href="/admin/doc" target="_blank" rel="noopener" title="使用文档：链接方式、加密方式与访问方式">';
+        $html .= '<a class="btn-doc" href="/admin/doc" target="_blank" rel="noopener" title="接口文档：访问方式、链接方式与签名规则">';
         $html .= '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>';
         $html .= '文档</a>';
         $html .= '<span>欢迎，' . $nickname . '</span>';
