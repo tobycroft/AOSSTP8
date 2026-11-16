@@ -160,7 +160,7 @@ class AiAction
      *  - 依接口「重要说明」：response_format 与输入图像一律放进 extra_body，
      *    请求体顶层不出现 response_format（即便 extra 里误传也会下沉纠正）。
      *
-     * @param array  $proc    已鉴权的 ao_ai 行（api_key / base_url）
+     * @param array  $proc    已鉴权的项目配置（含绑定 agnes API 合并进来的 api_key / base_url / model）
      * @param string $prompt  图像生成或编辑的文本指令
      * @param string $size    尺寸档位（1K/2K/3K/4K）或历史精确尺寸
      * @param array  $options model / ratio / image(string[]) / response_format /

@@ -28,7 +28,7 @@ class index extends CommonController
     /** 已鉴权的凭证 */
     public mixed $secret;
 
-    /** 已鉴权的项目配置（ao_ai 行） */
+    /** 已鉴权的项目配置（ao_ai 行 + 绑定的 agnes API 配置） */
     public mixed $proc;
 
     public function initialize()

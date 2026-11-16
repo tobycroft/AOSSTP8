@@ -11,7 +11,7 @@ use think\Exception;
  * v3 图片生成接口（文生图 / 图生图 / 多图合成）
  *
  * POST /v3/ai/images/generations
- * 继承 index 复用凭证信封鉴权，上游走 ao_ai 配置的 api_key / base_url。
+ * 继承 index 复用凭证信封鉴权，上游走项目绑定的 agnes API 的 api_key / base_url。
  */
 class images extends index
 {

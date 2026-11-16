@@ -56,8 +56,15 @@ class Ai extends CommonController
         }
         $list = $query->paginate($limit, false, ['page' => $page])->toArray();
 
+        // 一次性取出全部 agnes API 名称，供项目列表展示绑定关系（避免逐行查询）
+        $agnesNames = [];
+        foreach (AdminAiModel::agnesOptions() as $opt) {
+            $agnesNames[(int)$opt['id']] = $opt['name'];
+        }
+
         $items = [];
         foreach ($list['data'] as $item) {
+            $agnesId = (int)($item['agnes_api_id'] ?? 0);
             $items[] = [
                 'id' => $item['id'],
                 'name' => $item['name'],
@@ -65,10 +72,8 @@ class Ai extends CommonController
                 'secret_mask' => $this->maskSecret((string)$item['secret']),
                 'secret_strong' => Envelope::isStrongSecret((string)$item['secret']),
                 'kid' => Envelope::kid((string)$item['secret']),
-                'base_url' => $item['base_url'],
-                'model' => $item['model'],
-                'api_key' => $item['api_key'],
-                'api_key_short' => mb_strlen($item['api_key']) > 16 ? mb_substr($item['api_key'], 0, 8) . '...' . mb_substr($item['api_key'], -4) : $item['api_key'],
+                'agnes_api_id' => $agnesId,
+                'agnes_name' => $agnesNames[$agnesId] ?? ('未绑定(' . $agnesId . ')'),
                 'status' => $item['status'],
             ];
         }
@@ -79,7 +84,8 @@ class Ai extends CommonController
             'list' => $items,
             'search' => $search,
             'pagination' => $pagination,
-        ], 'agnes', 'ai', 'ai');
+            'agnesOptions' => AdminAiModel::agnesOptions(),
+        ], 'AI 项目', 'ai', 'ai');
     }
 
     /**
@@ -103,14 +109,17 @@ class Ai extends CommonController
             Ret::Fail(400, null, '项目名称不能为空');
         }
 
+        $agnesApiId = Input::PutInt('agnes_api_id', 0);
+        if ($agnesApiId <= 0 || empty(AdminAiModel::agnesConfig($agnesApiId))) {
+            Ret::Fail(400, null, '请选择可用的 agnes API');
+        }
+
         // 凭证由服务端签发，不接受人工输入：secret 的熵直接决定信封机密性上限
         $secret = Envelope::randomSecret();
         $data = [
             'name' => $name,
             'secret' => $secret,
-            'api_key' => Input::Put('api_key', ''),
-            'base_url' => Input::Put('base_url', 'https://apihub.agnes-ai.com/v1'),
-            'model' => Input::Put('model', 'agnes-3.0-flash'),
+            'agnes_api_id' => $agnesApiId,
             'status' => Input::PutInt('status', 1),
         ];
 
@@ -161,9 +170,13 @@ class Ai extends CommonController
 
         $data = [];
         if (request()->has('name', 'post')) $data['name'] = Input::Post('name');
-        if (request()->has('api_key', 'post')) $data['api_key'] = Input::Post('api_key');
-        if (request()->has('base_url', 'post')) $data['base_url'] = Input::Post('base_url');
-        if (request()->has('model', 'post')) $data['model'] = Input::Post('model');
+        if (request()->has('agnes_api_id', 'post')) {
+            $agnesApiId = Input::PostInt('agnes_api_id');
+            if ($agnesApiId <= 0 || empty(AdminAiModel::agnesConfig($agnesApiId))) {
+                Ret::Fail(400, null, '请选择可用的 agnes API');
+            }
+            $data['agnes_api_id'] = $agnesApiId;
+        }
         if (request()->has('status', 'post')) $data['status'] = Input::PostInt('status');
 
         $item->save($data);
@@ -203,20 +216,15 @@ class Ai extends CommonController
             Ret::Fail(404, null, '项目不存在');
         }
 
-        if ((string)$item['api_key'] === '') {
-            Ret::Fail(400, null, '未配置API密钥');
+        $proc = AdminAiModel::agnesConfig((int)($item['agnes_api_id'] ?? 0));
+        if (empty($proc) || (string)$proc['api_key'] === '') {
+            Ret::Fail(400, null, '未绑定可用的 agnes API 或 API 密钥为空');
         }
 
         $prompt = Input::Post('prompt', '用一句话介绍你自己。');
         if ($prompt === '') {
             $prompt = '用一句话介绍你自己。';
         }
-
-        $proc = [
-            'base_url' => $item['base_url'] ?: 'https://apihub.agnes-ai.com/v1',
-            'model' => $item['model'] ?: 'agnes-3.0-flash',
-            'api_key' => $item['api_key'],
-        ];
 
         try {
             $data = AiAction::chatCompletions($proc, [
@@ -259,8 +267,9 @@ class Ai extends CommonController
             Ret::Fail(404, null, '项目不存在');
         }
 
-        if ((string)$item['api_key'] === '') {
-            Ret::Fail(400, null, '未配置API密钥');
+        $proc = AdminAiModel::agnesConfig((int)($item['agnes_api_id'] ?? 0));
+        if (empty($proc) || (string)$proc['api_key'] === '') {
+            Ret::Fail(400, null, '未绑定可用的 agnes API 或 API 密钥为空');
         }
 
         $prompt = Input::Post('prompt', false);
@@ -298,11 +307,6 @@ class Ai extends CommonController
                 Ret::Success(0, $hit, '命中本地缓存');
             }
         }
-
-        $proc = [
-            'base_url' => $item['base_url'] ?: 'https://apihub.agnes-ai.com/v1',
-            'api_key' => $item['api_key'],
-        ];
 
         $options = [];
         if ($ratio !== '') {

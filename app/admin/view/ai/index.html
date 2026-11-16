@@ -2,7 +2,7 @@
 {block name="content"}
 <div class="toolbar">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <h2>agnes</h2>
+        <h2>AI 项目</h2>
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="搜索项目名称，或粘贴 Secret 精确定位" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 280px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
             <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
@@ -17,9 +17,7 @@
             <th>项目名称</th>
             <th>Secret（v3 凭证）</th>
             <th>kid</th>
-            <th>模型</th>
-            <th>API密钥</th>
-            <th>Base URL</th>
+            <th>绑定 API</th>
             <th>状态</th>
             <th>操作</th>
         </tr>
@@ -34,12 +32,10 @@
                 <button class="btn btn-sm" style="background:#595959;color:#fff;margin-left:4px;padding:2px 8px;font-size:12px;" onclick="copySecret('{$item.secret}')">复制</button>
             </td>
             <td style="font-family:monospace;font-size:12px;color:#8c8c8c;">{$item.kid}</td>
-            <td>{$item.model}</td>
-            <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.api_key}">{$item.api_key_short}</td>
-            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.base_url}">{$item.base_url}</td>
+            <td>{$item.agnes_name}</td>
             <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
             <td>
-                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', '{$item.api_key|addslashes}', '{$item.base_url|addslashes}', '{$item.model|addslashes}', {$item.status})">编辑</button>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', {$item.agnes_api_id}, {$item.status})">编辑</button>
                 <button class="btn btn-sm" style="background:#722ed1;color:#fff;margin-right:4px;" onclick="openTest({$item.id}, '{$item.name|addslashes}')">对话测试</button>
                 <button class="btn btn-sm" style="background:#13a8a8;color:#fff;margin-right:4px;" onclick="openImageTest({$item.id}, '{$item.name|addslashes}')">图片测试</button>
                 <button class="btn btn-sm" style="background:#fa8c16;color:#fff;margin-right:4px;" onclick="doResetSecret({$item.id})">重置Secret</button>
@@ -65,16 +61,14 @@
             </div>
         </div>
         <div class="form-group">
-            <label>API 密钥</label>
-            <input type="text" id="formApiKey" placeholder="apis的api_key">
-        </div>
-        <div class="form-group">
-            <label>模型名称</label>
-            <input type="text" id="formModel" placeholder="agnes-3.0-flash">
-        </div>
-        <div class="form-group">
-            <label>Base URL</label>
-            <input type="text" id="formBaseUrl" placeholder="https://apihub.agnes-ai.com/v1">
+            <label>绑定 agnes API</label>
+            <select id="formAgnesApiId">
+                <option value="0">-- 请选择 --</option>
+                {foreach $agnesOptions as $opt}
+                <option value="{$opt.id}">{$opt.name}</option>
+                {/foreach}
+            </select>
+            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">密钥、地址、模型由所选 agnes API 统一提供；可到「agnes API」菜单维护。</div>
         </div>
         <div class="form-group">
             <label>状态</label>
@@ -176,8 +170,6 @@
 {block name="script"}
 {literal}
 <script>
-var defaultBaseUrl = 'https://apihub.agnes-ai.com/v1';
-var defaultModel = 'agnes-3.0-flash';
 function doSearch() {
     var search = document.getElementById('searchInput').value;
     var url = '/admin/ai?page=1';
@@ -203,20 +195,16 @@ function openCreate() {
     document.getElementById('modalTitle').textContent = '新增项目';
     document.getElementById('editId').value = '';
     document.getElementById('formName').value = '';
-    document.getElementById('formApiKey').value = '';
-    document.getElementById('formModel').value = defaultModel;
-    document.getElementById('formBaseUrl').value = defaultBaseUrl;
+    document.getElementById('formAgnesApiId').value = '0';
     document.getElementById('formStatus').value = '1';
     document.getElementById('secretNote').style.display = '';
     document.getElementById('aiModal').classList.add('show');
 }
-function openEdit(id, name, apiKey, baseUrl, model, status) {
+function openEdit(id, name, agnesApiId, status) {
     document.getElementById('modalTitle').textContent = '编辑项目';
     document.getElementById('editId').value = id;
     document.getElementById('formName').value = name;
-    document.getElementById('formApiKey').value = apiKey;
-    document.getElementById('formModel').value = model;
-    document.getElementById('formBaseUrl').value = baseUrl;
+    document.getElementById('formAgnesApiId').value = agnesApiId;
     document.getElementById('formStatus').value = status;
     document.getElementById('secretNote').style.display = 'none';
     document.getElementById('aiModal').classList.add('show');
@@ -224,11 +212,10 @@ function openEdit(id, name, apiKey, baseUrl, model, status) {
 function submitForm() {
     var id = document.getElementById('editId').value;
     var name = document.getElementById('formName').value;
-    var apiKey = document.getElementById('formApiKey').value;
-    var model = document.getElementById('formModel').value;
-    var baseUrl = document.getElementById('formBaseUrl').value;
+    var agnesApiId = document.getElementById('formAgnesApiId').value;
     var status = document.getElementById('formStatus').value;
     if (!name) { alert('项目名称不能为空'); return; }
+    if (!agnesApiId || agnesApiId === '0') { alert('请选择绑定的 agnes API'); return; }
     var xhr = new XMLHttpRequest();
     var method = id ? 'POST' : 'PUT';
     xhr.open(method, '/admin/ai', true);
@@ -248,7 +235,7 @@ function submitForm() {
             }
         }
     };
-    var params = 'name=' + encodeURIComponent(name) + '&api_key=' + encodeURIComponent(apiKey) + '&model=' + encodeURIComponent(model) + '&base_url=' + encodeURIComponent(baseUrl) + '&status=' + status;
+    var params = 'name=' + encodeURIComponent(name) + '&agnes_api_id=' + agnesApiId + '&status=' + status;
     if (id) params += '&id=' + id;
     xhr.send(params);
 }

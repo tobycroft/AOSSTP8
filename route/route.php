@@ -95,7 +95,11 @@
     \think\facade\Route::any('admin/invite_code/batchDelete', '\app\admin\controller\InviteCode@batchDelete');
     \think\facade\Route::any('admin/invite_code', '\app\admin\controller\InviteCode@index');
 
-    // agnes（AI 接口）
+    // agnes API 管理（密钥独立存储）
+    \think\facade\Route::any('admin/agnes/copy', '\app\admin\controller\Agnes@copy');
+    \think\facade\Route::any('admin/agnes', '\app\admin\controller\Agnes@index');
+
+    // AI 项目（v3 凭证，绑定 agnes API）
     \think\facade\Route::any('admin/ai/test', '\app\admin\controller\Ai@test');
     \think\facade\Route::any('admin/ai/testImage', '\app\admin\controller\Ai@testImage');
     \think\facade\Route::any('admin/ai/resetSecret', '\app\admin\controller\Ai@resetSecret');

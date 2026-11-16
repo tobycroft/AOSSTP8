@@ -71,9 +71,10 @@ class Layout
             ],
         ],
         'ai' => [
-            'title' => 'agnes',
+            'title' => 'AI 管理',
             'items' => [
-                'ai' => ['label' => 'agnes', 'url' => '/admin/ai'],
+                'agnes' => ['label' => 'agnes API', 'url' => '/admin/agnes'],
+                'ai' => ['label' => 'AI 项目', 'url' => '/admin/ai'],
             ],
         ],
     ];
