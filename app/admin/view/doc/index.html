@@ -88,6 +88,9 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
         <a class="sub" href="#doc-api-cert">证书</a>
         <a class="sub" href="#doc-api-ai">AI</a>
         <a class="sub" href="#doc-api-hook">Hook</a>
+        <a href="#doc-portal">门户登录与注册</a>
+        <a class="sub" href="#doc-portal-login">登录验证码策略</a>
+        <a class="sub" href="#doc-portal-register">注册</a>
         <a href="#doc-sign">签名与加密</a>
         <a class="sub" href="#doc-sign-tls">传输加密</a>
         <a class="sub" href="#doc-sign-md5">MD5 签名</a>
@@ -237,6 +240,38 @@ Route::any(':version/:module/:controller/:function',
                 <tbody>
                     <tr><td>单推</td><td><span class="pill blue">GET</span> <code class="inline">/v1/hook/push/single?tag={标签}&amp;param={参数}</code></td><td><code class="inline">tag, param</code></td></tr>
                     <tr><td>GitHub Webhook</td><td><span class="pill green">POST</span> <code class="inline">/hook</code> 或 <code class="inline">/github</code></td><td><code class="inline">payload</code></td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="doc-section" id="doc-portal">
+            <h2>门户登录与注册</h2>
+            <p>门户（console）的登录与注册接口位于域名根路径，不使用四段式路由；两者共用验证码图片接口 <code class="inline">GET /captcha/gif</code>（4 位数字，答案 hash 写入 cookie <code class="inline">user_captcha</code>，有效期 300 秒）。</p>
+
+            <h3 id="doc-portal-login">登录验证码策略</h3>
+            <p>登录验证码按 IP 自适应：无失败记录时默认不需要验证码；一旦该 IP 登录失败 ≥1 次，在 2 小时窗口内（每次失败重新计时）强制校验验证码；任意一次登录成功立即解除，下次登录恢复免验证码。</p>
+            <table>
+                <thead><tr><th style="width:150px;">能力</th><th style="width:400px;">方法与链接</th><th>关键参数</th></tr></thead>
+                <tbody>
+                    <tr><td>登录</td><td><span class="pill green">POST</span> <code class="inline">/login</code></td><td><code class="inline">username, password, code</code>（code 仅在需要验证码时必填）</td></tr>
+                    <tr><td>登录态</td><td><span class="pill blue">GET</span> <code class="inline">/login/info</code></td><td><code class="inline">user_token</code>（cookie 或请求头）</td></tr>
+                    <tr><td>退出</td><td><span class="pill green">POST</span> <code class="inline">/login/logout</code></td><td><code class="inline">user_token</code></td></tr>
+                </tbody>
+            </table>
+            <table>
+                <thead><tr><th style="width:220px;">失败响应 data 字段</th><th>含义</th></tr></thead>
+                <tbody>
+                    <tr><td><code class="inline">need_captcha: true</code></td><td>该 IP 已进入验证码强制状态，前端需展示验证码并随下一次提交带上 <code class="inline">code</code></td></tr>
+                    <tr><td><code class="inline">need_captcha: false</code></td><td>未触发验证码策略（含 Redis 不可用时的降级）</td></tr>
+                </tbody>
+            </table>
+
+            <h3 id="doc-portal-register">注册</h3>
+            <p>注册始终强制验证码，不受上述 IP 失败策略影响；邀请码为必填，注册页默认填入 <code class="inline">tuuz</code>。</p>
+            <table>
+                <thead><tr><th style="width:150px;">能力</th><th style="width:400px;">方法与链接</th><th>关键参数</th></tr></thead>
+                <tbody>
+                    <tr><td>注册</td><td><span class="pill green">POST</span> <code class="inline">/register</code></td><td><code class="inline">username, password, nickname, invite_code, code</code>（均必填，nickname 可空）</td></tr>
                 </tbody>
             </table>
         </section>
