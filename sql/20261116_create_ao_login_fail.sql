@@ -1,5 +1,7 @@
 -- 门户登录风控：登录失败状态表
--- 执行方式：mysql -h <host> -u <user> -p <database> < sql/20261116_create_ao_login_fail.sql
+-- 执行方式：直接使用项目根目录 .env 中的 DB_HOST / DB_PORT / DB_USER / DB_PASS / DB_NAME 直连执行，
+--           例：mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < sql/20261116_create_ao_login_fail.sql
+--           （应用侧同样走 .env 直连：think\facade\Db 读取 config/database.php 的 env 配置，无额外连接参数）
 -- 说明：每个客户端 IP 一行，记录窗口期（2 小时）内的连续失败次数；
 --       登录成功即删除该行，故表数据量约为“失败中的 IP 数”，不会持续增长。
 --       未执行本脚本时，LoginGuard 会降级为不强制验证码并写 warning 日志，不影响登录。
