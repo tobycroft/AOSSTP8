@@ -9,6 +9,9 @@ class AiAction
     protected static string $default_base_url = 'https://apihub.agnes-ai.com/v1';
     protected static string $default_model = 'agnes-3.0-flash';
 
+    /** 图片生成默认模型：与对话模型相互独立，切勿回退到 $default_model */
+    protected static string $default_image_model = 'agnes-image-2.5-flash';
+
     public static function getDefaultBaseUrl(): string
     {
         return self::$default_base_url;
@@ -17,6 +20,11 @@ class AiAction
     public static function getDefaultModel(): string
     {
         return self::$default_model;
+    }
+
+    public static function getDefaultImageModel(): string
+    {
+        return self::$default_image_model;
     }
 
     public static function chatCompletions(array $proc, array $messages, array $options = []): array
@@ -129,6 +137,74 @@ class AiAction
 
         $url = rtrim($base_url, '/') . '/messages';
         return self::postAnthropic($url, $api_key, $payload);
+    }
+
+    /**
+     * 图片生成（文生图 / 图生图 / 多图合成）
+     *
+     * 上游：POST {base_url}/images/generations，Bearer 鉴权，与 chat 同一套配置。
+     * 与对话接口的关键差异：
+     *  - 默认模型使用独立的图片模型，绝不回退到 $proc['model']（那是对话模型）；
+     *  - 依接口「重要说明」：response_format 与输入图像一律放进 extra_body，
+     *    请求体顶层不出现 response_format（即便 extra 里误传也会下沉纠正）。
+     *
+     * @param array  $proc    已鉴权的 ao_ai 行（api_key / base_url）
+     * @param string $prompt  图像生成或编辑的文本指令
+     * @param string $size    尺寸档位（1K/2K/3K/4K）或历史精确尺寸
+     * @param array  $options model / ratio / image(string[]) / response_format /
+     *                        return_base64 / extra_body / extra
+     * @return array 上游原样响应（data[0].url 或 data[0].b64_json）
+     */
+    public static function imageGenerations(array $proc, string $prompt, string $size, array $options = []): array
+    {
+        $base_url = $proc['base_url'] ?: self::$default_base_url;
+        // 图片模型与对话模型隔离：只认显式传入的 model，否则用图片默认值
+        $model = ($options['model'] ?? '') ?: self::$default_image_model;
+        $api_key = $proc['api_key'];
+
+        $payload = [
+            'model' => $model,
+            'prompt' => $prompt,
+            'size' => $size,
+        ];
+
+        if (!empty($options['ratio'])) {
+            $payload['ratio'] = $options['ratio'];
+        }
+        if (isset($options['return_base64'])) {
+            $payload['return_base64'] = (bool)$options['return_base64'];
+        }
+
+        // extra_body：先接收调用方原始透传，再写入规范化字段（同名以规范化为准）
+        $extra_body = (!empty($options['extra_body']) && is_array($options['extra_body']))
+            ? $options['extra_body']
+            : [];
+
+        // 图生图 / 多图合成：输入图像统一放 extra_body.image
+        if (!empty($options['image']) && is_array($options['image'])) {
+            $extra_body['image'] = array_values($options['image']);
+        }
+        // response_format 只允许出现在 extra_body（url / b64_json）
+        if (!empty($options['response_format'])) {
+            $extra_body['response_format'] = $options['response_format'];
+        }
+
+        // extra 作为顶层高级透传，兼容其它方法习惯；但禁止把 response_format 留在顶层
+        if (!empty($options['extra']) && is_array($options['extra'])) {
+            $extra = $options['extra'];
+            if (isset($extra['response_format'])) {
+                $extra_body['response_format'] = $extra['response_format'];
+                unset($extra['response_format']);
+            }
+            $payload = array_merge($payload, $extra);
+        }
+
+        if (!empty($extra_body)) {
+            $payload['extra_body'] = $extra_body;
+        }
+
+        $url = rtrim($base_url, '/') . '/images/generations';
+        return self::postOpenAI($url, $api_key, $payload);
     }
 
     protected static function postOpenAI(string $url, string $api_key, array $payload): array
