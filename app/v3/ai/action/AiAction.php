@@ -22,7 +22,7 @@ class AiAction
     public static function chatCompletions(array $proc, array $messages, array $options = []): array
     {
         $base_url = $proc['base_url'] ?: self::$default_base_url;
-        $model = $options['model'] ?: ($proc['model'] ?: self::$default_model);
+        $model = ($options['model'] ?? '') ?: (($proc['model'] ?? '') ?: self::$default_model);
         $api_key = $proc['api_key'];
 
         $payload = [
@@ -62,7 +62,7 @@ class AiAction
     public static function responses(array $proc, $input, array $options = []): array
     {
         $base_url = $proc['base_url'] ?: self::$default_base_url;
-        $model = $options['model'] ?: ($proc['model'] ?: self::$default_model);
+        $model = ($options['model'] ?? '') ?: (($proc['model'] ?? '') ?: self::$default_model);
         $api_key = $proc['api_key'];
 
         $payload = [
@@ -99,7 +99,7 @@ class AiAction
     public static function messages(array $proc, array $messages, array $options = []): array
     {
         $base_url = $proc['base_url'] ?: self::$default_base_url;
-        $model = $options['model'] ?: ($proc['model'] ?: self::$default_model);
+        $model = ($options['model'] ?? '') ?: (($proc['model'] ?? '') ?: self::$default_model);
         $api_key = $proc['api_key'];
 
         $payload = [
