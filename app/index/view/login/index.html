@@ -14,6 +14,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC"
 .form-group label { display: block; margin-bottom: 6px; color: #555; font-size: 14px; }
 .form-group input { width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px; outline: none; transition: border-color 0.3s; }
 .form-group input:focus { border-color: #4096ff; }
+.form-group .tip { margin-top: 4px; color: #bbb; font-size: 12px; line-height: 1.6; }
 .captcha-row { display: flex; gap: 10px; }
 .captcha-row input { flex: 1; }
 .captcha-row img { height: 42px; border-radius: 4px; cursor: pointer; border: 1px solid #d9d9d9; }
@@ -40,12 +41,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC"
             <label>密码</label>
             <input type="password" id="password" name="password" placeholder="请输入密码" required>
         </div>
-        <div class="form-group">
+        <div class="form-group" id="captchaGroup" style="display: {if $need_captcha}block{else /}none{/if};">
             <label>验证码</label>
             <div class="captcha-row">
-                <input type="text" id="code" name="code" placeholder="请输入验证码" maxlength="4" required>
+                <input type="text" id="code" name="code" placeholder="请输入验证码" maxlength="4">
                 <img id="captchaImg" src="/captcha/gif" alt="验证码" title="点击刷新验证码">
             </div>
+            <div class="tip">该 IP 近期存在登录失败记录，需输入验证码；登录成功后自动免验证码</div>
         </div>
         <button class="btn" id="submitBtn">登 录</button>
         <div id="errorMsg" class="error"></div>
@@ -57,13 +59,28 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC"
 </div>
 {literal}
 <script>
-document.getElementById('captchaImg').onclick = function() { this.src = '/captcha/gif?_=' + Date.now(); };
+var captchaGroup = document.getElementById('captchaGroup');
+var captchaInput = document.getElementById('code');
+var captchaImg = document.getElementById('captchaImg');
+
+captchaImg.onclick = function() { this.src = '/captcha/gif?_=' + Date.now(); };
+
+// 显示/隐藏验证码，显示时刷新图片并清空输入
+function toggleCaptcha(show) {
+    captchaGroup.style.display = show ? 'block' : 'none';
+    if (show) {
+        captchaInput.value = '';
+        captchaImg.src = '/captcha/gif?_=' + Date.now();
+    }
+}
 
 document.getElementById('submitBtn').onclick = function() {
     var username = document.getElementById('username').value;
     var password = document.getElementById('password').value;
-    var code = document.getElementById('code').value;
-    if (!username || !password || !code) { alert('请填写完整信息'); return; }
+    var code = captchaInput.value;
+    var needCaptcha = captchaGroup.style.display !== 'none';
+    if (!username || !password) { alert('请填写完整信息'); return; }
+    if (needCaptcha && !code) { alert('请输入验证码'); return; }
     var errorMsg = document.getElementById('errorMsg');
     errorMsg.style.display = 'none';
     var btn = this;
@@ -80,11 +97,12 @@ document.getElementById('submitBtn').onclick = function() {
             } else {
                 errorMsg.style.display = 'block';
                 errorMsg.textContent = res.echo;
-                document.getElementById('captchaImg').src = '/captcha/gif?_=' + Date.now();
+                // 后端判定需验证码时（登录失败或已存在失败记录），展示验证码
+                toggleCaptcha(!!(res.data && res.data.need_captcha));
             }
         }
     };
-    xhr.send('username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password) + '&code=' + encodeURIComponent(code));
+    xhr.send('username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password) + '&code=' + encodeURIComponent(needCaptcha ? code : ''));
 };
 </script>
 {/literal}

@@ -4,6 +4,7 @@ namespace app\index\controller;
 
 use app\index\model\LoginLogModel;
 use app\index\model\UserModel;
+use app\index\utils\LoginGuard;
 use app\index\utils\UserAuth;
 use BaseController\CommonController;
 use Input;
@@ -26,8 +27,10 @@ class Login extends CommonController
 
     private function page()
     {
+        // 该 IP 存在未过期的登录失败记录时，登录页直接要求验证码
         View::assign([
             'title' => '登录',
+            'need_captcha' => LoginGuard::needCaptcha(request()->ip()),
         ]);
         return response(View::fetch('login/index'));
     }
@@ -36,35 +39,45 @@ class Login extends CommonController
     {
         $username = Input::Post('username');
         $password = Input::Post('password');
-        $code = Input::Post('code');
+        $code = Input::Post('code', false);
         $ip = request()->ip();
 
-        // 验证验证码（从 cookie 读取 hash）
-        $captchaHash = $_COOKIE['user_captcha'] ?? null;
-        if (empty($captchaHash)) {
-            Ret::Fail(400, null, '请先获取验证码');
-        }
-        $code = mb_strtolower($code, 'UTF-8');
-        if (!password_verify($code, $captchaHash)) {
+        // 登录失败 ≥1 次的 IP 强制校验验证码；无失败记录时不校验
+        $needCaptcha = LoginGuard::needCaptcha($ip);
+        if ($needCaptcha) {
+            // 验证验证码（从 cookie 读取 hash）
+            $captchaHash = $_COOKIE['user_captcha'] ?? null;
+            if (empty($captchaHash)) {
+                Ret::Fail(400, ['need_captcha' => true], '请先获取验证码');
+            }
+            if (!password_verify(mb_strtolower($code, 'UTF-8'), $captchaHash)) {
+                setcookie('user_captcha', '', time() - 3600, '/');
+                $fails = LoginGuard::markFail($ip);
+                Ret::Fail(400, ['need_captcha' => $fails >= 1], '验证码错误');
+            }
             setcookie('user_captcha', '', time() - 3600, '/');
-            Ret::Fail(400, null, '验证码错误');
         }
-        setcookie('user_captcha', '', time() - 3600, '/');
 
         $model = new UserModel();
         $user = $model->api_find_username($username);
 
         if ($user->isEmpty()) {
-            Ret::Fail(401, null, '用户名或密码错误');
+            $fails = LoginGuard::markFail($ip);
+            Ret::Fail(401, ['need_captcha' => $fails >= 1], '用户名或密码错误');
         }
 
         if ($user['status'] != 1) {
-            Ret::Fail(403, null, '账号已被禁用');
+            $fails = LoginGuard::markFail($ip);
+            Ret::Fail(403, ['need_captcha' => $fails >= 1], '账号已被禁用');
         }
 
         if (!password_verify($password, $user['password'])) {
-            Ret::Fail(401, null, '用户名或密码错误');
+            $fails = LoginGuard::markFail($ip);
+            Ret::Fail(401, ['need_captcha' => $fails >= 1], '用户名或密码错误');
         }
+
+        // 登录成功：清除该 IP 的失败状态，下次登录无需验证码
+        LoginGuard::clear($ip);
 
         $token = UserAuth::generateToken();
 
@@ -81,6 +94,7 @@ class Login extends CommonController
 
         Ret::Success(0, [
             'token' => $token,
+            'need_captcha' => false,
             'user' => [
                 'id' => $user['id'],
                 'username' => $user['username'],
