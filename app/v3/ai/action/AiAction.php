@@ -12,6 +12,9 @@ class AiAction
     /** 图片生成默认模型：与对话模型相互独立，切勿回退到 $default_model */
     protected static string $default_image_model = 'agnes-image-2.5-flash';
 
+    /** 返回数据中 model 字段的统一别名，避免向调用方暴露上游真实模型名 */
+    protected const MASKED_MODEL = 'aoss';
+
     public static function getDefaultBaseUrl(): string
     {
         return self::$default_base_url;
@@ -253,6 +256,7 @@ class AiAction
         $response = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error = curl_error($ch);
+        curl_close($ch);
 
         if ($response === false) {
             throw new Exception('AI接口请求失败: ' . $error);
@@ -264,6 +268,55 @@ class AiAction
             throw new Exception('AI接口返回错误: ' . $err_msg);
         }
 
+        // stream=true 时上游返回 SSE 文本流，json_decode 为 null，交由流式处理器按块屏蔽
+        if (($payload['stream'] ?? false) === true) {
+            self::emitSse((string)$response);
+        }
+
+        // 非流式响应：仅替换顶层 model，不递归改写嵌套业务字段
+        if (!is_array($data)) {
+            throw new Exception('AI接口返回格式异常');
+        }
+        if (array_key_exists('model', $data)) {
+            $data['model'] = self::MASKED_MODEL;
+        }
+
         return $data;
+    }
+
+    /**
+     * 流式响应处理：逐 data 块替换 model 后以标准 SSE 输出
+     *
+     * 上游 stream=true 返回 text/event-stream 文本，形如：
+     *   data: {"id":"...","model":"agnes-3.0-flash","choices":[...]}
+     *   data: [DONE]
+     * 这里仅对 data: 且非 [DONE] 的 JSON 块替换其顶层 model，其余行原样透传。
+     * 采用「接收完整响应后一次性输出」而非实时逐块推送，换取错误处理与非流式一致。
+     */
+    protected static function emitSse(string $raw): void
+    {
+        $masked = [];
+        foreach (preg_split('/\r\n|\r|\n/', $raw) as $line) {
+            if (strpos($line, 'data:') === 0) {
+                $payload = ltrim(substr($line, 5));
+                if ($payload !== '' && $payload !== '[DONE]') {
+                    $chunk = json_decode($payload, true);
+                    if (is_array($chunk) && array_key_exists('model', $chunk)) {
+                        $chunk['model'] = self::MASKED_MODEL;
+                        $line = 'data: ' . json_encode($chunk, 320);
+                    }
+                }
+            }
+            $masked[] = $line;
+        }
+
+        // 丢弃已有缓冲，避免 Ret 之外的多余输出污染 SSE 流
+        while (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
+        header('Content-Type: text/event-stream; charset=utf-8', true);
+        header('Cache-Control: no-cache', true);
+        echo implode("\n", $masked);
+        exit;
     }
 }
