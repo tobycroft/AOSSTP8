@@ -15,6 +15,7 @@
         <tr>
             <th>ID</th>
             <th>项目名称</th>
+            <th>对外模型名</th>
             <th>Secret（v3 凭证）</th>
             <th>kid</th>
             <th>绑定 API</th>
@@ -27,6 +28,7 @@
         <tr>
             <td>{$item.id}</td>
             <td>{$item.name}</td>
+            <td><span style="font-family:monospace;font-size:12px;color:#1677ff;">{if $item.model_alias}{$item.model_alias}{else/}<span style="color:#8c8c8c;">aoss（默认）</span>{/if}</span></td>
             <td style="white-space:nowrap;">
                 <span style="font-family:monospace;font-size:12px;{if !$item.secret_strong}color:#fa541c;{/if}" title="{$item.secret}">{$item.secret_mask}</span>
                 <button class="btn btn-sm" style="background:#595959;color:#fff;margin-left:4px;padding:2px 8px;font-size:12px;" onclick="copySecret('{$item.secret}')">复制</button>
@@ -35,7 +37,7 @@
             <td>{$item.agnes_name}</td>
             <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
             <td>
-                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', {$item.agnes_api_id}, {$item.status})">编辑</button>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', '{$item.model_alias|addslashes}', {$item.agnes_api_id}, {$item.status})">编辑</button>
                 <button class="btn btn-sm" style="background:#722ed1;color:#fff;margin-right:4px;" onclick="openTest({$item.id}, '{$item.name|addslashes}')">对话测试</button>
                 <button class="btn btn-sm" style="background:#13a8a8;color:#fff;margin-right:4px;" onclick="openImageTest({$item.id}, '{$item.name|addslashes}')">图片测试</button>
                 <button class="btn btn-sm" style="background:#fa8c16;color:#fff;margin-right:4px;" onclick="doResetSecret({$item.id})">重置Secret</button>
@@ -53,6 +55,11 @@
         <div class="form-group">
             <label>项目名称</label>
             <input type="text" id="formName" placeholder="人类可读的标签，例如「前端客服」">
+        </div>
+        <div class="form-group">
+            <label>对外模型名（可选）</label>
+            <input type="text" id="formModelAlias" placeholder="留空则使用默认 aoss" maxlength="64">
+            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">v3 接口返回数据中的 model 字段将显示为此名称，用于屏蔽上游真实模型；留空回退 aoss。</div>
         </div>
         <div class="form-group" id="secretNote" style="display:none;">
             <label>v3 凭证（Secret）</label>
@@ -195,15 +202,17 @@ function openCreate() {
     document.getElementById('modalTitle').textContent = '新增项目';
     document.getElementById('editId').value = '';
     document.getElementById('formName').value = '';
+    document.getElementById('formModelAlias').value = '';
     document.getElementById('formAgnesApiId').value = '0';
     document.getElementById('formStatus').value = '1';
     document.getElementById('secretNote').style.display = '';
     document.getElementById('aiModal').classList.add('show');
 }
-function openEdit(id, name, agnesApiId, status) {
+function openEdit(id, name, modelAlias, agnesApiId, status) {
     document.getElementById('modalTitle').textContent = '编辑项目';
     document.getElementById('editId').value = id;
     document.getElementById('formName').value = name;
+    document.getElementById('formModelAlias').value = modelAlias || '';
     document.getElementById('formAgnesApiId').value = agnesApiId;
     document.getElementById('formStatus').value = status;
     document.getElementById('secretNote').style.display = 'none';
@@ -212,6 +221,7 @@ function openEdit(id, name, agnesApiId, status) {
 function submitForm() {
     var id = document.getElementById('editId').value;
     var name = document.getElementById('formName').value;
+    var modelAlias = document.getElementById('formModelAlias').value.trim();
     var agnesApiId = document.getElementById('formAgnesApiId').value;
     var status = document.getElementById('formStatus').value;
     if (!name) { alert('项目名称不能为空'); return; }
@@ -235,7 +245,7 @@ function submitForm() {
             }
         }
     };
-    var params = 'name=' + encodeURIComponent(name) + '&agnes_api_id=' + agnesApiId + '&status=' + status;
+    var params = 'name=' + encodeURIComponent(name) + '&model_alias=' + encodeURIComponent(modelAlias) + '&agnes_api_id=' + agnesApiId + '&status=' + status;
     if (id) params += '&id=' + id;
     xhr.send(params);
 }

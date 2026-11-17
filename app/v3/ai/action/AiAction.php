@@ -12,8 +12,24 @@ class AiAction
     /** 图片生成默认模型：与对话模型相互独立，切勿回退到 $default_model */
     protected static string $default_image_model = 'agnes-image-2.5-flash';
 
-    /** 返回数据中 model 字段的统一别名，避免向调用方暴露上游真实模型名 */
+    /** 缺省别名：项目未配置 model_alias 时回退到此值 */
     protected const MASKED_MODEL = 'aoss';
+
+    /**
+     * 解析对外返回的模型名别名：优先取项目自定义值，缺省回退 MASKED_MODEL
+     *
+     * 空串、纯空白、非标量一律视为未配置。model_alias 字段可能尚未随迁移脚本
+     * 落到库中（本机连不上数据库），此处用 ?? '' 兜底，保证旧库也能正常运行。
+     */
+    protected static function resolveMaskedModel(array $proc): string
+    {
+        $alias = $proc['model_alias'] ?? '';
+        if (!is_string($alias)) {
+            return self::MASKED_MODEL;
+        }
+        $alias = trim($alias);
+        return $alias !== '' ? $alias : self::MASKED_MODEL;
+    }
 
     public static function getDefaultBaseUrl(): string
     {
@@ -67,7 +83,7 @@ class AiAction
         }
 
         $url = rtrim($base_url, '/') . '/chat/completions';
-        return self::postOpenAI($url, $api_key, $payload);
+        return self::postOpenAI($url, $api_key, $payload, self::resolveMaskedModel($proc));
     }
 
     public static function responses(array $proc, $input, array $options = []): array
@@ -104,7 +120,7 @@ class AiAction
         }
 
         $url = rtrim($base_url, '/') . '/responses';
-        return self::postOpenAI($url, $api_key, $payload);
+        return self::postOpenAI($url, $api_key, $payload, self::resolveMaskedModel($proc));
     }
 
     /**
@@ -151,7 +167,7 @@ class AiAction
         }
 
         $url = rtrim($base_url, '/') . '/messages';
-        return self::postAnthropic($url, $api_key, $payload);
+        return self::postAnthropic($url, $api_key, $payload, self::resolveMaskedModel($proc));
     }
 
     /**
@@ -219,29 +235,29 @@ class AiAction
         }
 
         $url = rtrim($base_url, '/') . '/images/generations';
-        return self::postOpenAI($url, $api_key, $payload);
+        return self::postOpenAI($url, $api_key, $payload, self::resolveMaskedModel($proc));
     }
 
-    protected static function postOpenAI(string $url, string $api_key, array $payload): array
+    protected static function postOpenAI(string $url, string $api_key, array $payload, string $maskedModel): array
     {
         $headers = [
             'Content-Type: application/json',
             'Authorization: Bearer ' . $api_key,
         ];
-        return self::postJson($url, $headers, $payload);
+        return self::postJson($url, $headers, $payload, $maskedModel);
     }
 
-    protected static function postAnthropic(string $url, string $api_key, array $payload): array
+    protected static function postAnthropic(string $url, string $api_key, array $payload, string $maskedModel): array
     {
         $headers = [
             'Content-Type: application/json',
             'x-api-key: ' . $api_key,
             'anthropic-version: 2023-06-01',
         ];
-        return self::postJson($url, $headers, $payload);
+        return self::postJson($url, $headers, $payload, $maskedModel);
     }
 
-    protected static function postJson(string $url, array $headers, array $payload): array
+    protected static function postJson(string $url, array $headers, array $payload, string $maskedModel): array
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -270,7 +286,7 @@ class AiAction
 
         // stream=true 时上游返回 SSE 文本流，json_decode 为 null，交由流式处理器按块屏蔽
         if (($payload['stream'] ?? false) === true) {
-            self::emitSse((string)$response);
+            self::emitSse((string)$response, $maskedModel);
         }
 
         // 非流式响应：仅替换顶层 model，不递归改写嵌套业务字段
@@ -278,7 +294,7 @@ class AiAction
             throw new Exception('AI接口返回格式异常');
         }
         if (array_key_exists('model', $data)) {
-            $data['model'] = self::MASKED_MODEL;
+            $data['model'] = $maskedModel;
         }
 
         return $data;
@@ -292,8 +308,11 @@ class AiAction
      *   data: [DONE]
      * 这里仅对 data: 且非 [DONE] 的 JSON 块替换其顶层 model，其余行原样透传。
      * 采用「接收完整响应后一次性输出」而非实时逐块推送，换取错误处理与非流式一致。
+     *
+     * @param string $raw         上游 SSE 原文
+     * @param string $maskedModel 对外返回的模型名别名
      */
-    protected static function emitSse(string $raw): void
+    protected static function emitSse(string $raw, string $maskedModel): void
     {
         $masked = [];
         foreach (preg_split('/\r\n|\r|\n/', $raw) as $line) {
@@ -302,7 +321,7 @@ class AiAction
                 if ($payload !== '' && $payload !== '[DONE]') {
                     $chunk = json_decode($payload, true);
                     if (is_array($chunk) && array_key_exists('model', $chunk)) {
-                        $chunk['model'] = self::MASKED_MODEL;
+                        $chunk['model'] = $maskedModel;
                         $line = 'data: ' . json_encode($chunk, 320);
                     }
                 }

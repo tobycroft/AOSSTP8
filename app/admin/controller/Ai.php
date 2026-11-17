@@ -74,6 +74,7 @@ class Ai extends CommonController
                 'kid' => Envelope::kid((string)$item['secret']),
                 'agnes_api_id' => $agnesId,
                 'agnes_name' => $agnesNames[$agnesId] ?? ('未绑定(' . $agnesId . ')'),
+                'model_alias' => (string)($item['model_alias'] ?? ''),
                 'status' => $item['status'],
             ];
         }
@@ -120,6 +121,7 @@ class Ai extends CommonController
             'name' => $name,
             'secret' => $secret,
             'agnes_api_id' => $agnesApiId,
+            'model_alias' => trim((string)Input::Put('model_alias', false)),
             'status' => Input::PutInt('status', 1),
         ];
 
@@ -176,6 +178,9 @@ class Ai extends CommonController
                 Ret::Fail(400, null, '请选择可用的 agnes API');
             }
             $data['agnes_api_id'] = $agnesApiId;
+        }
+        if (request()->has('model_alias', 'post')) {
+            $data['model_alias'] = trim((string)Input::Post('model_alias', false));
         }
         if (request()->has('status', 'post')) $data['status'] = Input::PostInt('status');
 
