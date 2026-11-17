@@ -77,6 +77,12 @@ class Layout
                 'ai' => ['label' => 'AI 项目', 'url' => '/admin/ai'],
             ],
         ],
+        'diagnose' => [
+            'title' => '系统诊断',
+            'items' => [
+                'diagnose' => ['label' => '功能检测', 'url' => '/admin/diagnose'],
+            ],
+        ],
     ];
 
     private static function css(): string

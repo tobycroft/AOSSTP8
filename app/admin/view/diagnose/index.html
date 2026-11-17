@@ -1,0 +1,78 @@
+{extend name="layout/base" /}
+{block name="content"}
+<style>
+.diag-summary { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+.diag-summary .item { background: #fff; border-radius: 8px; padding: 14px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); min-width: 160px; }
+.diag-summary .item .name { color: #999; font-size: 13px; margin-bottom: 6px; }
+.diag-summary .item .val { font-size: 15px; font-weight: 500; color: #333; }
+.diag-summary .item .val.ok { color: #52c41a; }
+.diag-summary .item .val.fail { color: #ff4d4f; }
+.diag-table { width: 100%; }
+.diag-table td:first-child { width: 180px; color: #999; }
+.diag-table td:last-child { word-break: break-all; }
+.diag-error { margin-top: 12px; padding: 10px 12px; background: #fff2f0; border: 1px solid #ffccc7; border-radius: 4px; color: #ff4d4f; font-size: 13px; word-break: break-all; }
+.diag-hint { color: #999; font-size: 13px; margin-bottom: 20px; }
+</style>
+
+<div class="welcome">功能检测</div>
+<div class="diag-hint">以下信息仅管理员可见，密码等敏感字段均已隐藏。所有检测均为只读操作，不会修改任何数据。</div>
+
+<div class="diag-summary">
+    <div class="item"><div class="name">运行环境</div><div class="val ok">PHP {$summary.php_version}</div></div>
+    <div class="item"><div class="name">数据库</div><div class="val {$summary.database_ok ? 'ok' : 'fail'}">{$summary.database_ok ? '正常' : '异常'}</div></div>
+    <div class="item"><div class="name">Redis</div><div class="val {$summary.redis_ok ? 'ok' : 'fail'}">{$summary.redis_ok ? '正常' : '异常'}</div></div>
+    <div class="item"><div class="name">缓存驱动</div><div class="val">{$summary.cache_driver}</div></div>
+    <div class="item"><div class="name">目录权限</div><div class="val {$summary.filesystem_ok ? 'ok' : 'fail'}">{$summary.filesystem_ok ? '正常' : '异常'}</div></div>
+</div>
+
+<div class="card">
+    <h3>运行环境</h3>
+    <table class="diag-table">
+        {foreach $environment.rows as $row}
+        <tr><td>{$row.label}</td><td>{$row.value}</td></tr>
+        {/foreach}
+    </table>
+</div>
+
+<div class="card">
+    <h3>数据库</h3>
+    <table class="diag-table">
+        {foreach $database.rows as $row}
+        <tr><td>{$row.label}</td><td>{$row.value}</td></tr>
+        {/foreach}
+    </table>
+    {if $database.error}
+    <div class="diag-error">连接错误：{$database.error}</div>
+    {/if}
+</div>
+
+<div class="card">
+    <h3>Redis</h3>
+    <table class="diag-table">
+        {foreach $redis.rows as $row}
+        <tr><td>{$row.label}</td><td>{$row.value}</td></tr>
+        {/foreach}
+    </table>
+    {if $redis.error}
+    <div class="diag-error">连接错误：{$redis.error}</div>
+    {/if}
+</div>
+
+<div class="card">
+    <h3>缓存配置</h3>
+    <table class="diag-table">
+        {foreach $cache.rows as $row}
+        <tr><td>{$row.label}</td><td>{$row.value}</td></tr>
+        {/foreach}
+    </table>
+</div>
+
+<div class="card">
+    <h3>文件系统</h3>
+    <table class="diag-table">
+        {foreach $filesystem.rows as $row}
+        <tr><td>{$row.label}</td><td>{$row.value}</td></tr>
+        {/foreach}
+    </table>
+</div>
+{/block}
