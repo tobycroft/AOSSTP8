@@ -79,6 +79,9 @@
     \think\facade\Route::any('admin/console', '\app\admin\controller\Console@index');
     \think\facade\Route::any('admin/doc', '\app\admin\controller\Doc@index');
 
+    // 系统诊断（功能检测）
+    \think\facade\Route::any('admin/diagnose', '\app\admin\controller\Diagnose@index');
+
     // SMS管理
     \think\facade\Route::any('admin/sms', '\app\admin\controller\Sms@index');
     \think\facade\Route::any('admin/sms_aliyun', '\app\admin\controller\SmsAliyun@index');
