@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4096ff"/>
+      <stop offset="0.55" stop-color="#1677ff"/>
+      <stop offset="1" stop-color="#0958d9"/>
+    </linearGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- rounded tile -->
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#bg)"/>
+  <!-- top gloss -->
+  <rect x="2" y="2" width="60" height="30" rx="15" fill="url(#gloss)"/>
+  <!-- inner subtle border -->
+  <rect x="2.5" y="2.5" width="59" height="59" rx="14.5" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1"/>
+  <!-- letter A -->
+  <g fill="none" stroke="#ffffff" stroke-width="8.2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="17,51 32,15 47,51"/>
+    <line x1="23.5" y1="39" x2="40.5" y2="39" stroke-width="7"/>
+  </g>
+</svg>
