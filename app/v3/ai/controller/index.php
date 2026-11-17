@@ -3,6 +3,7 @@
 namespace app\v3\ai\controller;
 
 use Aoss\Envelope;
+use app\v3\ai\action\RateLimiter;
 use app\v3\ai\model\AiModel;
 use BaseController\CommonController;
 use Input;
@@ -81,6 +82,9 @@ class index extends CommonController
 
         $this->secret = $proc['secret'];
         $this->proc = $proc;
+
+        // 鉴权通过后再限流，按 kid 计数；rate_limit<=0（含未迁移字段的空值）不限速
+        RateLimiter::check($kid, (int)($proc['rate_limit'] ?? 0));
     }
 
     /**

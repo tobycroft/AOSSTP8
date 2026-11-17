@@ -75,6 +75,7 @@ class Ai extends CommonController
                 'agnes_api_id' => $agnesId,
                 'agnes_name' => $agnesNames[$agnesId] ?? ('未绑定(' . $agnesId . ')'),
                 'model_alias' => (string)($item['model_alias'] ?? ''),
+                'rate_limit' => (int)($item['rate_limit'] ?? 0),
                 'status' => $item['status'],
             ];
         }
@@ -122,6 +123,7 @@ class Ai extends CommonController
             'secret' => $secret,
             'agnes_api_id' => $agnesApiId,
             'model_alias' => trim((string)Input::Put('model_alias', false)),
+            'rate_limit' => Input::PutInt('rate_limit', 0),
             'status' => Input::PutInt('status', 1),
         ];
 
@@ -181,6 +183,9 @@ class Ai extends CommonController
         }
         if (request()->has('model_alias', 'post')) {
             $data['model_alias'] = trim((string)Input::Post('model_alias', false));
+        }
+        if (request()->has('rate_limit', 'post')) {
+            $data['rate_limit'] = Input::PostInt('rate_limit', 0);
         }
         if (request()->has('status', 'post')) $data['status'] = Input::PostInt('status');
 
