@@ -118,6 +118,9 @@
     \think\facade\Route::any('admin/dnspod_domain/sync', '\app\admin\controller\DnspodDomain@sync');
     \think\facade\Route::any('admin/dnspod_domain', '\app\admin\controller\DnspodDomain@index');
 
+    // DNSPod 子域名（按 name+domain 聚合展示）
+    \think\facade\Route::any('admin/dnspod_subdomain', '\app\admin\controller\DnspodSubdomain@index');
+
     // DNSPod 解析记录缓存
     \think\facade\Route::any('admin/dnspod_record', '\app\admin\controller\DnspodRecord@index');
 

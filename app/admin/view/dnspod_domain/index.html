@@ -67,7 +67,7 @@ function doSearch() {
     window.location.href = url;
 }
 function doSync() {
-    if (!confirm('确认从所有启用的 DNSPod 账号同步域名数据？\n将清空本地缓存并以 DNSPod 返回数据为准。')) return;
+    if (!confirm('确认从所有启用的 DNSPod 账号同步域名和解析记录？\n已有数据将按远端最新数据更新，本地新增的数据会被保留。')) return;
     var btn = document.getElementById('syncBtn');
     btn.disabled = true;
     btn.textContent = '同步中...';
