@@ -82,8 +82,8 @@ class DnspodDomain extends CommonController
     }
 
     /**
-     * 同步所有启用的 DNSPod 账号下的域名到本地缓存
-     * 以 DNSPod 数据为准，清空本地后重新写入，相同域名去重
+     * 同步所有启用的 DNSPod 账号下的域名和解析记录到本地缓存
+     * 以 DNSPod 数据为准，TRUNCATE 清空本地（重置自增 id）后重新写入，相同域名去重
      */
     public function sync()
     {
@@ -98,7 +98,8 @@ class DnspodDomain extends CommonController
         }
 
         $seen = [];
-        $insertData = [];
+        $domainData = [];
+        $recordData = [];
         $now = date('Y-m-d H:i:s');
         $errors = [];
 
@@ -113,14 +114,15 @@ class DnspodDomain extends CommonController
 
             foreach ($domains as $domain) {
                 $name = (string)($domain['name'] ?? '');
-                if ($name === '' || isset($seen[$name])) {
+                $domainId = (int)($domain['id'] ?? 0);
+                if ($name === '' || $domainId <= 0 || isset($seen[$name])) {
                     continue;
                 }
                 $seen[$name] = true;
 
-                $insertData[] = [
+                $domainData[] = [
                     'dnspod_id' => (int)$config['id'],
-                    'domain_id' => (int)($domain['id'] ?? 0),
+                    'domain_id' => $domainId,
                     'name' => $name,
                     'punycode' => (string)($domain['punycode'] ?? ''),
                     'status' => (string)($domain['status'] ?? ''),
@@ -128,30 +130,52 @@ class DnspodDomain extends CommonController
                     'grade' => (string)($domain['grade'] ?? ''),
                     'date' => $now,
                 ];
+
+                try {
+                    $records = $client->recordList($domainId);
+                } catch (Exception $e) {
+                    $errors[] = $name . ' 记录获取失败: ' . $e->getMessage();
+                    continue;
+                }
+
+                foreach ($records as $record) {
+                    $recordData[] = [
+                        'dnspod_id' => (int)$config['id'],
+                        'domain_id' => $domainId,
+                        'domain_name' => $name,
+                        'record_id' => (int)($record['id'] ?? 0),
+                        'name' => (string)($record['name'] ?? ''),
+                        'type' => (string)($record['type'] ?? ''),
+                        'value' => (string)($record['value'] ?? ''),
+                        'line' => (string)($record['line'] ?? ''),
+                        'ttl' => (int)($record['ttl'] ?? 0),
+                        'enabled' => (string)($record['enabled'] ?? '1'),
+                        'weight' => (int)($record['weight'] ?? 0),
+                        'remark' => (string)($record['remark'] ?? ''),
+                        'date' => $now,
+                    ];
+                }
             }
         }
 
-        Db::startTrans();
-        try {
-            Db::name('ao_dnspod_domain')->delete(true);
+        Db::execute('TRUNCATE TABLE ao_dnspod_domain');
+        Db::execute('TRUNCATE TABLE ao_dnspod_record');
 
-            if (!empty($insertData)) {
-                Db::name('ao_dnspod_domain')->insertAll($insertData);
-            }
-
-            Db::commit();
-        } catch (Exception $e) {
-            Db::rollback();
-            Ret::Fail(500, null, '同步失败: ' . $e->getMessage());
+        if (!empty($domainData)) {
+            Db::name('ao_dnspod_domain')->insertAll($domainData);
+        }
+        if (!empty($recordData)) {
+            Db::name('ao_dnspod_record')->insertAll($recordData);
         }
 
-        $msg = '同步完成，共 ' . count($insertData) . ' 个域名（去重后）';
+        $msg = '同步完成，共 ' . count($domainData) . ' 个域名、' . count($recordData) . ' 条解析记录';
         if (!empty($errors)) {
-            $msg .= '；' . count($errors) . ' 个账号获取失败';
+            $msg .= '；' . count($errors) . ' 项获取失败';
         }
 
         Ret::Success(0, [
-            'count' => count($insertData),
+            'domainCount' => count($domainData),
+            'recordCount' => count($recordData),
             'errors' => $errors,
         ], $msg);
     }

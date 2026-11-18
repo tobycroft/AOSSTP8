@@ -1,0 +1,89 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>解析记录</h2>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <select id="domainSelect" onchange="applyFilter()" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;min-width:180px;">
+                <option value="0">全部域名</option>
+                {foreach $domains as $d}
+                <option value="{$d.domain_id}" {if $domainId==$d.domain_id}selected{/if}>{$d.name}</option>
+                {/foreach}
+            </select>
+            <select id="typeSelect" onchange="applyFilter()" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;">
+                <option value="">全部类型</option>
+                {foreach $types as $t}
+                <option value="{$t}" {if $type==$t}selected{/if}>{$t}</option>
+                {/foreach}
+            </select>
+            <input type="text" id="searchInput" placeholder="搜索主机记录、记录值、域名" value="{$search}" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;width:260px;outline:none;" onkeydown="if(event.key==='Enter')applyFilter()">
+            <button class="btn btn-primary" onclick="applyFilter()">搜索</button>
+        </div>
+    </div>
+    <div style="font-size:13px;color:#8c8c8c;">
+        共 <span style="color:#1677ff;font-weight:500;">{$total}</span> 条记录
+        <span style="margin-left:12px;">最近同步：{$lastSync}</span>
+        <span style="margin-left:12px;">到 <a href="/admin/dnspod_domain">域名管理</a> 同步数据</span>
+    </div>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>域名</th>
+            <th>主机记录</th>
+            <th>类型</th>
+            <th>记录值</th>
+            <th>线路</th>
+            <th>TTL</th>
+            <th>状态</th>
+            <th>来源</th>
+            <th>同步时间</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td style="color:#1677ff;">{$item.domain_name}</td>
+            <td style="font-family:monospace;">{$item.name}</td>
+            <td><span class="status-badge" style="background:#f0f5ff;color:#2f54eb;">{$item.type}</span></td>
+            <td style="font-family:monospace;font-size:12px;max-width:320px;word-break:break-all;">{$item.value}</td>
+            <td>{$item.line}</td>
+            <td>{$item.ttl}</td>
+            <td>
+                {if $item.enabled=='1'}
+                <span class="status-badge active">启用</span>
+                {else/}
+                <span class="status-badge inactive">禁用</span>
+                {/if}
+            </td>
+            <td style="font-size:12px;">{$item.config_name}</td>
+            <td style="color:#8c8c8c;font-size:13px;">{$item.date}</td>
+        </tr>
+        {/foreach}
+        {if empty($list)}
+        <tr>
+            <td colspan="10" style="text-align:center;color:#8c8c8c;padding:40px 0;">暂无解析记录，请先到「域名管理」同步数据</td>
+        </tr>
+        {/if}
+    </tbody>
+</table>
+{$pagination|raw}
+{/block}
+{block name="script"}
+{literal}
+<script>
+function applyFilter() {
+    var search = document.getElementById('searchInput').value;
+    var domainId = document.getElementById('domainSelect').value;
+    var type = document.getElementById('typeSelect').value;
+    var url = '/admin/dnspod_record?page=1';
+    if (search) url += '&search=' + encodeURIComponent(search);
+    if (domainId > 0) url += '&domain_id=' + domainId;
+    if (type) url += '&type=' + encodeURIComponent(type);
+    window.location.href = url;
+}
+</script>
+{/literal}
+{/block}
