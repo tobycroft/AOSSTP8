@@ -40,7 +40,7 @@
             <td style="color:#8c8c8c;font-size:13px;">{$item.domain_name}</td>
             <td style="font-size:12px;">{$item.config_name}</td>
             <td>
-                {foreach $item.types|explode=',' as $t}
+                {foreach $item.type_list as $t}
                 <span class="status-badge" style="background:#f0f5ff;color:#2f54eb;margin-right:4px;">{$t}</span>
                 {/foreach}
             </td>

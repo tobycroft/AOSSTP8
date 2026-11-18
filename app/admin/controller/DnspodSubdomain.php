@@ -45,7 +45,7 @@ class DnspodSubdomain extends CommonController
                 "MAX(CASE WHEN r.enabled='1' THEN 1 ELSE 0 END) as has_enabled",
                 'MAX(r.date) as date',
             ])
-            ->group('r.domain_id, r.domain_name, r.sub_domain, n.name')
+            ->group('r.domain_id, r.domain_name, r.name, n.name')
             ->order('r.domain_name', 'asc');
 
         if (!empty($search)) {
@@ -65,6 +65,7 @@ class DnspodSubdomain extends CommonController
         foreach ($list['data'] as $item) {
             $subDomain = $item['sub_domain'];
             $subFull = ($subDomain === '@') ? $item['domain_name'] : $subDomain . '.' . $item['domain_name'];
+            $typeList = $item['types'] ? explode(',', $item['types']) : [];
 
             $items[] = [
                 'domain_id' => $item['domain_id'],
@@ -74,6 +75,7 @@ class DnspodSubdomain extends CommonController
                 'config_name' => $item['config_name'] ?? '-',
                 'record_count' => (int)$item['record_count'],
                 'types' => $item['types'] ?? '',
+                'type_list' => $typeList,
                 'has_enabled' => (int)$item['has_enabled'],
                 'date' => $item['date'],
             ];
