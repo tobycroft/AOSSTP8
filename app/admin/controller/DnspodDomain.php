@@ -9,6 +9,7 @@ use app\admin\utils\Layout;
 use BaseController\CommonController;
 use Dnspod\Dnspod as DnspodClient;
 use Exception;
+use Ret;
 use think\facade\Db;
 
 class DnspodDomain extends CommonController
