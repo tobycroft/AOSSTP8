@@ -81,6 +81,7 @@ class Layout
             'title' => 'DNS 管理',
             'items' => [
                 'dnspod' => ['label' => 'DNSPod 配置', 'url' => '/admin/dnspod'],
+                'dnspod_domain' => ['label' => '域名管理', 'url' => '/admin/dnspod_domain'],
             ],
         ],
         'diagnose' => [

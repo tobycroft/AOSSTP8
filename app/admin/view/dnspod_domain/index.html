@@ -1,0 +1,100 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>域名管理</h2>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索域名、punycode 或来源账号" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 300px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
+            <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
+        </div>
+        <button class="btn btn-primary" id="syncBtn" onclick="doSync()" style="background:#52c41a;">同步全部数据</button>
+    </div>
+    <div style="font-size:13px;color:#8c8c8c;">
+        共 <span style="color:#1677ff;font-weight:500;">{$total}</span> 个域名
+        <span style="margin-left:12px;">最近同步：{$lastSync}</span>
+    </div>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>域名</th>
+            <th>punycode</th>
+            <th>来源账号</th>
+            <th>状态</th>
+            <th>记录数</th>
+            <th>等级</th>
+            <th>同步时间</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td style="font-family:monospace;color:#1677ff;">{$item.name}</td>
+            <td style="font-family:monospace;color:#8c8c8c;font-size:12px;">{$item.punycode}</td>
+            <td>{$item.config_name} <span style="color:#bfbfbf;font-size:12px;">(#{$item.dnspod_id})</span></td>
+            <td>
+                {if $item.status=='enable'}
+                <span class="status-badge active">启用</span>
+                {elseif $item.status=='disable'}
+                <span class="status-badge inactive">禁用</span>
+                {else/}
+                <span style="color:#8c8c8c;">{$item.status}</span>
+                {/if}
+            </td>
+            <td>{$item.records}</td>
+            <td>{$item.grade}</td>
+            <td style="color:#8c8c8c;font-size:13px;">{$item.date}</td>
+        </tr>
+        {/foreach}
+        {if empty($list)}
+        <tr>
+            <td colspan="8" style="text-align:center;color:#8c8c8c;padding:40px 0;">暂无域名数据，请点击「同步全部数据」从 DNSPod 拉取</td>
+        </tr>
+        {/if}
+    </tbody>
+</table>
+{$pagination|raw}
+{/block}
+{block name="script"}
+{literal}
+<script>
+function doSearch() {
+    var search = document.getElementById('searchInput').value;
+    var url = '/admin/dnspod_domain?page=1';
+    if (search) url += '&search=' + encodeURIComponent(search);
+    window.location.href = url;
+}
+function doSync() {
+    if (!confirm('确认从所有启用的 DNSPod 账号同步域名数据？\n将清空本地缓存并以 DNSPod 返回数据为准。')) return;
+    var btn = document.getElementById('syncBtn');
+    btn.disabled = true;
+    btn.textContent = '同步中...';
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/dnspod_domain/sync', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            btn.disabled = false;
+            btn.textContent = '同步全部数据';
+            var res;
+            try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            if (res.code == 0) {
+                var msg = res.echo || '同步完成';
+                if (res.data && res.data.errors && res.data.errors.length > 0) {
+                    msg += '\n\n失败账号：\n' + res.data.errors.join('\n');
+                }
+                alert(msg);
+                location.reload();
+            } else {
+                alert('同步失败：' + (res.echo || ''));
+            }
+        }
+    };
+    xhr.send();
+}
+</script>
+{/literal}
+{/block}

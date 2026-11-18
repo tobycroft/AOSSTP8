@@ -114,6 +114,10 @@
     \think\facade\Route::any('admin/dnspod/records', '\app\admin\controller\Dnspod@records');
     \think\facade\Route::any('admin/dnspod', '\app\admin\controller\Dnspod@index');
 
+    // DNSPod 域名缓存（同步展示）
+    \think\facade\Route::any('admin/dnspod_domain/sync', '\app\admin\controller\DnspodDomain@sync');
+    \think\facade\Route::any('admin/dnspod_domain', '\app\admin\controller\DnspodDomain@index');
+
     \think\facade\Route::any('admin', '\app\admin\controller\Index@index');
 });
 
