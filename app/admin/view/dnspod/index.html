@@ -140,9 +140,9 @@ function submitForm() {
     var apiId = document.getElementById('formApiId').value;
     var apiToken = document.getElementById('formApiToken').value;
     var status = document.getElementById('formStatus').value;
-    if (!name) { alert('配置名称不能为空'); return; }
-    if (!apiId || parseInt(apiId) <= 0) { alert('API ID 不能为空且需为正整数'); return; }
-    if (!apiToken) { alert('API Token 不能为空'); return; }
+    if (!name) { showToast('配置名称不能为空', 'warn', 2500); return; }
+    if (!apiId || parseInt(apiId) <= 0) { showToast('API ID 不能为空且需为正整数', 'warn', 2500); return; }
+    if (!apiToken) { showToast('API Token 不能为空', 'warn', 2500); return; }
     var xhr = new XMLHttpRequest();
     var method = id ? 'POST' : 'PUT';
     xhr.open(method, '/admin/dnspod', true);
@@ -151,11 +151,12 @@ function submitForm() {
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4) {
             var res;
-            try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            try { res = JSON.parse(xhr.responseText); } catch(e) { showToast('响应解析失败', 'error', 5000); return; }
             if (res.code == 0) {
-                location.reload();
+                showToast('保存成功', 'success', 1500);
+                setTimeout(function() { location.reload(); }, 800);
             } else {
-                alert(res.echo);
+                showToast(res.echo, 'error', 5000);
             }
         }
     };
@@ -164,23 +165,24 @@ function submitForm() {
     xhr.send(params);
 }
 function doTest(id, name) {
-    if (!confirm('确认测试「' + name + '」的 API ID / Token 是否可用？')) return;
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', '/admin/dnspod/test', true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-            var res;
-            try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
-            if (res.code == 0) {
-                alert('测试成功：' + (res.echo || ''));
-            } else {
-                alert('测试失败：' + (res.echo || ''));
+    showConfirm('确认测试「' + name + '」的 API ID / Token 是否可用？', function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/admin/dnspod/test', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4) {
+                var res;
+                try { res = JSON.parse(xhr.responseText); } catch(e) { showToast('响应解析失败', 'error', 5000); return; }
+                if (res.code == 0) {
+                    showToast('测试成功：' + (res.echo || ''), 'success', 2500);
+                } else {
+                    showToast('测试失败：' + (res.echo || ''), 'error', 5000);
+                }
             }
-        }
-    };
-    xhr.send('id=' + id);
+        };
+        xhr.send('id=' + id);
+    }, '测试 API');
 }
 function openDomains(id, name) {
     document.getElementById('domainsTitle').textContent = '域名列表 - ' + name;
@@ -297,22 +299,24 @@ function loadRecords() {
     xhr.send(params);
 }
 function doDelete(id) {
-    if (!confirm('确定要删除该 DNSPod 配置吗？')) return;
-    var xhr = new XMLHttpRequest();
-    xhr.open('DELETE', '/admin/dnspod', true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-            var res = JSON.parse(xhr.responseText);
-            if (res.code == 0) {
-                location.reload();
-            } else {
-                alert(res.echo);
+    showConfirm('确定要删除该 DNSPod 配置吗？', function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('DELETE', '/admin/dnspod', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4) {
+                var res = JSON.parse(xhr.responseText);
+                if (res.code == 0) {
+                    showToast('删除成功', 'success', 1500);
+                    setTimeout(function() { location.reload(); }, 800);
+                } else {
+                    showToast(res.echo, 'error', 5000);
+                }
             }
-        }
-    };
-    xhr.send('id=' + id);
+        };
+        xhr.send('id=' + id);
+    }, '删除确认');
 }
 </script>
 {/literal}

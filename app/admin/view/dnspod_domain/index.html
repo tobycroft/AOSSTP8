@@ -67,33 +67,34 @@ function doSearch() {
     window.location.href = url;
 }
 function doSync() {
-    if (!confirm('确认从所有启用的 DNSPod 账号同步域名和解析记录？\n已有数据将按远端最新数据更新，本地新增的数据会被保留。')) return;
-    var btn = document.getElementById('syncBtn');
-    btn.disabled = true;
-    btn.textContent = '同步中...';
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', '/admin/dnspod_domain/sync', true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-            btn.disabled = false;
-            btn.textContent = '同步全部数据';
-            var res;
-            try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
-            if (res.code == 0) {
-                var msg = res.echo || '同步完成';
-                if (res.data && res.data.errors && res.data.errors.length > 0) {
-                    msg += '\n\n失败账号：\n' + res.data.errors.join('\n');
+    showConfirm('确认从所有启用的 DNSPod 账号同步域名和解析记录？\n已有数据将按远端最新数据更新，本地新增的数据会被保留。', function() {
+        var btn = document.getElementById('syncBtn');
+        btn.disabled = true;
+        btn.textContent = '同步中...';
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/admin/dnspod_domain/sync', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4) {
+                btn.disabled = false;
+                btn.textContent = '同步全部数据';
+                var res;
+                try { res = JSON.parse(xhr.responseText); } catch(e) { showToast('响应解析失败', 'error', 5000); return; }
+                if (res.code == 0) {
+                    var msg = res.echo || '同步完成';
+                    if (res.data && res.data.errors && res.data.errors.length > 0) {
+                        msg += '\n\n失败账号：\n' + res.data.errors.join('\n');
+                    }
+                    showToast(msg, res.data && res.data.errors && res.data.errors.length > 0 ? 'warn' : 'success', 6000);
+                    setTimeout(function() { location.reload(); }, 1000);
+                } else {
+                    showToast('同步失败：' + (res.echo || ''), 'error', 6000);
                 }
-                alert(msg);
-                location.reload();
-            } else {
-                alert('同步失败：' + (res.echo || ''));
             }
-        }
-    };
-    xhr.send();
+        };
+        xhr.send();
+    }, '同步确认');
 }
 </script>
 {/literal}

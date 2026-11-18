@@ -196,10 +196,10 @@ function submitRecord(e) {
     var line = document.getElementById('f_line').value.trim() || '默认';
     var ttl = document.getElementById('f_ttl').value || 600;
 
-    if (!domainId) { alert('请选择所属域名'); return false; }
-    if (!name) { alert('请填写主机记录'); return false; }
-    if (!type) { alert('请选择记录类型'); return false; }
-    if (!value) { alert('请填写记录值'); return false; }
+    if (!domainId) { showToast('请选择所属域名', 'warn', 2500); return false; }
+    if (!name) { showToast('请填写主机记录', 'warn', 2500); return false; }
+    if (!type) { showToast('请选择记录类型', 'warn', 2500); return false; }
+    if (!value) { showToast('请填写记录值', 'warn', 2500); return false; }
 
     var isEdit = !!recordId;
     var method = isEdit ? 'POST' : 'PUT';
@@ -221,12 +221,12 @@ function submitRecord(e) {
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4) {
             var res;
-            try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            try { res = JSON.parse(xhr.responseText); } catch(e) { showToast('响应解析失败', 'error', 5000); return; }
             if (res.code == 0) {
-                alert(res.echo || '操作成功');
-                location.reload();
+                showToast(res.echo || '操作成功', 'success', 1500);
+                setTimeout(function() { location.reload(); }, 800);
             } else {
-                alert('操作失败：' + (res.echo || ''));
+                showToast('操作失败：' + (res.echo || ''), 'error', 5000);
             }
         }
     };
@@ -236,44 +236,46 @@ function submitRecord(e) {
 
 function toggleStatus(domainId, recordId, status) {
     var text = status === 'enable' ? '启用' : '禁用';
-    if (!confirm('确认' + text + '该解析记录？')) return;
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', '/admin/dnspod_record/status', true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-            var res;
-            try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
-            if (res.code == 0) {
-                alert(res.echo || '操作成功');
-                location.reload();
-            } else {
-                alert('操作失败：' + (res.echo || ''));
+    showConfirm('确认' + text + '该解析记录？', function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/admin/dnspod_record/status', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4) {
+                var res;
+                try { res = JSON.parse(xhr.responseText); } catch(e) { showToast('响应解析失败', 'error', 5000); return; }
+                if (res.code == 0) {
+                    showToast(res.echo || '操作成功', 'success', 1500);
+                    setTimeout(function() { location.reload(); }, 800);
+                } else {
+                    showToast('操作失败：' + (res.echo || ''), 'error', 5000);
+                }
             }
-        }
-    };
-    xhr.send('domain_id=' + domainId + '&record_id=' + recordId + '&status=' + status);
+        };
+        xhr.send('domain_id=' + domainId + '&record_id=' + recordId + '&status=' + status);
+    }, text + '确认');
 }
 
 function removeRecord(domainId, recordId) {
-    if (!confirm('确认删除该解析记录？此操作不可恢复。')) return;
-    var xhr = new XMLHttpRequest();
-    xhr.open('DELETE', '/admin/dnspod_record?domain_id=' + domainId + '&record_id=' + recordId, true);
-    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-            var res;
-            try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
-            if (res.code == 0) {
-                alert(res.echo || '删除成功');
-                location.reload();
-            } else {
-                alert('删除失败：' + (res.echo || ''));
+    showConfirm('确认删除该解析记录？此操作不可恢复。', function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('DELETE', '/admin/dnspod_record?domain_id=' + domainId + '&record_id=' + recordId, true);
+        xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4) {
+                var res;
+                try { res = JSON.parse(xhr.responseText); } catch(e) { showToast('响应解析失败', 'error', 5000); return; }
+                if (res.code == 0) {
+                    showToast(res.echo || '删除成功', 'success', 1500);
+                    setTimeout(function() { location.reload(); }, 800);
+                } else {
+                    showToast('删除失败：' + (res.echo || ''), 'error', 5000);
+                }
             }
-        }
-    };
-    xhr.send();
+        };
+        xhr.send();
+    }, '删除确认');
 }
 </script>
 {/literal}

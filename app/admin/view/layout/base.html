@@ -60,6 +60,8 @@ tr:hover { background: #fafafa; }
 .modal.show { display: flex; align-items: center; justify-content: center; }
 .modal-box { background: #fff; border-radius: 8px; padding: 24px; width: 480px; max-width: 90%; }
 .modal-box h3 { margin-bottom: 20px; color: #333; }
+.confirm-box { width: 420px; max-width: 90%; }
+.confirm-msg { font-size: 14px; color: #666; line-height: 1.8; white-space: pre-wrap; word-break: break-all; }
 .form-group { margin-bottom: 14px; }
 .form-group label { display: block; margin-bottom: 4px; color: #555; font-size: 13px; }
 .form-group input, .form-group select { width: 100%; padding: 8px 10px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px; outline: none; }
@@ -145,6 +147,26 @@ function showToast(message, type, duration) {
         setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 300);
     }, duration || 3000);
     return el;
+}
+function showConfirm(message, callback, title) {
+    var box = document.getElementById('confirmModal');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'confirmModal';
+        box.className = 'modal';
+        box.innerHTML = '<div class="modal-box confirm-box"><h3 id="confirmTitle" style="margin-bottom:14px;">操作确认</h3><p id="confirmMsg" class="confirm-msg"></p><div class="modal-actions"><button class="btn btn-cancel" id="confirmCancel">取消</button><button class="btn btn-danger" id="confirmOk">确定</button></div></div>';
+        document.body.appendChild(box);
+    }
+    document.getElementById('confirmTitle').textContent = title || '操作确认';
+    document.getElementById('confirmMsg').textContent = message;
+    var okBtn = document.getElementById('confirmOk');
+    var cancelBtn = document.getElementById('confirmCancel');
+    okBtn.onclick = null;
+    cancelBtn.onclick = null;
+    function close() { box.classList.remove('show'); okBtn.onclick = null; cancelBtn.onclick = null; }
+    okBtn.onclick = function() { close(); if (callback) callback(); };
+    cancelBtn.onclick = function() { close(); };
+    box.classList.add('show');
 }
 function toggleGroup(el){el.classList.toggle("open");el.nextElementSibling.classList.toggle("open");}
 function doLogout(){if(!confirm('确定要退出登录吗？')) return;var xhr=new XMLHttpRequest();xhr.open('POST','/admin/login/logout',true);xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded');xhr.setRequestHeader('admin-token',localStorage.getItem('admin_token'));xhr.onreadystatechange=function(){if(xhr.readyState==4){localStorage.removeItem('admin_token');document.cookie='admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';window.location.href='/admin/login';}};xhr.send();}
