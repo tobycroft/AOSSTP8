@@ -77,6 +77,12 @@ class Layout
                 'ai' => ['label' => 'AI 项目', 'url' => '/admin/ai'],
             ],
         ],
+        'dnspod' => [
+            'title' => 'DNS 管理',
+            'items' => [
+                'dnspod' => ['label' => 'DNSPod 配置', 'url' => '/admin/dnspod'],
+            ],
+        ],
         'diagnose' => [
             'title' => '系统诊断',
             'items' => [

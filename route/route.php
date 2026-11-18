@@ -108,6 +108,12 @@
     \think\facade\Route::any('admin/ai/resetSecret', '\app\admin\controller\Ai@resetSecret');
     \think\facade\Route::any('admin/ai', '\app\admin\controller\Ai@index');
 
+    // DNSPod 管理（密钥独立存储，接入 dnspod 官方接口）
+    \think\facade\Route::any('admin/dnspod/test', '\app\admin\controller\Dnspod@test');
+    \think\facade\Route::any('admin/dnspod/domains', '\app\admin\controller\Dnspod@domains');
+    \think\facade\Route::any('admin/dnspod/records', '\app\admin\controller\Dnspod@records');
+    \think\facade\Route::any('admin/dnspod', '\app\admin\controller\Dnspod@index');
+
     \think\facade\Route::any('admin', '\app\admin\controller\Index@index');
 });
 

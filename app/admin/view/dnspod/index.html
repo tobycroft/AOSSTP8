@@ -1,0 +1,319 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>DNSPod 管理</h2>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索名称或 API ID" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 260px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
+            <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
+        </div>
+        <button class="btn btn-primary" onclick="openCreate()">新增配置</button>
+    </div>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>配置名称</th>
+            <th>API ID</th>
+            <th>API Token</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td>{$item.name}</td>
+            <td>{$item.api_id}</td>
+            <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.api_token}">{$item.api_token_short}</td>
+            <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
+            <td>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', {$item.api_id}, '{$item.api_token|addslashes}', {$item.status})">编辑</button>
+                <button class="btn btn-sm" style="background:#52c41a;color:#fff;margin-right:4px;" onclick="doTest({$item.id}, '{$item.name|addslashes}')">测试</button>
+                <button class="btn btn-sm" style="background:#1890ff;color:#fff;margin-right:4px;" onclick="openDomains({$item.id}, '{$item.name|addslashes}')">域名</button>
+                <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
+            </td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination|raw}
+<div class="modal" id="dnspodModal">
+    <div class="modal-box">
+        <h3 id="modalTitle">新增配置</h3>
+        <input type="hidden" id="editId" value="">
+        <div class="form-group">
+            <label>配置名称</label>
+            <input type="text" id="formName" placeholder="人类可读的标签，例如「主账号 DNSPod」">
+        </div>
+        <div class="form-group">
+            <label>API ID</label>
+            <input type="number" id="formApiId" placeholder="DNSPod API ID（数字）">
+        </div>
+        <div class="form-group">
+            <label>API Token</label>
+            <input type="text" id="formApiToken" placeholder="DNSPod API Token">
+        </div>
+        <div class="form-group">
+            <label>状态</label>
+            <select id="formStatus">
+                <option value="1">启用</option>
+                <option value="0">禁用</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn btn-primary" id="modalSubmit" onclick="submitForm()">确定</button>
+        </div>
+    </div>
+</div>
+<div class="modal" id="domainsModal">
+    <div class="modal-box" style="width:720px;">
+        <h3 id="domainsTitle">域名列表</h3>
+        <input type="hidden" id="domainsConfigId" value="">
+        <div style="margin-bottom:12px;font-size:13px;color:#8c8c8c;">点击域名可查看其解析记录</div>
+        <div id="domainsResult" style="width:100%;min-height:120px;max-height:480px;overflow:auto;padding:8px 10px;border:1px solid #e8e8e8;border-radius:4px;font-size:14px;background:#fafafa;color:#666;">点击「刷新」获取域名列表</div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeDomains()">关闭</button>
+            <button class="btn btn-primary" id="domainsSubmit" onclick="loadDomains()">刷新</button>
+        </div>
+    </div>
+</div>
+<div class="modal" id="recordsModal">
+    <div class="modal-box" style="width:820px;">
+        <h3 id="recordsTitle">解析记录</h3>
+        <input type="hidden" id="recordsConfigId" value="">
+        <input type="hidden" id="recordsDomainId" value="">
+        <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:160px;">
+                <label style="font-size:13px;color:#555;">子域名（可选）</label>
+                <input type="text" id="recordSubDomain" placeholder="留空查全部" style="width:100%;padding:8px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;outline:none;">
+            </div>
+            <div style="flex:1;min-width:120px;">
+                <label style="font-size:13px;color:#555;">记录类型（可选）</label>
+                <input type="text" id="recordType" placeholder="如 A / CNAME / TXT" style="width:100%;padding:8px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;outline:none;">
+            </div>
+        </div>
+        <div id="recordsResult" style="width:100%;min-height:160px;max-height:480px;overflow:auto;padding:8px 10px;border:1px solid #e8e8e8;border-radius:4px;font-size:14px;background:#fafafa;color:#666;">点击「查询」获取解析记录</div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeRecords()">返回域名列表</button>
+            <button class="btn btn-primary" id="recordsSubmit" onclick="loadRecords()">查询</button>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{literal}
+<script>
+function doSearch() {
+    var search = document.getElementById('searchInput').value;
+    var url = '/admin/dnspod?page=1';
+    if (search) url += '&search=' + encodeURIComponent(search);
+    window.location.href = url;
+}
+function closeModal() {
+    document.getElementById('dnspodModal').classList.remove('show');
+}
+function openCreate() {
+    document.getElementById('modalTitle').textContent = '新增配置';
+    document.getElementById('editId').value = '';
+    document.getElementById('formName').value = '';
+    document.getElementById('formApiId').value = '';
+    document.getElementById('formApiToken').value = '';
+    document.getElementById('formStatus').value = '1';
+    document.getElementById('dnspodModal').classList.add('show');
+}
+function openEdit(id, name, apiId, apiToken, status) {
+    document.getElementById('modalTitle').textContent = '编辑配置';
+    document.getElementById('editId').value = id;
+    document.getElementById('formName').value = name;
+    document.getElementById('formApiId').value = apiId;
+    document.getElementById('formApiToken').value = apiToken;
+    document.getElementById('formStatus').value = status;
+    document.getElementById('dnspodModal').classList.add('show');
+}
+function submitForm() {
+    var id = document.getElementById('editId').value;
+    var name = document.getElementById('formName').value;
+    var apiId = document.getElementById('formApiId').value;
+    var apiToken = document.getElementById('formApiToken').value;
+    var status = document.getElementById('formStatus').value;
+    if (!name) { alert('配置名称不能为空'); return; }
+    if (!apiId || parseInt(apiId) <= 0) { alert('API ID 不能为空且需为正整数'); return; }
+    if (!apiToken) { alert('API Token 不能为空'); return; }
+    var xhr = new XMLHttpRequest();
+    var method = id ? 'POST' : 'PUT';
+    xhr.open(method, '/admin/dnspod', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res;
+            try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    var params = 'name=' + encodeURIComponent(name) + '&api_id=' + encodeURIComponent(apiId) + '&api_token=' + encodeURIComponent(apiToken) + '&status=' + status;
+    if (id) params += '&id=' + id;
+    xhr.send(params);
+}
+function doTest(id, name) {
+    if (!confirm('确认测试「' + name + '」的 API ID / Token 是否可用？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/dnspod/test', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res;
+            try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            if (res.code == 0) {
+                alert('测试成功：' + (res.echo || ''));
+            } else {
+                alert('测试失败：' + (res.echo || ''));
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function openDomains(id, name) {
+    document.getElementById('domainsTitle').textContent = '域名列表 - ' + name;
+    document.getElementById('domainsConfigId').value = id;
+    document.getElementById('domainsResult').textContent = '正在获取域名列表...';
+    document.getElementById('domainsResult').style.color = '#faad14';
+    document.getElementById('domainsModal').classList.add('show');
+    loadDomains();
+}
+function closeDomains() {
+    document.getElementById('domainsModal').classList.remove('show');
+}
+function loadDomains() {
+    var id = document.getElementById('domainsConfigId').value;
+    if (!id) return;
+    var box = document.getElementById('domainsResult');
+    var btn = document.getElementById('domainsSubmit');
+    box.textContent = '正在获取域名列表...';
+    box.style.color = '#faad14';
+    btn.disabled = true;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/dnspod/domains', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            btn.disabled = false;
+            var res;
+            try { res = JSON.parse(xhr.responseText); } catch(e) { box.textContent = '响应解析失败'; box.style.color = '#ff4d4f'; return; }
+            if (res.code == 0 && res.data && res.data.domains) {
+                var domains = res.data.domains;
+                if (domains.length === 0) {
+                    box.textContent = '暂无域名';
+                    box.style.color = '#8c8c8c';
+                    return;
+                }
+                var html = '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e8e8e8;">ID</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e8e8e8;">域名</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e8e8e8;">状态</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e8e8e8;">记录数</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e8e8e8;">操作</th></tr></thead><tbody>';
+                for (var i = 0; i < domains.length; i++) {
+                    var d = domains[i];
+                    html += '<tr><td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;">' + d.id + '</td><td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;font-family:monospace;">' + d.name + '</td><td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;">' + d.status + '</td><td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;">' + d.records + '</td><td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;"><button class="btn btn-sm" style="background:#1890ff;color:#fff;" onclick="openRecords(' + d.id + ', \'' + d.name.replace(/'/g, "\\'") + '\')">查看记录</button></td></tr>';
+                }
+                html += '</tbody></table>';
+                box.innerHTML = html;
+                box.style.color = '#333';
+            } else {
+                box.textContent = res.echo || '获取失败';
+                box.style.color = '#ff4d4f';
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function openRecords(domainId, domainName) {
+    var configId = document.getElementById('domainsConfigId').value;
+    document.getElementById('recordsTitle').textContent = '解析记录 - ' + domainName;
+    document.getElementById('recordsConfigId').value = configId;
+    document.getElementById('recordsDomainId').value = domainId;
+    document.getElementById('recordSubDomain').value = '';
+    document.getElementById('recordType').value = '';
+    document.getElementById('recordsResult').textContent = '正在获取解析记录...';
+    document.getElementById('recordsResult').style.color = '#faad14';
+    document.getElementById('domainsModal').classList.remove('show');
+    document.getElementById('recordsModal').classList.add('show');
+    loadRecords();
+}
+function closeRecords() {
+    document.getElementById('recordsModal').classList.remove('show');
+    document.getElementById('domainsModal').classList.add('show');
+}
+function loadRecords() {
+    var configId = document.getElementById('recordsConfigId').value;
+    var domainId = document.getElementById('recordsDomainId').value;
+    if (!configId || !domainId) return;
+    var subDomain = document.getElementById('recordSubDomain').value.trim();
+    var recordType = document.getElementById('recordType').value.trim();
+    var box = document.getElementById('recordsResult');
+    var btn = document.getElementById('recordsSubmit');
+    box.textContent = '正在获取解析记录...';
+    box.style.color = '#faad14';
+    btn.disabled = true;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/dnspod/records', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            btn.disabled = false;
+            var res;
+            try { res = JSON.parse(xhr.responseText); } catch(e) { box.textContent = '响应解析失败'; box.style.color = '#ff4d4f'; return; }
+            if (res.code == 0 && res.data && res.data.records) {
+                var records = res.data.records;
+                if (records.length === 0) {
+                    box.textContent = '暂无解析记录';
+                    box.style.color = '#8c8c8c';
+                    return;
+                }
+                var html = '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e8e8e8;">ID</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e8e8e8;">主机记录</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e8e8e8;">类型</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e8e8e8;">记录值</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e8e8e8;">线路</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e8e8e8;">TTL</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #e8e8e8;">状态</th></tr></thead><tbody>';
+                for (var i = 0; i < records.length; i++) {
+                    var r = records[i];
+                    html += '<tr><td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;">' + r.id + '</td><td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;font-family:monospace;">' + r.name + '</td><td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;">' + r.type + '</td><td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;font-family:monospace;word-break:break-all;">' + r.value + '</td><td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;">' + r.line + '</td><td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;">' + r.ttl + '</td><td style="padding:6px 8px;border-bottom:1px solid #f0f0f0;">' + (r.enabled === '1' ? '启用' : '禁用') + '</td></tr>';
+                }
+                html += '</tbody></table>';
+                box.innerHTML = html;
+                box.style.color = '#333';
+            } else {
+                box.textContent = res.echo || '获取失败';
+                box.style.color = '#ff4d4f';
+            }
+        }
+    };
+    var params = 'id=' + configId + '&domain_id=' + domainId;
+    if (subDomain) params += '&sub_domain=' + encodeURIComponent(subDomain);
+    if (recordType) params += '&record_type=' + encodeURIComponent(recordType);
+    xhr.send(params);
+}
+function doDelete(id) {
+    if (!confirm('确定要删除该 DNSPod 配置吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/dnspod', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) {
+                location.reload();
+            } else {
+                alert(res.echo);
+            }
+        }
+    };
+    xhr.send('id=' + id);
+}
+</script>
+{/literal}
+{/block}
