@@ -88,7 +88,6 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
         <a class="sub" href="#doc-api-cert">证书</a>
         <a class="sub" href="#doc-api-ai">AI</a>
         <a class="sub" href="#doc-api-ai-thinking">推理模式（Thinking）</a>
-        <a class="sub" href="#doc-api-ai-image">图片生成</a>
         <a class="sub" href="#doc-api-hook">Hook</a>
         <a href="#doc-portal">门户登录与注册</a>
         <a class="sub" href="#doc-portal-login">登录验证码策略</a>
@@ -234,7 +233,6 @@ Route::any(':version/:module/:controller/:function',
                     <tr><td>对话补全</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/chat/completions</code></td><td><code class="inline">messages, model, temperature, max_tokens, tools, chat_template_kwargs</code></td></tr>
                     <tr><td>Responses</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/responses/index</code></td><td>按上游接口透传（含 <code class="inline">chat_template_kwargs</code>）</td></tr>
                     <tr><td>Messages</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/messages/index</code></td><td>按上游接口透传（含 <code class="inline">thinking</code> / <code class="inline">chat_template_kwargs</code>）</td></tr>
-                    <tr><td>图片生成</td><td><span class="pill green">POST</span> <code class="inline">/v3/ai/images/generations</code></td><td><code class="inline">prompt, size, ratio, model, image, response_format, return_base64, extra_body</code></td></tr>
                 </tbody>
             </table>
             <h4 id="doc-api-ai-thinking">推理模式（Thinking）</h4>
@@ -260,39 +258,6 @@ curl -s https://upload.tuuz.cc:433/v3/ai/messages/index \
   --data-urlencode 'thinking={"type":"enabled","budget_tokens":2048}'</pre>
             <div class="note">推理内容由上游返回（如 <code class="inline">reasoning_content</code> / <code class="inline">thinking</code> 块），本服务按上游结构原样透传；关闭推理只需不传上述字段。</div>
             <div class="note warn"><strong>v3 已废弃 <code class="inline">?token=</code> 明文传参</strong>：请求必须携带 <code class="inline">X-Aoss-Ts</code>、<code class="inline">X-Aoss-Kid</code>、<code class="inline">X-Aoss-Auth</code> 三个鉴权字段，<code class="inline">auth</code> 为 <code class="inline">secret|ts</code> 的 AES-256-GCM 密文。协议与代码示例见 <a href="#doc-sign-envelope" style="color:#1677ff;">v3 凭证信封</a>。无法设置请求头的调用方可改用同名表单参数 <code class="inline">ts</code> / <code class="inline">kid</code> / <code class="inline">auth</code>。</div>
-
-            <h3 id="doc-api-ai-image">图片生成</h3>
-            <p>图片接口为文生图 / 图生图 / 多图合成共用入口，鉴权与其余 v3 接口一致，模型默认为 <code class="inline">agnes-image-2.5-flash</code>（与对话模型相互独立）。参数以 <code class="inline">application/x-www-form-urlencoded</code> 提交，其中 <code class="inline">image</code>、<code class="inline">extra_body</code> 为 JSON 字符串。</p>
-            <table>
-                <thead><tr><th style="width:150px;">参数</th><th style="width:90px;">必填</th><th>说明</th></tr></thead>
-                <tbody>
-                    <tr><td><code class="inline">prompt</code></td><td>是</td><td>图像生成或编辑的文本指令。</td></tr>
-                    <tr><td><code class="inline">size</code></td><td>是</td><td>档位式 <code class="inline">1K / 2K / 3K / 4K</code>（推荐），也兼容 <code class="inline">1024x768</code> 等历史精确写法；不支持的尺寸可能被标准化。</td></tr>
-                    <tr><td><code class="inline">ratio</code></td><td>否</td><td>与档位式 <code class="inline">size</code> 配合：<code class="inline">1:1 3:4 4:3 16:9 9:16 2:3 3:2 21:9</code}，默认 <code class="inline">1:1</code>。</td></tr>
-                    <tr><td><code class="inline">model</code></td><td>否</td><td>默认 <code class="inline">agnes-image-2.5-flash</code>；不传不会取项目配置的对话模型。</td></tr>
-                    <tr><td><code class="inline">image</code></td><td>图生图 / 多图合成必填</td><td>输入图像 JSON 数组，元素为公共图像 URL 或 Data URI Base64；服务端写入 <code class="inline">extra_body.image</code>。</td></tr>
-                    <tr><td><code class="inline">response_format</code></td><td>否</td><td><code class="inline">url</code> 或 <code class="inline">b64_json</code>；服务端写入 <code class="inline">extra_body.response_format</code>，禁止置于顶层。</td></tr>
-                    <tr><td><code class="inline">return_base64</code></td><td>否</td><td>文生图需要 Base64 返回时使用。</td></tr>
-                    <tr><td><code class="inline">extra_body</code></td><td>否</td><td>高级工作流附加参数（JSON 对象），与 <code class="inline">image</code> / <code class="inline">response_format</code> 合并，同名以后者为准。</td></tr>
-                </tbody>
-            </table>
-            <div class="note warn"><strong>易错点</strong>：<code class="inline">response_format</code> 只接受放在 <code class="inline">extra_body.response_format</code>，请勿在请求体顶层放置（顶层即便误传也会被服务端下沉纠正）。<code class="inline">1920x1080</code> / <code class="inline">2560x1440</code> 不是原生输出尺寸，会被标准化（例如 <code class="inline">16:9</code> 的 <code class="inline">1K</code> 为 <code class="inline">1312x736</code>）；需要精确画布请用 <code class="inline">size=2K&amp;ratio=16:9</code> 后自行裁剪缩放。图生图无需传 <code class="inline">tags:["img2img"]</code>。</div>
-            <pre class="code"><span class="lang">cURL</span># 文生图：URL 输出（返回 2624x1472）
-curl -s https://upload.tuuz.cc:433/v3/ai/images/generations \
-  -H "X-Aoss-Ts: $TS" -H "X-Aoss-Kid: $KID" -H "X-Aoss-Auth: $AUTH" \
-  --data-urlencode 'prompt=A luminous floating city above a misty canyon at sunrise' \
-  --data-urlencode 'size=2K' \
-  --data-urlencode 'ratio=16:9' \
-  --data-urlencode 'response_format=url'
-
-# 图生图：Base64 输出
-curl -s https://upload.tuuz.cc:433/v3/ai/images/generations \
-  -H "X-Aoss-Ts: $TS" -H "X-Aoss-Kid: $KID" -H "X-Aoss-Auth: $AUTH" \
-  --data-urlencode 'prompt=Keep the composition, repaint in watercolor' \
-  --data-urlencode 'size=1K' \
-  --data-urlencode 'image=["https://example.com/src.png"]' \
-  --data-urlencode 'response_format=b64_json'</pre>
-            <div class="note">返回结构沿用上游：<code class="inline">data[0].url</code> 或 <code class="inline">data[0].b64_json</code>，外层由 <code class="inline">Ret</code> 包为 <code class="inline">{code,data,echo}</code>。</div>
 
             <h3 id="doc-api-hook">Hook</h3>
             <table>
