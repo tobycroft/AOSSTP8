@@ -39,7 +39,7 @@ class DnspodDomain extends CommonController
             ->alias('d')
             ->leftJoin('ao_dnspod n', 'd.dnspod_id = n.id')
             ->field('d.*, n.name as config_name')
-            ->order('d.id', 'desc');
+            ->order('d.domain_id', 'desc');
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
@@ -54,10 +54,10 @@ class DnspodDomain extends CommonController
         $items = [];
         foreach ($list['data'] as $item) {
             $items[] = [
-                'id' => $item['id'],
+                'id' => $item['domain_id'],
+                'domain_id' => $item['domain_id'],
                 'dnspod_id' => $item['dnspod_id'],
                 'config_name' => $item['config_name'] ?? '-',
-                'domain_id' => $item['domain_id'],
                 'name' => $item['name'],
                 'punycode' => $item['punycode'],
                 'status' => $item['status'],
@@ -114,16 +114,17 @@ class DnspodDomain extends CommonController
         $insertRecords = [];
         $updateRecords = [];
 
-        // 本地现有域名 name => id 与记录 (domain_id,record_id) => id
+        // 本地现有域名 name => domain_id（did）
         $localDomains = Db::name('ao_dnspod_domain')
-            ->column('id', 'name');
+            ->column('domain_id', 'name');
+        // 本地现有记录 (domain_id,record_id) => true
         $localRecords = [];
         $localRecordAll = Db::name('ao_dnspod_record')
-            ->field('id, domain_id, record_id')
+            ->field('domain_id, record_id')
             ->select()
             ->toArray();
         foreach ($localRecordAll as $lr) {
-            $localRecords[$lr['domain_id'] . ',' . $lr['record_id']] = $lr['id'];
+            $localRecords[$lr['domain_id'] . ',' . $lr['record_id']] = true;
         }
         unset($localRecordAll);
 
@@ -158,7 +159,6 @@ class DnspodDomain extends CommonController
                 ];
 
                 if (isset($localDomains[$name])) {
-                    $item['id'] = (int)$localDomains[$name];
                     $updateDomains[] = $item;
                 } else {
                     $insertDomains[] = $item;
@@ -195,7 +195,6 @@ class DnspodDomain extends CommonController
 
                     $key = $domainId . ',' . $recordId;
                     if (isset($localRecords[$key])) {
-                        $recordItem['id'] = (int)$localRecords[$key];
                         $updateRecords[] = $recordItem;
                     } else {
                         $insertRecords[] = $recordItem;
@@ -206,46 +205,42 @@ class DnspodDomain extends CommonController
 
         Db::startTrans();
         try {
-            // 1. upsert 域名
+            // 1. upsert 域名（主键为 domain_id）
             foreach ($insertDomains as $item) {
-                unset($item['id']);
                 Db::name('ao_dnspod_domain')->insert($item);
             }
             foreach ($updateDomains as $item) {
-                $id = (int)$item['id'];
-                unset($item['id']);
-                Db::name('ao_dnspod_domain')->where('id', $id)->update($item);
+                $domainId = (int)$item['domain_id'];
+                Db::name('ao_dnspod_domain')->where('domain_id', $domainId)->update($item);
             }
 
-            // 2. upsert 记录
+            // 2. upsert 记录（复合主键 domain_id+record_id）
             foreach ($insertRecords as $item) {
-                unset($item['id']);
                 Db::name('ao_dnspod_record')->insert($item);
             }
             foreach ($updateRecords as $item) {
-                $id = (int)$item['id'];
-                unset($item['id']);
-                Db::name('ao_dnspod_record')->where('id', $id)->update($item);
+                $domainId = (int)$item['domain_id'];
+                $recordId = (int)$item['record_id'];
+                Db::name('ao_dnspod_record')
+                    ->where('domain_id', $domainId)
+                    ->where('record_id', $recordId)
+                    ->update($item);
             }
 
             // 3. 清理本地已不存在的域名（以远端为准）
             $existsDomains = array_keys($remoteDomains);
             if (!empty($localDomains)) {
-                foreach ($localDomains as $localName => $localId) {
+                foreach ($localDomains as $localName => $localDomainId) {
                     if (!in_array($localName, $existsDomains, true)) {
-                        // 删除该域名及其记录
-                        $delDomainId = Db::name('ao_dnspod_domain')->where('name', $localName)->value('domain_id');
-                        Db::name('ao_dnspod_domain')->where('id', $localId)->delete();
-                        if ($delDomainId) {
-                            Db::name('ao_dnspod_record')->where('domain_id', $delDomainId)->delete();
-                        }
+                        Db::name('ao_dnspod_domain')->where('domain_id', $localDomainId)->delete();
+                        Db::name('ao_dnspod_record')->where('domain_id', $localDomainId)->delete();
                     }
                 }
             }
 
             // 4. 清理本地已不存在的记录（以远端为准，仅针对本次记录获取成功的域名）
             if (!empty($localRecords)) {
-                foreach ($localRecords as $key => $localId) {
+                foreach ($localRecords as $key => $flag) {
                     [$dId, $rId] = explode(',', $key);
                     $dId = (int)$dId;
                     if (empty($fetchedRecordDomains[$dId])) {
@@ -254,7 +249,10 @@ class DnspodDomain extends CommonController
                     $rId = (int)$rId;
                     $remoteList = $remoteRecords[$dId] ?? [];
                     if (!in_array($rId, $remoteList, true)) {
-                        Db::name('ao_dnspod_record')->where('id', (int)$localId)->delete();
+                        Db::name('ao_dnspod_record')
+                            ->where('domain_id', $dId)
+                            ->where('record_id', $rId)
+                            ->delete();
                     }
                 }
             }

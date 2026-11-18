@@ -17,7 +17,7 @@
 <table>
     <thead>
         <tr>
-            <th>ID</th>
+            <th>DID</th>
             <th>域名</th>
             <th>punycode</th>
             <th>来源账号</th>
@@ -30,7 +30,7 @@
     <tbody>
         {foreach $list as $item}
         <tr>
-            <td>{$item.id}</td>
+            <td style="font-family:monospace;color:#8c8c8c;">{$item.domain_id}</td>
             <td style="font-family:monospace;color:#1677ff;">{$item.name}</td>
             <td style="font-family:monospace;color:#8c8c8c;font-size:12px;">{$item.punycode}</td>
             <td>{$item.config_name} <span style="color:#bfbfbf;font-size:12px;">(#{$item.dnspod_id})</span></td>

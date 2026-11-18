@@ -122,6 +122,7 @@
     \think\facade\Route::any('admin/dnspod_subdomain', '\app\admin\controller\DnspodSubdomain@index');
 
     // DNSPod 解析记录缓存
+    \think\facade\Route::any('admin/dnspod_record/status', '\app\admin\controller\DnspodRecord@status');
     \think\facade\Route::any('admin/dnspod_record', '\app\admin\controller\DnspodRecord@index');
 
     \think\facade\Route::any('admin', '\app\admin\controller\Index@index');

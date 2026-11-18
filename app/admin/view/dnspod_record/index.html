@@ -18,6 +18,7 @@
             </select>
             <input type="text" id="searchInput" placeholder="搜索主机记录、记录值、域名" value="{$search}" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;width:260px;outline:none;" onkeydown="if(event.key==='Enter')applyFilter()">
             <button class="btn btn-primary" onclick="applyFilter()">搜索</button>
+            <button class="btn btn-primary" onclick="openRecordForm()" style="background:#52c41a;">+ 新增记录</button>
         </div>
     </div>
     <div style="font-size:13px;color:#8c8c8c;">
@@ -29,7 +30,7 @@
 <table>
     <thead>
         <tr>
-            <th>ID</th>
+            <th>记录ID</th>
             <th>域名</th>
             <th>主机记录</th>
             <th>类型</th>
@@ -38,13 +39,13 @@
             <th>TTL</th>
             <th>状态</th>
             <th>来源</th>
-            <th>同步时间</th>
+            <th>操作</th>
         </tr>
     </thead>
     <tbody>
         {foreach $list as $item}
         <tr>
-            <td>{$item.id}</td>
+            <td style="font-family:monospace;color:#8c8c8c;font-size:12px;">{$item.record_id}</td>
             <td style="color:#1677ff;">{$item.domain_name}</td>
             <td style="font-family:monospace;">{$item.name}</td>
             <td><span class="status-badge" style="background:#f0f5ff;color:#2f54eb;">{$item.type}</span></td>
@@ -59,7 +60,15 @@
                 {/if}
             </td>
             <td style="font-size:12px;">{$item.config_name}</td>
-            <td style="color:#8c8c8c;font-size:13px;">{$item.date}</td>
+            <td style="white-space:nowrap;">
+                <button class="btn btn-link" onclick="openRecordForm({$item.domain_id}, {$item.record_id}, '{$item.name}', '{$item.type}', '{$item.value}', '{$item.line}', {$item.ttl})">编辑</button>
+                {if $item.enabled=='1'}
+                <button class="btn btn-link" style="color:#faad14;" onclick="toggleStatus({$item.domain_id}, {$item.record_id}, 'disable')">禁用</button>
+                {else/}
+                <button class="btn btn-link" style="color:#52c41a;" onclick="toggleStatus({$item.domain_id}, {$item.record_id}, 'enable')">启用</button>
+                {/if}
+                <button class="btn btn-link" style="color:#ff4d4f;" onclick="removeRecord({$item.domain_id}, {$item.record_id})">删除</button>
+            </td>
         </tr>
         {/foreach}
         {if empty($list)}
@@ -70,6 +79,61 @@
     </tbody>
 </table>
 {$pagination|raw}
+
+<div id="recordModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:8px;width:480px;max-width:92%;padding:24px;box-shadow:0 6px 16px rgba(0,0,0,.08);">
+        <h3 id="recordModalTitle" style="margin:0 0 16px;">新增解析记录</h3>
+        <form id="recordForm" onsubmit="return submitRecord(event)">
+            <input type="hidden" id="f_domain_id">
+            <input type="hidden" id="f_record_id">
+            <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:6px;font-size:13px;color:#595959;">所属域名 <span style="color:#ff4d4f;">*</span></label>
+                <select id="f_domain_select" onchange="document.getElementById('f_domain_id').value=this.value" style="width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;" required>
+                    <option value="">请选择域名</option>
+                    {foreach $domains as $d}
+                    <option value="{$d.domain_id}">{$d.name}</option>
+                    {/foreach}
+                </select>
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:6px;font-size:13px;color:#595959;">主机记录 <span style="color:#ff4d4f;">*</span></label>
+                <input type="text" id="f_name" placeholder="如 @、www、api" style="width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;box-sizing:border-box;" required>
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:6px;font-size:13px;color:#595959;">记录类型 <span style="color:#ff4d4f;">*</span></label>
+                <select id="f_type" style="width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;" required>
+                    <option value="">请选择</option>
+                    <option value="A">A</option>
+                    <option value="AAAA">AAAA</option>
+                    <option value="CNAME">CNAME</option>
+                    <option value="MX">MX</option>
+                    <option value="TXT">TXT</option>
+                    <option value="NS">NS</option>
+                    <option value="SRV">SRV</option>
+                    <option value="CAA">CAA</option>
+                </select>
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:6px;font-size:13px;color:#595959;">记录值 <span style="color:#ff4d4f;">*</span></label>
+                <textarea id="f_value" rows="3" placeholder="记录值" style="width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;box-sizing:border-box;resize:vertical;" required></textarea>
+            </div>
+            <div style="display:flex;gap:12px;margin-bottom:14px;">
+                <div style="flex:1;">
+                    <label style="display:block;margin-bottom:6px;font-size:13px;color:#595959;">线路</label>
+                    <input type="text" id="f_line" value="默认" style="width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;box-sizing:border-box;">
+                </div>
+                <div style="flex:1;">
+                    <label style="display:block;margin-bottom:6px;font-size:13px;color:#595959;">TTL</label>
+                    <input type="number" id="f_ttl" value="600" style="width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;box-sizing:border-box;">
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+                <button type="button" class="btn" onclick="closeRecordForm()" style="padding:8px 18px;border:1px solid #d9d9d9;background:#fff;border-radius:4px;cursor:pointer;">取消</button>
+                <button type="submit" class="btn btn-primary" style="padding:8px 18px;">确定</button>
+            </div>
+        </form>
+    </div>
+</div>
 {/block}
 {block name="script"}
 {literal}
@@ -83,6 +147,133 @@ function applyFilter() {
     if (domainId > 0) url += '&domain_id=' + domainId;
     if (type) url += '&type=' + encodeURIComponent(type);
     window.location.href = url;
+}
+
+function openRecordForm(domainId, recordId, name, type, value, line, ttl) {
+    var modal = document.getElementById('recordModal');
+    var title = document.getElementById('recordModalTitle');
+    if (recordId) {
+        title.textContent = '编辑解析记录';
+        document.getElementById('f_domain_id').value = domainId;
+        document.getElementById('f_record_id').value = recordId;
+        document.getElementById('f_domain_select').value = domainId;
+        document.getElementById('f_name').value = name || '';
+        document.getElementById('f_type').value = type || '';
+        document.getElementById('f_value').value = value || '';
+        document.getElementById('f_line').value = line || '默认';
+        document.getElementById('f_ttl').value = ttl || 600;
+        document.getElementById('f_domain_select').disabled = true;
+    } else {
+        title.textContent = '新增解析记录';
+        document.getElementById('f_record_id').value = '';
+        document.getElementById('f_domain_id').value = '';
+        document.getElementById('f_name').value = '';
+        document.getElementById('f_type').value = '';
+        document.getElementById('f_value').value = '';
+        document.getElementById('f_line').value = '默认';
+        document.getElementById('f_ttl').value = 600;
+        document.getElementById('f_domain_select').disabled = false;
+        var cur = document.getElementById('domainSelect').value;
+        if (cur > 0) {
+            document.getElementById('f_domain_select').value = cur;
+            document.getElementById('f_domain_id').value = cur;
+        }
+    }
+    modal.style.display = 'flex';
+}
+
+function closeRecordForm() {
+    document.getElementById('recordModal').style.display = 'none';
+}
+
+function submitRecord(e) {
+    e.preventDefault();
+    var domainId = document.getElementById('f_domain_id').value;
+    var recordId = document.getElementById('f_record_id').value;
+    var name = document.getElementById('f_name').value.trim();
+    var type = document.getElementById('f_type').value;
+    var value = document.getElementById('f_value').value.trim();
+    var line = document.getElementById('f_line').value.trim() || '默认';
+    var ttl = document.getElementById('f_ttl').value || 600;
+
+    if (!domainId) { alert('请选择所属域名'); return false; }
+    if (!name) { alert('请填写主机记录'); return false; }
+    if (!type) { alert('请选择记录类型'); return false; }
+    if (!value) { alert('请填写记录值'); return false; }
+
+    var isEdit = !!recordId;
+    var method = isEdit ? 'POST' : 'PUT';
+    var url = '/admin/dnspod_record';
+    var params = 'domain_id=' + encodeURIComponent(domainId) +
+        '&name=' + encodeURIComponent(name) +
+        '&type=' + encodeURIComponent(type) +
+        '&value=' + encodeURIComponent(value) +
+        '&line=' + encodeURIComponent(line) +
+        '&ttl=' + encodeURIComponent(ttl);
+    if (isEdit) {
+        params += '&record_id=' + encodeURIComponent(recordId);
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.open(method, url, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res;
+            try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            if (res.code == 0) {
+                alert(res.echo || '操作成功');
+                location.reload();
+            } else {
+                alert('操作失败：' + (res.echo || ''));
+            }
+        }
+    };
+    xhr.send(params);
+    return false;
+}
+
+function toggleStatus(domainId, recordId, status) {
+    var text = status === 'enable' ? '启用' : '禁用';
+    if (!confirm('确认' + text + '该解析记录？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/dnspod_record/status', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res;
+            try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            if (res.code == 0) {
+                alert(res.echo || '操作成功');
+                location.reload();
+            } else {
+                alert('操作失败：' + (res.echo || ''));
+            }
+        }
+    };
+    xhr.send('domain_id=' + domainId + '&record_id=' + recordId + '&status=' + status);
+}
+
+function removeRecord(domainId, recordId) {
+    if (!confirm('确认删除该解析记录？此操作不可恢复。')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/dnspod_record?domain_id=' + domainId + '&record_id=' + recordId, true);
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res;
+            try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            if (res.code == 0) {
+                alert(res.echo || '删除成功');
+                location.reload();
+            } else {
+                alert('删除失败：' + (res.echo || ''));
+            }
+        }
+    };
+    xhr.send();
 }
 </script>
 {/literal}
