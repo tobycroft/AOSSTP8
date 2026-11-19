@@ -4,7 +4,6 @@
 --   1. ao_attachment 增加 tag 列，门户图床上传时写入 tag=用户ID，列表/删除按 token=imagebed + tag 过滤；
 --      其它项目上传 tag 为空，行为不变。
 --   2. 删除门户控制台专用且已无任何读写的 ao_ak_log。
---   3. 统一图片访问域名端口：image.tuuz.cc 的 444/4444 全部改为 433（含 ao_oss.url 与表默认值）。
 
 -- 1. ao_attachment 增加 tag 列（幂等）
 SET @col_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
@@ -26,14 +25,7 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 DROP TABLE IF EXISTS `ao_ak_log`;
 DROP TABLE IF EXISTS `ao_image_bed`;
 
--- 3. 确保图床存储项目存在（幂等）
+-- 3. 确保图床存储项目存在（幂等，不存在时初始化）
 INSERT INTO `ao_oss` (`type`, `main_type`, `name`, `code`, `token`, `oss_type`, `oss_tag`, `sms_type`, `sms_tag`, `sms_limit`, `url`, `ext`, `size`, `status`)
 SELECT 'local', 'local', 'imagebed', '', 'imagebed', 'none', 'default', 'none', 'none', 20, 'https://image.tuuz.cc:433', 'jpg,jpeg,png,gif,bmp,webp', 10240, 1
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `ao_oss` WHERE `token` = 'imagebed');
-
--- 4. 统一图片访问域端口：image.tuuz.cc 的 444/4444 全部改为 433
-UPDATE `ao_oss`
-SET `url` = REPLACE(REPLACE(`url`, 'image.tuuz.cc:4444', 'image.tuuz.cc:433'), 'image.tuuz.cc:444', 'image.tuuz.cc:433')
-WHERE `url` LIKE '%image.tuuz.cc%';
-
-ALTER TABLE `ao_oss` ALTER COLUMN `url` SET DEFAULT 'https://image.tuuz.cc:433';
