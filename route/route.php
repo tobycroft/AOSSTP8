@@ -102,12 +102,8 @@
     \think\facade\Route::any('admin/agnes/copy', '\app\admin\controller\Agnes@copy');
     \think\facade\Route::any('admin/agnes', '\app\admin\controller\Agnes@index');
 
-    // AI 项目（v3 凭证，绑定 agnes API）
-    \think\facade\Route::any('admin/ai/test', '\app\admin\controller\Ai@test');
-    \think\facade\Route::any('admin/ai/resetSecret', '\app\admin\controller\Ai@resetSecret');
-    \think\facade\Route::any('admin/ai', '\app\admin\controller\Ai@index');
-
-    // v3 项目管理（v3 开放接口通用凭证，独立于 AI 项目）
+    // v3 项目管理（v3 开放接口通用凭证，含 AI 专属配置 agnes 绑定/模型别名）
+    \think\facade\Route::any('admin/v3_project/test', '\app\admin\controller\V3Project@test');
     \think\facade\Route::any('admin/v3_project/resetSecret', '\app\admin\controller\V3Project@resetSecret');
     \think\facade\Route::any('admin/v3_project', '\app\admin\controller\V3Project@index');
 

@@ -36,6 +36,46 @@ class AdminAgnesModel extends Model
         if ($id <= 0) {
             return 0;
         }
-        return \think\facade\Db::name('ao_ai')->where('agnes_api_id', $id)->count();
+        return \think\facade\Db::name('ao_v3_project')->where('agnes_api_id', $id)->count();
+    }
+
+    /**
+     * 供后台表单下拉选择的 agnes API 列表（id + 名称，避免暴露密钥）
+     *
+     * @return array [{id, name}, ...]
+     */
+    public static function agnesOptions(): array
+    {
+        return \think\facade\Db::name('ao_ai_agnes')
+            ->field('id, name')
+            ->order('id', 'desc')
+            ->select()
+            ->toArray();
+    }
+
+    /**
+     * 按 agnes_api_id 取出上游配置，供在线测试复用 AiAction。
+     * 只取启用中的 API；禁用或已删除则返回空配置，由调用方提示。
+     *
+     * @param int $agnesApiId
+     * @return array ['base_url','model','api_key'] 或 []
+     */
+    public static function agnesConfig(int $agnesApiId): array
+    {
+        if ($agnesApiId <= 0) {
+            return [];
+        }
+        $row = \think\facade\Db::name('ao_ai_agnes')
+            ->field('api_key, base_url, model, status')
+            ->where('id', $agnesApiId)
+            ->find();
+        if (empty($row) || (int)$row['status'] !== 1) {
+            return [];
+        }
+        return [
+            'api_key' => $row['api_key'],
+            'base_url' => $row['base_url'],
+            'model' => $row['model'],
+        ];
     }
 }

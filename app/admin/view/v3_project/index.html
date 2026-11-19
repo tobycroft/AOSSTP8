@@ -11,16 +11,18 @@
     </div>
 </div>
 <div class="card">
-    <p>v3 项目为通用凭证：一个项目（Secret）可使用 v3 下所有应用（Excel 等），采用信封鉴权（请求只传 kid 与密文，Secret 永不明文传输）。</p>
+    <p>v3 项目为通用凭证：一个项目（Secret）可使用 v3 下所有应用（AI、Excel 等），采用信封鉴权（请求只传 kid 与密文，Secret 永不明文传输）。原「AI 项目」已全量迁入本表；AI 专属配置（agnes 绑定、模型别名）直接在项目上维护。</p>
 </div>
 <table>
     <thead>
         <tr>
             <th>ID</th>
             <th>项目名称</th>
+            <th>对外模型名</th>
             <th>限流(次/60秒)</th>
             <th>Secret（v3 凭证）</th>
             <th>kid</th>
+            <th>绑定 API</th>
             <th>状态</th>
             <th>操作</th>
         </tr>
@@ -30,15 +32,18 @@
         <tr>
             <td>{$item.id}</td>
             <td>{$item.name}</td>
+            <td><span style="font-family:monospace;font-size:12px;color:#1677ff;">{if $item.model_alias}{$item.model_alias}{else/}<span style="color:#8c8c8c;">aoss（默认）</span>{/if}</span></td>
             <td>{if $item.rate_limit > 0}<span style="color:#fa541c;">{$item.rate_limit}</span>{else/}<span style="color:#8c8c8c;">不限</span>{/if}</td>
             <td style="white-space:nowrap;">
                 <span style="font-family:monospace;font-size:12px;{if !$item.secret_strong}color:#fa541c;{/if}" title="{$item.secret}">{$item.secret_mask}</span>
                 <button class="btn btn-sm" style="background:#595959;color:#fff;margin-left:4px;padding:2px 8px;font-size:12px;" onclick="copySecret('{$item.secret}')">复制</button>
             </td>
             <td style="font-family:monospace;font-size:12px;color:#8c8c8c;">{$item.kid}</td>
+            <td>{$item.agnes_name}</td>
             <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
             <td>
-                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', {$item.rate_limit}, {$item.status})">编辑</button>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', '{$item.model_alias|addslashes}', {$item.rate_limit}, {$item.agnes_api_id}, {$item.status})">编辑</button>
+                <button class="btn btn-sm" style="background:#722ed1;color:#fff;margin-right:4px;" onclick="openTest({$item.id}, '{$item.name|addslashes}')">对话测试</button>
                 <button class="btn btn-sm" style="background:#fa8c16;color:#fff;margin-right:4px;" onclick="doResetSecret({$item.id})">重置Secret</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
@@ -53,18 +58,33 @@
         <input type="hidden" id="editId" value="">
         <div class="form-group">
             <label>项目名称</label>
-            <input type="text" id="formName" placeholder="人类可读的标签，例如「Excel 对接」">
+            <input type="text" id="formName" placeholder="人类可读的标签，例如「前端客服」">
+        </div>
+        <div class="form-group">
+            <label>对外模型名（可选，AI 应用）</label>
+            <input type="text" id="formModelAlias" placeholder="留空则使用默认 aoss" maxlength="64">
+            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">v3 AI 接口返回数据中的 model 字段将显示为此名称，用于屏蔽上游真实模型；留空回退 aoss。</div>
         </div>
         <div class="form-group">
             <label>接口限流（次 / 60 秒）</label>
             <input type="number" id="formRateLimit" min="0" step="1" placeholder="0" maxlength="10">
-            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">每个项目每 60 秒内允许的请求次数（v3 Excel 接口合计）；0 或留空表示不限速。超限返回 429 并带 Retry-After。</div>
+            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">每个项目每 60 秒内允许的请求次数（v3 各应用独立计数）；0 或留空表示不限速。超限返回 429 并带 Retry-After。</div>
         </div>
         <div class="form-group" id="secretNote" style="display:none;">
             <label>v3 凭证（Secret）</label>
             <div style="padding:8px 10px;border:1px solid #ffe58f;background:#fffbe6;border-radius:4px;font-size:13px;color:#874d00;">
                 凭证由服务端自动签发，创建后仅展示一次；如需更换请在列表点「重置Secret」。凭证本身不可手动指定。
             </div>
+        </div>
+        <div class="form-group">
+            <label>绑定 agnes API（可选，AI 应用）</label>
+            <select id="formAgnesApiId">
+                <option value="0">-- 未绑定 --</option>
+                {foreach $agnesOptions as $opt}
+                <option value="{$opt.id}">{$opt.name}</option>
+                {/foreach}
+            </select>
+            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">绑定后项目可使用 v3 AI 接口；密钥、地址、模型由所选 agnes API 统一提供，可到「agnes API」菜单维护。不绑定则仅可使用 Excel 等非 AI 应用。</div>
         </div>
         <div class="form-group">
             <label>状态</label>
@@ -76,6 +96,24 @@
         <div class="modal-actions">
             <button class="btn btn-cancel" onclick="closeModal()">取消</button>
             <button class="btn btn-primary" id="modalSubmit" onclick="submitForm()">确定</button>
+        </div>
+    </div>
+</div>
+<div class="modal" id="testModal">
+    <div class="modal-box" style="width:560px;">
+        <h3 id="testTitle">在线测试</h3>
+        <input type="hidden" id="testId" value="">
+        <div class="form-group">
+            <label>测试提示词</label>
+            <textarea id="testPrompt" rows="3" style="width:100%;padding:8px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;outline:none;resize:vertical;">用一句话介绍你自己。</textarea>
+        </div>
+        <div class="form-group">
+            <label>测试结果</label>
+            <div id="testResult" style="width:100%;min-height:100px;padding:8px 10px;border:1px solid #e8e8e8;border-radius:4px;font-size:14px;background:#fafafa;white-space:pre-wrap;word-break:break-all;color:#666;">点击「开始测试」查看结果</div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeTest()">关闭</button>
+            <button class="btn btn-primary" id="testSubmit" onclick="runTest()">开始测试</button>
         </div>
     </div>
 </div>
@@ -108,16 +146,20 @@ function openCreate() {
     document.getElementById('modalTitle').textContent = '新增项目';
     document.getElementById('editId').value = '';
     document.getElementById('formName').value = '';
+    document.getElementById('formModelAlias').value = '';
     document.getElementById('formRateLimit').value = '0';
+    document.getElementById('formAgnesApiId').value = '0';
     document.getElementById('formStatus').value = '1';
     document.getElementById('secretNote').style.display = '';
     document.getElementById('v3Modal').classList.add('show');
 }
-function openEdit(id, name, rateLimit, status) {
+function openEdit(id, name, modelAlias, rateLimit, agnesApiId, status) {
     document.getElementById('modalTitle').textContent = '编辑项目';
     document.getElementById('editId').value = id;
     document.getElementById('formName').value = name;
+    document.getElementById('formModelAlias').value = modelAlias || '';
     document.getElementById('formRateLimit').value = rateLimit;
+    document.getElementById('formAgnesApiId').value = agnesApiId;
     document.getElementById('formStatus').value = status;
     document.getElementById('secretNote').style.display = 'none';
     document.getElementById('v3Modal').classList.add('show');
@@ -125,7 +167,9 @@ function openEdit(id, name, rateLimit, status) {
 function submitForm() {
     var id = document.getElementById('editId').value;
     var name = document.getElementById('formName').value;
+    var modelAlias = document.getElementById('formModelAlias').value.trim();
     var rateLimit = document.getElementById('formRateLimit').value;
+    var agnesApiId = document.getElementById('formAgnesApiId').value;
     var status = document.getElementById('formStatus').value;
     if (!name) { alert('项目名称不能为空'); return; }
     var xhr = new XMLHttpRequest();
@@ -147,9 +191,53 @@ function submitForm() {
             }
         }
     };
-    var params = 'name=' + encodeURIComponent(name) + '&rate_limit=' + rateLimit + '&status=' + status;
+    var params = 'name=' + encodeURIComponent(name) + '&model_alias=' + encodeURIComponent(modelAlias) + '&rate_limit=' + rateLimit + '&agnes_api_id=' + agnesApiId + '&status=' + status;
     if (id) params += '&id=' + id;
     xhr.send(params);
+}
+function openTest(id, name) {
+    document.getElementById('testTitle').textContent = '在线测试 - ' + name;
+    document.getElementById('testId').value = id;
+    document.getElementById('testPrompt').value = '用一句话介绍你自己。';
+    document.getElementById('testResult').textContent = '准备就绪，点击「开始测试」';
+    document.getElementById('testResult').style.color = '#666';
+    document.getElementById('testSubmit').disabled = false;
+    document.getElementById('testModal').classList.add('show');
+}
+function closeTest() {
+    document.getElementById('testModal').classList.remove('show');
+}
+function runTest() {
+    var id = document.getElementById('testId').value;
+    var prompt = document.getElementById('testPrompt').value;
+    if (!id) { alert('缺少项目ID'); return; }
+    var resultBox = document.getElementById('testResult');
+    var btn = document.getElementById('testSubmit');
+    resultBox.textContent = '正在请求模型，请稍候...';
+    resultBox.style.color = '#faad14';
+    btn.disabled = true;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/v3_project/test', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            btn.disabled = false;
+            var res;
+            try { res = JSON.parse(xhr.responseText); } catch(e) { resultBox.textContent = '响应解析失败'; resultBox.style.color = '#ff4d4f'; return; }
+            if (res.code == 0 && res.data) {
+                var usage = res.data.usage || {};
+                var usageText = Object.keys(usage).length ? ('\n\n[Token用量] 输入:' + (usage.prompt_tokens||0) + ' 输出:' + (usage.completion_tokens||0) + ' 总计:' + (usage.total_tokens||0)) : '';
+                resultBox.textContent = res.data.reply + usageText;
+                resultBox.style.color = '#333';
+                showToast('测试成功', 'success');
+            } else {
+                resultBox.textContent = res.echo || '测试失败';
+                resultBox.style.color = '#ff4d4f';
+            }
+        }
+    };
+    xhr.send('id=' + id + '&prompt=' + encodeURIComponent(prompt));
 }
 function doResetSecret(id) {
     if (!confirm('重置后旧 Secret 与旧 kid 立即失效，调用方必须同步更换，否则 v3 接口将全部鉴权失败。确定继续？')) return;

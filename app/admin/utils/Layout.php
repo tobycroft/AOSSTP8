@@ -74,7 +74,6 @@ class Layout
             'title' => 'AI 管理',
             'items' => [
                 'agnes' => ['label' => 'agnes API', 'url' => '/admin/agnes'],
-                'ai' => ['label' => 'AI 项目', 'url' => '/admin/ai'],
             ],
         ],
         'v3' => [
