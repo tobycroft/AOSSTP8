@@ -36,7 +36,7 @@ class AdminAgnesModel extends Model
         if ($id <= 0) {
             return 0;
         }
-        return \think\facade\Db::name('ao_v3_project')->where('agnes_api_id', $id)->count();
+        return \think\facade\Db::name('ao_v3_project_agnes')->where('agnes_api_id', $id)->count();
     }
 
     /**
