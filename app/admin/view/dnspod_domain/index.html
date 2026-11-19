@@ -25,6 +25,7 @@
             <th>记录数</th>
             <th>等级</th>
             <th>同步时间</th>
+            <th>操作</th>
         </tr>
     </thead>
     <tbody>
@@ -46,11 +47,14 @@
             <td>{$item.records}</td>
             <td>{$item.grade}</td>
             <td style="color:#8c8c8c;font-size:13px;">{$item.date}</td>
+            <td style="white-space:nowrap;">
+                <a class="btn btn-sm btn-edit" href="/admin/dnspod_subdomain?domain_id={$item.domain_id}" style="text-decoration:none;display:inline-block;">子域名</a>
+            </td>
         </tr>
         {/foreach}
         {if empty($list)}
         <tr>
-            <td colspan="8" style="text-align:center;color:#8c8c8c;padding:40px 0;">暂无域名数据，请点击「同步全部数据」从 DNSPod 拉取</td>
+            <td colspan="9" style="text-align:center;color:#8c8c8c;padding:40px 0;">暂无域名数据，请点击「同步全部数据」从 DNSPod 拉取</td>
         </tr>
         {/if}
     </tbody>

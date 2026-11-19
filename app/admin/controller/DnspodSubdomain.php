@@ -26,6 +26,48 @@ class DnspodSubdomain extends CommonController
     }
 
     /**
+     * 获取某个子域名的解析记录列表（子域名页内联展开用）
+     * GET /admin/dnspod_subdomain/records?domain_id=X&name=Y
+     */
+    public function records()
+    {
+        $domainId = input('get.domain_id', 0, 'intval');
+        $name = input('get.name', '');
+        if ($domainId <= 0 || $name === '') {
+            Ret::Fail(400, null, '缺少参数[domain_id]或[name]');
+        }
+
+        $list = Db::name('ao_dnspod_record')
+            ->alias('r')
+            ->leftJoin('ao_dnspod n', 'r.dnspod_id = n.id')
+            ->field('r.*, n.name as config_name')
+            ->where('r.domain_id', $domainId)
+            ->where('r.name', $name)
+            ->order('r.type', 'asc')
+            ->order('r.record_id', 'asc')
+            ->select()
+            ->toArray();
+
+        $items = [];
+        foreach ($list as $item) {
+            $items[] = [
+                'record_id' => $item['record_id'],
+                'domain_id' => $item['domain_id'],
+                'name' => $item['name'],
+                'type' => $item['type'],
+                'value' => $item['value'],
+                'line' => $item['line'],
+                'ttl' => (int)$item['ttl'],
+                'enabled' => $item['enabled'],
+                'config_name' => $item['config_name'] ?? '-',
+                'date' => $item['date'],
+            ];
+        }
+
+        Ret::Success(0, ['list' => $items]);
+    }
+
+    /**
      * 实时搜索 JSON 接口：GET /admin/dnspod_subdomain/data
      */
     public function data()

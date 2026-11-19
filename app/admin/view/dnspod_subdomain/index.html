@@ -34,7 +34,7 @@
     </thead>
     <tbody id="subdomainBody">
         {foreach $list as $item}
-        <tr>
+        <tr data-domain-id="{$item.domain_id}" data-name="{$item.sub_domain}" data-domain-name="{$item.domain_name}">
             <td style="font-family:monospace;color:#1677ff;">{$item.sub_full}</td>
             <td style="color:#8c8c8c;font-size:13px;">{$item.domain_name}</td>
             <td style="font-size:12px;">{$item.config_name}</td>
@@ -52,8 +52,8 @@
                 {/if}
             </td>
             <td style="color:#8c8c8c;font-size:13px;">{$item.date}</td>
-            <td>
-                <a class="btn btn-sm btn-edit" href="/admin/dnspod_record?search={$item.sub_domain|urlencode|raw}&domain_id={$item.domain_id}" style="text-decoration:none;display:inline-block;">查看解析</a>
+            <td style="white-space:nowrap;">
+                <button class="btn btn-sm btn-edit" onclick="toggleExpand(this)">展开记录</button>
             </td>
         </tr>
         {/foreach}
@@ -65,12 +65,60 @@
     </tbody>
 </table>
 <div id="paginationBox">{$pagination|raw}</div>
+
+<div id="recordModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:8px;width:480px;max-width:92%;padding:24px;box-shadow:0 6px 16px rgba(0,0,0,.08);">
+        <h3 id="recordModalTitle" style="margin:0 0 16px;">新增解析记录</h3>
+        <form id="recordForm" onsubmit="return submitRecord(event)">
+            <input type="hidden" id="f_domain_id">
+            <input type="hidden" id="f_record_id">
+            <input type="hidden" id="f_name">
+            <div style="margin-bottom:14px;display:flex;gap:24px;font-size:13px;color:#595959;">
+                <div>所属域名：<span id="f_domain_label" style="color:#1677ff;font-family:monospace;"></span></div>
+                <div>主机记录：<span id="f_name_label" style="color:#1677ff;font-family:monospace;"></span></div>
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:6px;font-size:13px;color:#595959;">记录类型 <span style="color:#ff4d4f;">*</span></label>
+                <select id="f_type" style="width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;" required>
+                    <option value="">请选择</option>
+                    <option value="A">A</option>
+                    <option value="AAAA">AAAA</option>
+                    <option value="CNAME">CNAME</option>
+                    <option value="MX">MX</option>
+                    <option value="TXT">TXT</option>
+                    <option value="NS">NS</option>
+                    <option value="SRV">SRV</option>
+                    <option value="CAA">CAA</option>
+                </select>
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:6px;font-size:13px;color:#595959;">记录值 <span style="color:#ff4d4f;">*</span></label>
+                <textarea id="f_value" rows="3" placeholder="记录值" style="width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;box-sizing:border-box;resize:vertical;" required></textarea>
+            </div>
+            <div style="display:flex;gap:12px;margin-bottom:14px;">
+                <div style="flex:1;">
+                    <label style="display:block;margin-bottom:6px;font-size:13px;color:#595959;">线路</label>
+                    <input type="text" id="f_line" value="默认" style="width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;box-sizing:border-box;">
+                </div>
+                <div style="flex:1;">
+                    <label style="display:block;margin-bottom:6px;font-size:13px;color:#595959;">TTL</label>
+                    <input type="number" id="f_ttl" value="600" style="width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;outline:none;box-sizing:border-box;">
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+                <button type="button" class="btn" onclick="closeRecordForm()" style="padding:8px 18px;border:1px solid #d9d9d9;background:#fff;border-radius:4px;cursor:pointer;">取消</button>
+                <button type="submit" class="btn btn-primary" style="padding:8px 18px;">确定</button>
+            </div>
+        </form>
+    </div>
+</div>
 {/block}
 {block name="script"}
 {literal}
 <script>
 var searchTimer = null;
 var currentPage = 1;
+var currentExpandKey = null;
 
 function sendSearchRequest() {
     var search = document.getElementById('searchInput').value;
@@ -99,6 +147,7 @@ function renderRows(list) {
     var body = document.getElementById('subdomainBody');
     if (!list || list.length === 0) {
         body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#8c8c8c;padding:40px 0;">暂无子域名数据</td></tr>';
+        currentExpandKey = null;
         return;
     }
     var html = '';
@@ -111,8 +160,7 @@ function renderRows(list) {
         var statusHtml = it.has_enabled == 1
             ? '<span class="status-badge active">启用</span>'
             : '<span class="status-badge inactive">禁用</span>';
-        var link = '/admin/dnspod_record?search=' + encodeURIComponent(it.sub_domain) + '&domain_id=' + it.domain_id;
-        html += '<tr>'
+        html += '<tr data-domain-id="' + it.domain_id + '" data-name="' + it.sub_domain + '" data-domain-name="' + it.domain_name + '">'
             + '<td style="font-family:monospace;color:#1677ff;">' + it.sub_full + '</td>'
             + '<td style="color:#8c8c8c;font-size:13px;">' + it.domain_name + '</td>'
             + '<td style="font-size:12px;">' + it.config_name + '</td>'
@@ -120,10 +168,22 @@ function renderRows(list) {
             + '<td>' + it.record_count + '</td>'
             + '<td>' + statusHtml + '</td>'
             + '<td style="color:#8c8c8c;font-size:13px;">' + it.date + '</td>'
-            + '<td><a class="btn btn-sm btn-edit" href="' + link + '" style="text-decoration:none;display:inline-block;">查看解析</a></td>'
+            + '<td style="white-space:nowrap;"><button class="btn btn-sm btn-edit" onclick="toggleExpand(this)">展开记录</button></td>'
             + '</tr>';
     }
     body.innerHTML = html;
+
+    if (currentExpandKey) {
+        var parts = currentExpandKey.split('|');
+        var rows = body.querySelectorAll('tr[data-domain-id]');
+        for (var k = 0; k < rows.length; k++) {
+            if (rows[k].dataset.domainId === parts[0] && rows[k].dataset.name === parts[1]) {
+                var btn = rows[k].querySelector('button');
+                if (btn) toggleExpand(btn);
+                break;
+            }
+        }
+    }
 }
 
 function renderPagination(current, totalPages) {
@@ -166,15 +226,6 @@ function buildPageRange(current, total) {
     return range;
 }
 
-function buildQueryString() {
-    var search = document.getElementById('searchInput').value;
-    var domainId = document.getElementById('domainSelect').value;
-    var qs = '';
-    if (search) qs += '&search=' + encodeURIComponent(search);
-    if (domainId > 0) qs += '&domain_id=' + domainId;
-    return qs;
-}
-
 function goPage(page) {
     currentPage = page;
     sendSearchRequest();
@@ -192,6 +243,236 @@ document.getElementById('searchInput').addEventListener('input', function() {
     currentPage = 1;
     searchTimer = setTimeout(sendSearchRequest, 300);
 });
+
+/* ===== 子域名展开：解析记录内联展示与操作 ===== */
+
+function toggleExpand(btn) {
+    var tr = btn.closest('tr');
+    var key = tr.dataset.domainId + '|' + tr.dataset.name;
+    var next = tr.nextElementSibling;
+    if (next && next.classList && next.classList.contains('expand-row')) {
+        if (next.style.display === 'none') {
+            next.style.display = '';
+            btn.textContent = '收起记录';
+            currentExpandKey = key;
+        } else {
+            next.style.display = 'none';
+            btn.textContent = '展开记录';
+            if (currentExpandKey === key) currentExpandKey = null;
+        }
+        return;
+    }
+    currentExpandKey = key;
+    btn.textContent = '收起记录';
+    var expandTr = document.createElement('tr');
+    expandTr.className = 'expand-row';
+    expandTr.innerHTML = '<td colspan="8" style="background:#fafafa;padding:16px 24px;"><div class="expand-box" style="min-height:60px;color:#8c8c8c;font-size:13px;">加载中...</div></td>';
+    tr.parentNode.insertBefore(expandTr, next);
+    loadRecords(tr, expandTr.querySelector('.expand-box'));
+}
+
+function loadRecords(tr, box) {
+    var domainId = tr.dataset.domainId;
+    var name = tr.dataset.name;
+    var domainName = tr.dataset.domainName;
+    var url = '/admin/dnspod_subdomain/records?domain_id=' + domainId + '&name=' + encodeURIComponent(name);
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res;
+            try { res = JSON.parse(xhr.responseText); } catch(e) { box.innerHTML = '<span style="color:#ff4d4f;">响应解析失败</span>'; return; }
+            if (res.code == 0) {
+                renderRecordsSubTable(box, res.data.list, domainId, name, domainName);
+            } else {
+                box.innerHTML = '<span style="color:#ff4d4f;">加载失败：' + (res.echo || '') + '</span>';
+            }
+        }
+    };
+    xhr.send();
+}
+
+function renderRecordsSubTable(box, list, domainId, name, domainName) {
+    box._records = list;
+    box._domainId = domainId;
+    box._name = name;
+    box._domainName = domainName;
+
+    var html = '<div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">'
+        + '<span style="font-size:13px;color:#595959;">解析记录（' + (list ? list.length : 0) + ' 条）· 域名：' + domainName + ' · 主机记录：' + name + '</span>'
+        + '<button class="btn btn-sm btn-primary" style="background:#52c41a;" onclick="openRecordForm(' + domainId + ', ' + "'" + jsAttr(name) + "'" + ', ' + "'" + jsAttr(domainName) + "'" + ')">+ 新增记录</button>'
+        + '</div>';
+    if (!list || list.length === 0) {
+        html += '<div style="text-align:center;color:#8c8c8c;padding:20px 0;">暂无解析记录，点击右上角新增</div>';
+        box.innerHTML = html;
+        return;
+    }
+    html += '<table style="width:100%;background:#fff;border-radius:6px;overflow:hidden;border:1px solid #f0f0f0;border-collapse:collapse;">';
+    html += '<thead><tr><th>记录ID</th><th>类型</th><th>记录值</th><th>线路</th><th>TTL</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+    for (var i = 0; i < list.length; i++) {
+        var r = list[i];
+        var statusHtml = r.enabled == '1'
+            ? '<span class="status-badge active">启用</span>'
+            : '<span class="status-badge inactive">禁用</span>';
+        var toggleBtn = r.enabled == '1'
+            ? '<button class="btn btn-link" style="color:#faad14;" onclick="toggleRecordStatus(' + r.domain_id + ',' + r.record_id + ',\'disable\')">禁用</button>'
+            : '<button class="btn btn-link" style="color:#52c41a;" onclick="toggleRecordStatus(' + r.domain_id + ',' + r.record_id + ',\'enable\')">启用</button>';
+        html += '<tr>'
+            + '<td style="font-family:monospace;color:#8c8c8c;font-size:12px;">' + r.record_id + '</td>'
+            + '<td><span class="status-badge" style="background:#f0f5ff;color:#2f54eb;">' + r.type + '</span></td>'
+            + '<td style="font-family:monospace;font-size:12px;max-width:320px;word-break:break-all;">' + r.value + '</td>'
+            + '<td>' + r.line + '</td>'
+            + '<td>' + r.ttl + '</td>'
+            + '<td>' + statusHtml + '</td>'
+            + '<td style="white-space:nowrap;">'
+            + '<button class="btn btn-link" onclick="editRecord(this,' + r.record_id + ')">编辑</button>'
+            + toggleBtn
+            + '<button class="btn btn-link" style="color:#ff4d4f;" onclick="removeRecordFromSub(' + r.domain_id + ',' + r.record_id + ')">删除</button>'
+            + '</td>'
+            + '</tr>';
+    }
+    html += '</tbody></table>';
+    box.innerHTML = html;
+}
+
+function jsAttr(s) {
+    return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+function editRecord(btn, recordId) {
+    var box = btn.closest('.expand-box');
+    var list = box._records || [];
+    var rec = null;
+    for (var i = 0; i < list.length; i++) {
+        if (list[i].record_id == recordId) { rec = list[i]; break; }
+    }
+    if (!rec) return;
+    openRecordForm(box._domainId, box._name, box._domainName, rec);
+}
+
+function openRecordForm(domainId, name, domainName, rec) {
+    var modal = document.getElementById('recordModal');
+    var title = document.getElementById('recordModalTitle');
+    document.getElementById('f_domain_id').value = domainId;
+    document.getElementById('f_name').value = name;
+    document.getElementById('f_domain_label').textContent = domainName;
+    document.getElementById('f_name_label').textContent = name;
+    if (rec) {
+        title.textContent = '编辑解析记录';
+        document.getElementById('f_record_id').value = rec.record_id;
+        document.getElementById('f_type').value = rec.type;
+        document.getElementById('f_value').value = rec.value;
+        document.getElementById('f_line').value = rec.line || '默认';
+        document.getElementById('f_ttl').value = rec.ttl || 600;
+    } else {
+        title.textContent = '新增解析记录';
+        document.getElementById('f_record_id').value = '';
+        document.getElementById('f_type').value = '';
+        document.getElementById('f_value').value = '';
+        document.getElementById('f_line').value = '默认';
+        document.getElementById('f_ttl').value = 600;
+    }
+    modal.style.display = 'flex';
+}
+
+function closeRecordForm() {
+    document.getElementById('recordModal').style.display = 'none';
+}
+
+function submitRecord(e) {
+    e.preventDefault();
+    var domainId = document.getElementById('f_domain_id').value;
+    var recordId = document.getElementById('f_record_id').value;
+    var name = document.getElementById('f_name').value;
+    var type = document.getElementById('f_type').value;
+    var value = document.getElementById('f_value').value.trim();
+    var line = document.getElementById('f_line').value.trim() || '默认';
+    var ttl = document.getElementById('f_ttl').value || 600;
+
+    if (!type) { showToast('请选择记录类型', 'warn', 2500); return false; }
+    if (!value) { showToast('请填写记录值', 'warn', 2500); return false; }
+
+    var isEdit = !!recordId;
+    var method = isEdit ? 'POST' : 'PUT';
+    var params = 'domain_id=' + encodeURIComponent(domainId) +
+        '&name=' + encodeURIComponent(name) +
+        '&type=' + encodeURIComponent(type) +
+        '&value=' + encodeURIComponent(value) +
+        '&line=' + encodeURIComponent(line) +
+        '&ttl=' + encodeURIComponent(ttl);
+    if (isEdit) {
+        params += '&record_id=' + encodeURIComponent(recordId);
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.open(method, '/admin/dnspod_record', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res;
+            try { res = JSON.parse(xhr.responseText); } catch(e) { showToast('响应解析失败', 'error', 5000); return; }
+            if (res.code == 0) {
+                showToast(res.echo || '操作成功', 'success', 1500);
+                closeRecordForm();
+                refreshAfterAction();
+            } else {
+                showToast('操作失败：' + (res.echo || ''), 'error', 5000);
+            }
+        }
+    };
+    xhr.send(params);
+    return false;
+}
+
+function toggleRecordStatus(domainId, recordId, status) {
+    var text = status === 'enable' ? '启用' : '禁用';
+    showConfirm('确认' + text + '该解析记录？', function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/admin/dnspod_record/status', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4) {
+                var res;
+                try { res = JSON.parse(xhr.responseText); } catch(e) { showToast('响应解析失败', 'error', 5000); return; }
+                if (res.code == 0) {
+                    showToast(res.echo || '操作成功', 'success', 1500);
+                    refreshAfterAction();
+                } else {
+                    showToast('操作失败：' + (res.echo || ''), 'error', 5000);
+                }
+            }
+        };
+        xhr.send('domain_id=' + domainId + '&record_id=' + recordId + '&status=' + status);
+    }, text + '确认');
+}
+
+function removeRecordFromSub(domainId, recordId) {
+    showConfirm('确认删除该解析记录？此操作不可恢复。', function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('DELETE', '/admin/dnspod_record?domain_id=' + domainId + '&record_id=' + recordId, true);
+        xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4) {
+                var res;
+                try { res = JSON.parse(xhr.responseText); } catch(e) { showToast('响应解析失败', 'error', 5000); return; }
+                if (res.code == 0) {
+                    showToast(res.echo || '删除成功', 'success', 1500);
+                    refreshAfterAction();
+                } else {
+                    showToast('删除失败：' + (res.echo || ''), 'error', 5000);
+                }
+            }
+        };
+        xhr.send();
+    }, '删除确认');
+}
+
+function refreshAfterAction() {
+    sendSearchRequest();
+}
 </script>
 {/literal}
 {/block}

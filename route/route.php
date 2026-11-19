@@ -119,6 +119,7 @@
 
     // DNSPod 子域名（按 name+domain 聚合展示）
     \think\facade\Route::any('admin/dnspod_subdomain/data', '\app\admin\controller\DnspodSubdomain@data');
+    \think\facade\Route::any('admin/dnspod_subdomain/records', '\app\admin\controller\DnspodSubdomain@records');
     \think\facade\Route::any('admin/dnspod_subdomain', '\app\admin\controller\DnspodSubdomain@index');
 
     // DNSPod 解析记录缓存
