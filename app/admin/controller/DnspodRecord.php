@@ -254,8 +254,8 @@ class DnspodRecord extends CommonController
      */
     private function remove()
     {
-        $domainId = input('delete.domain_id', 0, 'intval');
-        $recordId = input('delete.record_id', 0, 'intval');
+        $domainId = input('param.domain_id', 0, 'intval');
+        $recordId = input('param.record_id', 0, 'intval');
         if ($domainId <= 0 || $recordId <= 0) {
             Ret::Fail(400, null, '缺少参数[domain_id]或[record_id]');
         }
