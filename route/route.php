@@ -107,6 +107,10 @@
     \think\facade\Route::any('admin/ai/resetSecret', '\app\admin\controller\Ai@resetSecret');
     \think\facade\Route::any('admin/ai', '\app\admin\controller\Ai@index');
 
+    // v3 项目管理（v3 开放接口通用凭证，独立于 AI 项目）
+    \think\facade\Route::any('admin/v3_project/resetSecret', '\app\admin\controller\V3Project@resetSecret');
+    \think\facade\Route::any('admin/v3_project', '\app\admin\controller\V3Project@index');
+
     // DNSPod 管理（密钥独立存储，接入 dnspod 官方接口）
     \think\facade\Route::any('admin/dnspod/test', '\app\admin\controller\Dnspod@test');
     \think\facade\Route::any('admin/dnspod/domains', '\app\admin\controller\Dnspod@domains');

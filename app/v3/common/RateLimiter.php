@@ -1,13 +1,13 @@
 <?php
 
-namespace app\v3\ai\action;
+namespace app\v3\common;
 
 use think\facade\Cache;
 
 /**
- * v3 AI 接口固定窗口限流器
+ * v3 开放接口固定窗口限流器（公共）
  *
- * 按项目凭证 kid 计数，四个 AI 接口（chat/responses/messages/images）共用同一配额。
+ * 按项目凭证 kid 计数，同一应用（前缀）内各接口共用同一配额。
  * 计数存于 TP 自带 Cache（默认 file 驱动），不引入 Redis 依赖。
  *
  * 固定窗口：WINDOW 秒一个窗口，key 带窗口序号，窗口切换即重新计数。
@@ -18,9 +18,6 @@ class RateLimiter
     /** 固定窗口长度（秒） */
     public const WINDOW = 60;
 
-    /** 缓存 key 前缀，避免与其它业务计数冲突 */
-    private const PREFIX = 'v3_ai_rl:';
-
     /** 计数键 TTL：略大于窗口，保证窗口内计数不丢，旧键随后自然过期 */
     private const TTL = self::WINDOW + 2;
 
@@ -29,14 +26,15 @@ class RateLimiter
      *
      * @param string $kid   项目凭证定位标识（鉴权后取得）
      * @param int    $limit 每窗口允许的请求次数，<=0 表示不限速
+     * @param string $prefix 缓存 key 前缀，不同应用独立计数（如 v3_ai_rl: / v3_excel_rl:）
      */
-    public static function check(string $kid, int $limit): void
+    public static function check(string $kid, int $limit, string $prefix = 'v3_ai_rl:'): void
     {
         if ($limit <= 0) {
             return;
         }
 
-        $key = self::PREFIX . $kid . ':' . intdiv(time(), self::WINDOW);
+        $key = $prefix . $kid . ':' . intdiv(time(), self::WINDOW);
         $raw = Cache::get($key);
 
         // 窗口内首次请求：写入计数 1 并带 TTL 后放行

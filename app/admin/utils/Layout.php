@@ -77,6 +77,12 @@ class Layout
                 'ai' => ['label' => 'AI 项目', 'url' => '/admin/ai'],
             ],
         ],
+        'v3' => [
+            'title' => 'v3',
+            'items' => [
+                'v3_project' => ['label' => '项目管理 v3', 'url' => '/admin/v3_project'],
+            ],
+        ],
         'dnspod' => [
             'title' => 'DNS 管理',
             'items' => [
