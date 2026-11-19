@@ -130,7 +130,7 @@ class V3Grant extends CommonController
         $agnesIds = $agnesIdsRaw === '' ? [] : explode(',', $agnesIdsRaw);
         foreach ($agnesIds as $agnesId) {
             if ((int)$agnesId > 0 && empty(AdminAgnesModel::agnesConfig((int)$agnesId))) {
-                Ret::Fail(400, null, 'agnes API 不可用(ID: ' . (int)$agnesId . ')');
+                Ret::Fail(400, null, 'Agnes API 不可用(ID: ' . (int)$agnesId . ')');
             }
         }
 
@@ -163,7 +163,7 @@ class V3Grant extends CommonController
             ->where('is_default', 1)
             ->value('agnes_api_id'));
         if (empty($proc) || (string)$proc['api_key'] === '') {
-            Ret::Fail(400, null, '项目未授权可用的默认 agnes API');
+            Ret::Fail(400, null, '项目未授权可用的默认 Agnes API');
         }
 
         $prompt = Input::Post('prompt', '用一句话介绍你自己。');

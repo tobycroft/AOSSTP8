@@ -8,13 +8,13 @@ use think\Model;
 CREATE TABLE `ao_ai_agnes` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(64) DEFAULT NULL COMMENT 'API 名称（人类可读标签）',
-  `api_key` varchar(255) DEFAULT NULL COMMENT 'agnes API 密钥',
+  `api_key` varchar(255) DEFAULT NULL COMMENT 'Agnes API 密钥',
   `base_url` varchar(255) DEFAULT 'https://apihub.agnes-ai.com/v1' COMMENT 'API 地址',
   `model` varchar(64) DEFAULT 'agnes-3.0-flash' COMMENT '模型名称',
   `status` tinyint(1) DEFAULT '1' COMMENT '状态：1启用 0禁用',
   `date` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='agnes API 配置';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Agnes API 配置';
  */
 
 class AdminAgnesModel extends Model
@@ -40,7 +40,7 @@ class AdminAgnesModel extends Model
     }
 
     /**
-     * 供后台表单下拉选择的 agnes API 列表（id + 名称，避免暴露密钥）
+     * 供后台表单下拉选择的 Agnes API 列表（id + 名称，避免暴露密钥）
      *
      * @return array [{id, name}, ...]
      */

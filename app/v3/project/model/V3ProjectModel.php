@@ -47,9 +47,9 @@ class V3ProjectModel extends Model
     }
 
     /**
-     * 取项目被授权且启用中的默认 agnes API 配置
+     * 取项目被授权且启用中的默认 Agnes API 配置
      *
-     * 仅返回 is_default=1 的授权；对应 agnes API 不存在或被禁用时返回空数组
+     * 仅返回 is_default=1 的授权；对应 Agnes API 不存在或被禁用时返回空数组
      * （授权仍在但 key 已失效，等同未授权，AI 应用据此判定不可用）。
      *
      * @param int $projectId ao_v3_project.id

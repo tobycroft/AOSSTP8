@@ -2,7 +2,7 @@
 {block name="content"}
 <div class="toolbar">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <h2>agnes API</h2>
+        <h2>Agnes API</h2>
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="搜索名称或 API 密钥" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 260px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
             <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
@@ -141,7 +141,7 @@ function submitForm() {
     xhr.send(params);
 }
 function doCopy(id) {
-    if (!confirm('复制这条 agnes API 作为新记录？')) return;
+    if (!confirm('复制这条 Agnes API 作为新记录？')) return;
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/admin/agnes/copy', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -160,7 +160,7 @@ function doCopy(id) {
     xhr.send('id=' + id);
 }
 function doDelete(id) {
-    if (!confirm('确定要删除这条 agnes API 吗？被项目绑定时将无法删除。')) return;
+    if (!confirm('确定要删除这条 Agnes API 吗？被项目绑定时将无法删除。')) return;
     var xhr = new XMLHttpRequest();
     xhr.open('DELETE', '/admin/agnes', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');

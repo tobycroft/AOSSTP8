@@ -11,7 +11,7 @@ use Input;
 use Ret;
 
 /**
- * agnes API 管理：单独维护上游密钥/地址/模型，供多个 v3 项目绑定复用。
+ * Agnes API 管理：单独维护上游密钥/地址/模型，供多个 v3 项目绑定复用。
  */
 class Agnes extends CommonController
 {
@@ -74,7 +74,7 @@ class Agnes extends CommonController
             'list' => $items,
             'search' => $search,
             'pagination' => $pagination,
-        ], 'agnes API', 'ai', 'agnes');
+        ], 'Agnes API', 'ai', 'agnes');
     }
 
     private function create()
@@ -108,7 +108,7 @@ class Agnes extends CommonController
         $model = new AdminAgnesModel();
         $item = $model->findOrEmpty($id);
         if ($item->isEmpty()) {
-            Ret::Fail(404, null, 'agnes API 不存在');
+            Ret::Fail(404, null, 'Agnes API 不存在');
         }
 
         $data = [];
@@ -123,8 +123,8 @@ class Agnes extends CommonController
     }
 
     /**
-     * 复制一条 agnes API 为新记录（名称追加"-副本"）。
-     * agnes API 本身不含 v3 凭证，复制是安全的；同一把上游密钥可在后台被多个项目绑定。
+     * 复制一条 Agnes API 为新记录（名称追加"-副本"）。
+     * Agnes API 本身不含 v3 凭证，复制是安全的；同一把上游密钥可在后台被多个项目绑定。
      */
     public function copy()
     {
@@ -136,7 +136,7 @@ class Agnes extends CommonController
         $model = new AdminAgnesModel();
         $item = $model->findOrEmpty($id);
         if ($item->isEmpty()) {
-            Ret::Fail(404, null, 'agnes API 不存在');
+            Ret::Fail(404, null, 'Agnes API 不存在');
         }
 
         $row = $item->toArray();
@@ -155,13 +155,13 @@ class Agnes extends CommonController
 
         $bound = AdminAgnesModel::boundCount($id);
         if ($bound > 0) {
-            Ret::Fail(400, null, '该 agnes API 仍被 ' . $bound . ' 个项目绑定，请先改绑后再删除');
+            Ret::Fail(400, null, '该 Agnes API 仍被 ' . $bound . ' 个项目绑定，请先改绑后再删除');
         }
 
         $model = new AdminAgnesModel();
         $item = $model->findOrEmpty($id);
         if ($item->isEmpty()) {
-            Ret::Fail(404, null, 'agnes API 不存在');
+            Ret::Fail(404, null, 'Agnes API 不存在');
         }
 
         $item->delete();

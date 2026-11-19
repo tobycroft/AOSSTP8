@@ -8,7 +8,7 @@ use think\Model;
 CREATE TABLE `ao_v3_project_agnes`:
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `project_id` int unsigned NOT NULL COMMENT 'v3 项目 ID（ao_v3_project.id）',
-  `agnes_api_id` int unsigned NOT NULL COMMENT 'agnes API ID（ao_ai_agnes.id）',
+  `agnes_api_id` int unsigned NOT NULL COMMENT 'Agnes API ID（ao_ai_agnes.id）',
   `is_default` tinyint(1) DEFAULT 0 COMMENT '默认使用的 AI key（AI 请求取此 key）',
   `date` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -44,7 +44,7 @@ class AdminV3GrantModel extends Model
      * 整体替换某项目的授权集合（后台分配弹窗保存）
      *
      * @param int $projectId
-     * @param array $agnesIds 授权的 agnes API ID 列表
+     * @param array $agnesIds 授权的 Agnes API ID 列表
      * @param int $defaultAgnesId 默认 key，须在 $agnesIds 内
      * @return void
      */

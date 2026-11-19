@@ -98,7 +98,7 @@
     \think\facade\Route::any('admin/invite_code/batchDelete', '\app\admin\controller\InviteCode@batchDelete');
     \think\facade\Route::any('admin/invite_code', '\app\admin\controller\InviteCode@index');
 
-    // agnes API 管理（密钥独立存储）
+    // Agnes API 管理（密钥独立存储）
     \think\facade\Route::any('admin/agnes/copy', '\app\admin\controller\Agnes@copy');
     \think\facade\Route::any('admin/agnes', '\app\admin\controller\Agnes@index');
 
