@@ -102,8 +102,12 @@
     \think\facade\Route::any('admin/agnes/copy', '\app\admin\controller\Agnes@copy');
     \think\facade\Route::any('admin/agnes', '\app\admin\controller\Agnes@index');
 
-    // v3 项目管理（v3 开放接口通用凭证，含 AI 专属配置 agnes 绑定/模型别名）
-    \think\facade\Route::any('admin/v3_project/test', '\app\admin\controller\V3Project@test');
+    // AI 授权（将 agnes AI key 分配给 v3 项目，多对多）
+    \think\facade\Route::any('admin/v3_grant/test', '\app\admin\controller\V3Grant@test');
+    \think\facade\Route::any('admin/v3_grant/grants', '\app\admin\controller\V3Grant@grants');
+    \think\facade\Route::any('admin/v3_grant', '\app\admin\controller\V3Grant@index');
+
+    // v3 项目管理（v3 开放接口通用凭证；AI 授权等配置在 AI 授权页维护）
     \think\facade\Route::any('admin/v3_project/resetSecret', '\app\admin\controller\V3Project@resetSecret');
     \think\facade\Route::any('admin/v3_project', '\app\admin\controller\V3Project@index');
 
