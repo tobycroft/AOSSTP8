@@ -305,7 +305,7 @@ curl -s https://upload.tuuz.cc:433/v3/ai/messages/index \
             <h2>签名与加密</h2>
 
             <h3 id="doc-sign-tls">传输加密</h3>
-            <p>所有对外生产入口强制 HTTPS：开放接口与上传服务 <code class="inline">upload.tuuz.cc:433</code>、图片服务 <code class="inline">image.tuuz.cc:444</code>。除 v3 的凭证信封外，其余接口以传输层加密与访问控制为主，未启用应用层加密。</p>
+            <p>所有对外生产入口强制 HTTPS：开放接口与上传服务 <code class="inline">upload.tuuz.cc:433</code>、图片服务 <code class="inline">image.tuuz.cc:433</code>。除 v3 的凭证信封外，其余接口以传输层加密与访问控制为主，未启用应用层加密。</p>
 
             <h3 id="doc-sign-envelope">v3 凭证信封</h3>
             <p>v3 接口不存在「项目 token」这一概念：<code class="inline">ao_ai.name</code> 只是人类可读标签，<code class="inline">ao_ai.secret</code> 是服务端签发的<strong>唯一凭证</strong>（64 位十六进制，32 字节熵），同时作为信封加密密钥。调用方据此派生密钥，将「<code class="inline">secret|ts</code>」加密为单段密文提交，服务端解密后校验。请求链路上只出现 secret 的哈希前缀与密文，凭证全程不落 URL、请求体与访问日志。</p>

@@ -16,6 +16,8 @@ use Throwable;
 
 class index extends search
 {
+    protected string $upload_tag = '';
+
     public function initialize()
     {
 
@@ -60,7 +62,7 @@ class index extends search
         $mime = $file->getOriginalMime();
         // 判断附件格式是否符合
 
-        $file_exists = AttachmentModel::where(['token' => $token, 'md5' => $md5, 'sha1' => $sha1])->find();
+        $file_exists = AttachmentModel::where(['token' => $token, 'md5' => $md5, 'sha1' => $sha1, 'tag' => $this->upload_tag])->find();
 
         if ($file_exists) {
             if ($proc['type'] != 'all' || file_exists('./upload/' . $file_exists['path'])) {
@@ -118,12 +120,12 @@ class index extends search
             case "tiff":
                 $getId3 = new getID3();
                 $ana = $getId3->analyze($info->getPathname());
-                $video = $ana["video"];
-                $width = empty($video['resolution_x']) ?: $video['resolution_x'];
-                $height = empty($video['resolution_y']) ?: $video['resolution_y'];
+                $video = $ana["video"] ?? [];
+                $width = empty($video['resolution_x']) ? 0 : $video['resolution_x'];
+                $height = empty($video['resolution_y']) ? 0 : $video['resolution_y'];
                 if (!empty($video)) {
-                    $bitrate = empty($video['bits_per_sample']) ?: $video['bits_per_sample'];
-                    $duration_str = empty($video['compression_ratio']) ?: $video['compression_ratio'];
+                    $bitrate = empty($video['bits_per_sample']) ? 0 : $video['bits_per_sample'];
+                    $duration_str = empty($video['compression_ratio']) ? "00:00" : $video['compression_ratio'];
                 }
                 break;
 
@@ -135,6 +137,7 @@ class index extends search
 
         $file_info = [
             'token' => $token,
+            'tag' => $this->upload_tag,
             'name' => $file_name,
             'mime' => $mime,
             'path' => $fileName,

@@ -217,7 +217,7 @@ class create extends index
         $fileName = 'image/' . $this->token . '/' . $md5 . '.jpg';
 
         // 保持原有的存储逻辑不变
-        $sav = 'https://image.tuuz.cc:444//image/' . $this->token . DIRECTORY_SEPARATOR . $md5 . '.jpg';
+        $sav = 'https://image.tuuz.cc:433/image/' . $this->token . DIRECTORY_SEPARATOR . $md5 . '.jpg';
         Ret::Success(0, $sav);
     }
 
