@@ -82,17 +82,23 @@ class DnspodDomain extends CommonController
     }
 
     /**
-     * 同步所有启用的 DNSPod 账号下的域名和解析记录到本地缓存
+     * 同步域名和解析记录到本地缓存
+     * 传入 id 时仅同步该 DNSPod 配置账号下的全部域名；不传则同步所有启用账号。
      * 使用 upsert 方案：按唯一键（域名 name / 记录 domain_id+record_id）做更新或插入，
      * 保持本地自增 id 稳定，不重复清空重建。
      */
     public function sync()
     {
-        $configs = Db::name('ao_dnspod')
-            ->field('id, name, api_id, api_token')
-            ->where('status', 1)
-            ->select()
-            ->toArray();
+        $configId = input('post.id', 0, 'intval');
+
+        $configQuery = Db::name('ao_dnspod')
+            ->field('id, name, api_id, api_token');
+        if ($configId > 0) {
+            $configQuery->where('id', $configId);
+        } else {
+            $configQuery->where('status', 1);
+        }
+        $configs = $configQuery->select()->toArray();
 
         if (empty($configs)) {
             Ret::Fail(400, null, '没有可用的 DNSPod 配置');
@@ -114,15 +120,23 @@ class DnspodDomain extends CommonController
         $insertRecords = [];
         $updateRecords = [];
 
-        // 本地现有域名 name => domain_id（did）
-        $localDomains = Db::name('ao_dnspod_domain')
-            ->column('domain_id', 'name');
+        // 本地现有域名 name => domain_id（did）。单配置同步时仅限定该配置下的域名，避免清理误伤其它账号数据
+        $localDomainQuery = Db::name('ao_dnspod_domain');
+        if ($configId > 0) {
+            $localDomainQuery->where('dnspod_id', $configId);
+        }
+        $localDomains = $localDomainQuery->column('domain_id', 'name');
         // 本地现有记录 (domain_id,record_id) => true
         $localRecords = [];
-        $localRecordAll = Db::name('ao_dnspod_record')
-            ->field('domain_id, record_id')
-            ->select()
-            ->toArray();
+        $localRecordQuery = Db::name('ao_dnspod_record')
+            ->field('domain_id, record_id');
+        if ($configId > 0) {
+            $domainIds = array_values($localDomains);
+            if (!empty($domainIds)) {
+                $localRecordQuery->whereIn('domain_id', $domainIds);
+            }
+        }
+        $localRecordAll = $localRecordQuery->select()->toArray();
         foreach ($localRecordAll as $lr) {
             $localRecords[$lr['domain_id'] . ',' . $lr['record_id']] = true;
         }
@@ -266,6 +280,9 @@ class DnspodDomain extends CommonController
         $msg = '同步完成，新增 ' . count($insertDomains) . ' 个域名、更新 ' . count($updateDomains) . ' 个域名；记录新增 ' . count($insertRecords) . '、更新 ' . count($updateRecords) . '';
         if (!empty($errors)) {
             $msg .= '；' . count($errors) . ' 项获取失败';
+        }
+        if ($configId > 0 && !empty($configs)) {
+            $msg = '【' . $configs[0]['name'] . '】' . $msg;
         }
 
         Ret::Success(0, [
