@@ -144,14 +144,9 @@
 \think\facade\Route::any('register', '\app\index\controller\Register@index');
 \think\facade\Route::any('en', '\app\index\controller\Index@indexEn');
 
-// 门户用户控制台（多租户）
-\think\facade\Route::any('console/project/resetAk', '\app\index\controller\Project@resetAk');
-\think\facade\Route::any('console/project', '\app\index\controller\Project@index');
-\think\facade\Route::any('console/login_log', '\app\index\controller\LoginLog@index');
-\think\facade\Route::any('console/password', '\app\index\controller\Password@index');
-\think\facade\Route::any('console/hook', '\app\index\controller\Hook@index');
-\think\facade\Route::any('console/call_log', '\app\index\controller\CallLog@index');
-\think\facade\Route::any('console', '\app\index\controller\Console@index');
+// 门户图床（具体路径需注册在通用路径之前，避免被前缀匹配抢占）
+\think\facade\Route::any('image/delete', '\app\index\controller\Image@delete');
+\think\facade\Route::any('image', '\app\index\controller\Image@index');
 
 \think\facade\Route::any(':any', function () {
     header("Access-Control-Allow-Origin: *", true);
