@@ -3,7 +3,6 @@
 namespace app\v3\file\controller;
 
 use app\v2\file\model\FileTokenModel;
-use app\v3\common\UploadFolder;
 use app\v3\common\V3EnvelopeAuth;
 use app\v3\project\model\V3ProjectModel;
 use app\v3\storage\model\V3StorageModel;
@@ -12,30 +11,28 @@ use Input;
 use Ret;
 
 /**
- * v3 文件上传：临时凭证签发接口，鉴权改为 v3 凭证信封。
+ * v3 文件上传：临时凭证签发接口（v3 凭证信封鉴权）。
  *
- * 与 v2/file/token 功能一致（换取一次性上传 token / 上传地址 / hash 查询），
- * 区别有二：
- *   1. 鉴权走 V3EnvelopeAuth（X-Aoss-Ts/Kid/Auth），不再用 oss token + md5 签名；
- *   2. 存储配置来自独立的 ao_v3_storage（按信封鉴权命中的项目 id 查），
- *      与 ao_oss 无关；落盘文件夹取该存储项的 upload_folder（为空回退存储名）。
+ * 存储来自本项目绑定的 Bucket（ao_v3_storage.project_id）：
+ *   - Path 决定落盘目录 upload/{Path}/YYYYMMDD/md5.ext（留空回退 Bucket 名称）
+ *   - ext / size 决定允许的后缀与单文件大小上限
+ *   - type=local 存本站，type=oss 传远程（凭据 oss_tag → ao_oss_aliyun）
  *
- * 签发的一次性 token 仍落 ao_attachment_token：oss_token 列写入绑定到的
- * ao_v3_storage.token，upload_folder 列写入存储项配置的文件夹，
- * 供 v3/file/index 直传时定位存储与落盘目录。
+ * 签发的一次性 token 落 ao_attachment_token，并记录 storage_id，
+ * 供 v3/file/index 直传时定位到对应 Bucket。
  *
  * 四个接口：
  *   POST /v3/file/token/create          换取临时 token
  *   POST /v3/file/token/upload_url      换取临时 token + 完整上传地址
  *   POST /v3/file/token/upload_url_hash 换取临时 token + hash 模式上传地址
- *   POST /v3/file/token/hash_query      按 md5/hash 查询已上传文件完整信息
+ *   POST /v3/file/token/hash_query      按 md5 查询已上传文件完整信息
  */
 class token extends CommonController
 {
     use V3EnvelopeAuth;
 
-    /** 绑定到的 ao_v3_storage 存储配置（信封鉴权通过后按项目 id 解析） */
-    protected array $storage = [];
+    /** 本项目绑定的 Bucket（信封鉴权通过后按项目 id 解析） */
+    protected array $bucket = [];
 
     public function initialize()
     {
@@ -48,16 +45,13 @@ class token extends CommonController
             'v3_file_rl:'
         );
 
-        // 按项目 id 解析独立存储配置；未配置或存储不可用时直接拒绝
+        // 按项目 id 解析 Bucket；未配置或已停用时直接拒绝
         $projectId = (int)($this->proc['id'] ?? 0);
-        $storage = V3StorageModel::api_find_project($projectId);
-        if (empty($storage)) {
-            Ret::Fail(403, null, '项目未配置存储，请在后台「存储管理 v3」为该项目新增存储');
+        $bucket = V3StorageModel::api_find_project($projectId);
+        if (empty($bucket)) {
+            Ret::Fail(403, null, '项目未配置存储，请在后台「存储管理 v3」为该项目创建 Bucket');
         }
-        if ((string)($storage['type'] ?? 'none') === 'none') {
-            Ret::Fail(403, null, '项目绑定的存储类型不可用');
-        }
-        $this->storage = $storage;
+        $this->bucket = $bucket;
     }
 
     /** 换取一次性上传 token */
@@ -104,13 +98,17 @@ class token extends CommonController
             Ret::Fail(400, null, '需要hash字段');
         }
 
-        $file = \think\facade\Db::name('ao_attachment')->where('md5', $hash)->find();
+        $file = \think\facade\Db::name('ao_attachment')
+            ->where('md5', $hash)
+            ->where('token', V3StorageModel::api_group_key((int)$this->bucket['id']))
+            ->find();
         if (!$file) {
             Ret::Fail(404, null, '未找到文件');
         }
 
+        $url = rtrim((string)$this->bucket['url'], '/');
         $file['src'] = $file['path'];
-        $file['url'] = $this->storage['url'] . '/' . $file['path'];
+        $file['url'] = $url !== '' ? $url . '/' . $file['path'] : $file['path'];
         $file['surl'] = $file['path'];
 
         Ret::Success(0, $file);
@@ -119,26 +117,25 @@ class token extends CommonController
     /**
      * 签发一次性上传 token 并落 ao_attachment_token
      *
-     * oss_token 写入项目绑定到的 ao_v3_storage.token，
-     * upload_folder 写入存储项的落盘文件夹（为空时留空，直传阶段回退存储名称），
-     * 使直传阶段（v3/file/index）能复用 V1 的落盘逻辑并使用配置的文件夹。
+     * 只记录 storage_id：直传阶段据此重新查出 Bucket（含最新 Path/后缀/大小），
+     * 因此后台改了 Bucket 配置后，已签发但未使用的 token 也按新配置落盘。
      *
      * @return array{token:string, expired_at:string}
      */
     private function issueToken(): array
     {
-        $storageToken = (string)$this->storage['token'];
-        $uploadFolder = UploadFolder::normalize($this->storage['upload_folder'] ?? '');
+        $storageId = (int)$this->bucket['id'];
         $ip = Input::Post('ip', false);
 
         $now = time();
-        $tempToken = md5(uniqid('ft_', true) . $storageToken . microtime());
+        $tempToken = md5(uniqid('ft_', true) . $storageId . microtime());
         $expiredAt = date('Y-m-d H:i:s', $now + 300);
 
         $data = [
             'token' => $tempToken,
-            'oss_token' => $storageToken,
-            'upload_folder' => $uploadFolder,
+            // oss_token 是 V1/V2 的存储标识列（NOT NULL），V3 不使用，显式留空
+            'oss_token' => '',
+            'storage_id' => $storageId,
             'created_at' => date('Y-m-d H:i:s', $now),
             'expired_at' => $expiredAt,
             'is_used' => 0,

@@ -111,7 +111,8 @@
     \think\facade\Route::any('admin/v3_project/resetSecret', '\app\admin\controller\V3Project@resetSecret');
     \think\facade\Route::any('admin/v3_project', '\app\admin\controller\V3Project@index');
 
-    // v3 存储管理（独立 menu；一项目一存储，与 ao_oss 无关）
+    // v3 存储管理（独立 menu；一项目一 Bucket，Bucket 自带 Path/后缀/大小/类型）
+    \think\facade\Route::any('admin/v3_storage/credential_options', '\app\admin\controller\V3Storage@credential_options');
     \think\facade\Route::any('admin/v3_storage', '\app\admin\controller\V3Storage@index');
 
     // 邮件管理（供 v3 邮件接口使用：服务器配置 → 项目授权 → 内容模板 → 发送日志）

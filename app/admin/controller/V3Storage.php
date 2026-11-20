@@ -2,6 +2,7 @@
 
 namespace app\admin\controller;
 
+use app\admin\model\AdminOssAliyunModel;
 use app\admin\model\AdminV3ProjectModel;
 use app\admin\model\AdminV3StorageModel;
 use app\admin\utils\AdminAuth;
@@ -12,11 +13,14 @@ use Input;
 use Ret;
 
 /**
- * 存储管理 v3：ao_v3_storage 后台维护（独立 menu，与 ao_oss 无关）
+ * 存储管理 v3：ao_v3_storage 后台维护（独立 menu）
  *
- * 一项目一存储：每个存储项通过 project_id 绑定一个 ao_v3_project 项目；
- * 上传文件夹 upload_folder 也在存储项里维护（为空回退 name）。
- * 字段刻意与 ao_oss 对齐，使 v3 直传能把本表行直接当作 V1 upload_file 的 $proc。
+ * 这里的每一项就是一个 Bucket：一个 V3 项目对应一个 Bucket，Bucket 自身描述
+ *   - 落盘 Path（相对 upload/，留空回退 Bucket 名称）
+ *   - 允许上传的后缀、单文件大小上限
+ *   - 存本地（local）还是传远程（oss）
+ *   - 远程时用哪套 OSS 凭据（oss_tag → ao_oss_aliyun，仅凭据仓库）
+ * 不再包含 ao_oss 的 token / code / main_type 等历史概念。
  */
 class V3Storage extends CommonController
 {
@@ -48,8 +52,7 @@ class V3Storage extends CommonController
         $limit = 15;
         $search = input('get.search', '');
 
-        $model = new AdminV3StorageModel();
-        $query = $model->order('id', 'desc');
+        $query = AdminV3StorageModel::order('id', 'desc');
         if (!empty($search)) {
             $query->where('name', 'like', '%' . $search . '%');
         }
@@ -59,32 +62,34 @@ class V3Storage extends CommonController
         foreach (AdminV3ProjectModel::field('id, name')->select() as $p) {
             $projectNames[(int)$p['id']] = (string)$p['name'];
         }
+        // 凭据 tag → 实际 bucket，便于列表判断远程落点
+        $credBuckets = [];
+        foreach (AdminOssAliyunModel::field('tag, bucket')->select() as $c) {
+            $credBuckets[(string)$c['tag']] = (string)$c['bucket'];
+        }
 
         $items = [];
         foreach ($list['data'] as $item) {
             $pid = (int)($item['project_id'] ?? 0);
+            $tag = (string)($item['oss_tag'] ?? '');
             $items[] = [
                 'id' => $item['id'],
                 'project_id' => $pid,
                 'project_name' => $projectNames[$pid] ?? ('已删除(' . $pid . ')'),
-                'name' => $item['name'],
-                'type' => $item['type'],
-                'main_type' => $item['main_type'],
-                'token' => $item['token'],
-                'token_short' => mb_strlen((string)$item['token']) > 16
-                    ? mb_substr((string)$item['token'], 0, 16) . '...'
-                    : (string)$item['token'],
-                'oss_type' => $item['oss_type'],
-                'oss_tag' => $item['oss_tag'],
-                'url' => $item['url'],
-                'ext' => $item['ext'],
-                'size' => $item['size'],
-                'upload_folder' => (string)($item['upload_folder'] ?? ''),
+                'name' => (string)$item['name'],
+                'path' => (string)($item['path'] ?? ''),
+                'ext' => (string)$item['ext'],
+                'size' => (int)$item['size'],
+                'type' => (string)$item['type'],
+                'oss_tag' => $tag,
+                'oss_bucket' => $tag !== '' ? ($credBuckets[$tag] ?? '') : '',
+                'cred_invalid' => $tag !== '' && !isset($credBuckets[$tag]),
+                'url' => (string)$item['url'],
                 'status' => $item['status'],
             ];
         }
 
-        // 项目下拉：只列出尚未绑定存储的 V3 项目（一项目一存储）
+        // 项目下拉：只列出尚未绑定 Bucket 的 V3 项目（一项目一 Bucket）
         $bound = AdminV3StorageModel::where('project_id', '>', 0)->column('project_id');
         $boundIds = array_map('intval', $bound);
         $projects = [];
@@ -107,7 +112,29 @@ class V3Storage extends CommonController
     }
 
     /**
-     * 校验项目存在、未被其它存储占用
+     * 远程凭据下拉：返回 ao_oss_aliyun 的可用 tag（凭据仓库，不是项目绑定）
+     */
+    public function credential_options()
+    {
+        $rows = AdminOssAliyunModel::field('tag, bucket, endpoint')->order('id', 'desc')->select();
+        $options = [];
+        foreach ($rows as $row) {
+            $tag = (string)$row['tag'];
+            if ($tag === '') {
+                continue;
+            }
+            $options[] = [
+                'tag' => $tag,
+                'bucket' => (string)$row['bucket'],
+                'endpoint' => (string)$row['endpoint'],
+                'label' => $tag . '（桶 ' . $row['bucket'] . '）',
+            ];
+        }
+        Ret::Success(0, $options);
+    }
+
+    /**
+     * 校验项目存在、且未被其它 Bucket 占用
      */
     private function assertProject(int $projectId, int $excludeId = 0): void
     {
@@ -122,62 +149,124 @@ class V3Storage extends CommonController
             $query->where('id', '<>', $excludeId);
         }
         if ($query->field('id')->find()) {
-            Ret::Fail(400, null, '该项目已绑定存储（一项目一存储），请先修改或删除已有存储');
+            Ret::Fail(400, null, '该项目已有 Bucket（一项目一 Bucket），请先修改或删除已有项');
         }
     }
 
-    private function readUploadFolder(string $method): string
+    /**
+     * 落盘 Path：相对 upload/ 的安全目录段，留空表示回退 Bucket 名称
+     */
+    private function readPath(string $method): string
     {
         $raw = $method === 'put'
-            ? (string)Input::Put('upload_folder', false)
-            : (string)Input::Post('upload_folder', false);
-        $folder = UploadFolder::normalize($raw);
-        if (!UploadFolder::isValid($folder)) {
-            Ret::Fail(400, null, '上传文件夹不合法：仅允许字母/数字/下划线/连字符，多级用 / 分隔，不能用 . 或 .. 或绝对路径');
+            ? (string)Input::Put('path', false)
+            : (string)Input::Post('path', false);
+        $path = UploadFolder::normalize($raw);
+        if (!UploadFolder::isValid($path)) {
+            Ret::Fail(400, null, 'Path 不合法：仅允许字母/数字/下划线/连字符，多级用 / 分隔，不能用 . 或 .. 或绝对路径');
         }
-        return $folder;
+        if (mb_strlen($path) > 100) {
+            Ret::Fail(400, null, 'Path 不能超过 100 个字符');
+        }
+        return $path;
+    }
+
+    /**
+     * 允许上传的后缀：逗号分隔的安全后缀列表，统一小写
+     */
+    private function readExt(string $method): string
+    {
+        $raw = $method === 'put'
+            ? (string)Input::Put('ext', false)
+            : (string)Input::Post('ext', false);
+        $raw = strtolower(str_replace(['，', ' '], [',', ''], trim($raw)));
+        if ($raw === '') {
+            Ret::Fail(400, null, '请填写允许上传的后缀');
+        }
+        $exts = [];
+        foreach (explode(',', $raw) as $one) {
+            $one = trim($one);
+            if ($one === '') {
+                continue;
+            }
+            if (!preg_match('/^[a-z0-9]{1,16}$/', $one)) {
+                Ret::Fail(400, null, '后缀不合法：' . $one . '（仅允许字母数字，多个用英文逗号分隔）');
+            }
+            $exts[$one] = true;
+        }
+        if (empty($exts)) {
+            Ret::Fail(400, null, '请填写允许上传的后缀');
+        }
+        return implode(',', array_keys($exts));
+    }
+
+    /**
+     * 类型：local 存本站 / oss 传远程
+     */
+    private function readType(string $method): string
+    {
+        $type = $method === 'put'
+            ? (string)Input::Put('type', false)
+            : (string)Input::Post('type', false);
+        if (!in_array($type, ['local', 'oss'], true)) {
+            Ret::Fail(400, null, '存储类型只能是 local（本站）或 oss（远程）');
+        }
+        return $type;
+    }
+
+    /**
+     * 远程凭据：必须是 ao_oss_aliyun 里存在的 tag；本地类型忽略
+     */
+    private function readOssTag(string $type, string $method): string
+    {
+        if ($type !== 'oss') {
+            return '';
+        }
+        $tag = $method === 'put'
+            ? (string)Input::Put('oss_tag', false)
+            : (string)Input::Post('oss_tag', false);
+        $tag = trim($tag);
+        if ($tag === '') {
+            Ret::Fail(400, null, '远程存储必须选择 OSS 凭据');
+        }
+        if (!AdminOssAliyunModel::where('tag', $tag)->field('id')->find()) {
+            Ret::Fail(400, null, '选择的 OSS 凭据不存在');
+        }
+        return $tag;
     }
 
     private function create()
     {
-        $name = Input::Put('name');
-        if (empty($name)) {
-            Ret::Fail(400, null, '存储名称不能为空');
+        $name = trim((string)Input::Put('name', false));
+        if ($name === '') {
+            Ret::Fail(400, null, 'Bucket 名称不能为空');
+        }
+        if (mb_strlen($name) > 100) {
+            Ret::Fail(400, null, 'Bucket 名称不能超过 100 个字符');
         }
         $projectId = Input::PutInt('project_id', 0);
         $this->assertProject($projectId);
-        $uploadFolder = $this->readUploadFolder('put');
 
-        // token 为直传定位用的存储标识；留空则自动生成
-        $token = trim((string)Input::Put('token', false));
-        if ($token === '') {
-            $token = md5(uniqid('v3s_', true) . $projectId . microtime());
-        }
-        // 该标识会原样写入 ao_attachment_token.oss_token 与 ao_attachment.token（均 varchar(64)），
-        // 超长会在签发/落库阶段报错或被截断，故在此限制长度
-        if (mb_strlen($token) > 64) {
-            Ret::Fail(400, null, '存储标识不能超过 64 个字符');
-        }
-        if (AdminV3StorageModel::where('token', $token)->field('id')->find()) {
-            Ret::Fail(400, null, '存储标识已存在');
+        $type = $this->readType('put');
+        $ossTag = $this->readOssTag($type, 'put');
+        $url = rtrim(trim((string)Input::Put('url', false)), '/');
+        if ($type === 'oss' && $url === '') {
+            Ret::Fail(400, null, '远程存储必须填写访问域名（URL 前缀）');
         }
 
         AdminV3StorageModel::create([
             'project_id' => $projectId,
             'name' => $name,
-            'type' => Input::Put('type', 'local'),
-            'main_type' => Input::Put('main_type', 'local'),
-            'code' => Input::Put('code', ''),
-            'token' => $token,
-            'oss_type' => Input::Put('oss_type', 'none'),
-            'oss_tag' => Input::Put('oss_tag', 'default'),
-            'url' => Input::Put('url', ''),
-            'ext' => Input::Put('ext', 'jpg,png,gif,bmp,jpeg'),
-            'size' => Input::PutInt('size', 16384),
-            'upload_folder' => $uploadFolder,
+            'path' => $this->readPath('put'),
+            'ext' => $this->readExt('put'),
+            'size' => max(1, Input::PutInt('size', 16384)),
+            'type' => $type,
+            'oss_type' => $type === 'oss' ? 'aliyun' : 'none',
+            'oss_tag' => $ossTag,
+            'url' => $url,
             'status' => Input::PutInt('status', 1),
         ]);
-        Ret::Success(0, ['token' => $token], '创建成功');
+        Ret::Success(0, [], '创建成功');
     }
 
     private function update()
@@ -188,7 +277,7 @@ class V3Storage extends CommonController
         }
         $item = AdminV3StorageModel::findOrEmpty($id);
         if ($item->isEmpty()) {
-            Ret::Fail(404, null, '存储不存在');
+            Ret::Fail(404, null, 'Bucket 不存在');
         }
 
         $data = [];
@@ -197,19 +286,33 @@ class V3Storage extends CommonController
             $this->assertProject($projectId, $id);
             $data['project_id'] = $projectId;
         }
-        if (request()->has('name', 'post')) $data['name'] = Input::Post('name');
-        if (request()->has('type', 'post')) $data['type'] = Input::Post('type');
-        if (request()->has('main_type', 'post')) $data['main_type'] = Input::Post('main_type');
-        if (request()->has('code', 'post')) $data['code'] = Input::Post('code');
-        if (request()->has('oss_type', 'post')) $data['oss_type'] = Input::Post('oss_type');
-        if (request()->has('oss_tag', 'post')) $data['oss_tag'] = Input::Post('oss_tag');
-        if (request()->has('url', 'post')) $data['url'] = Input::Post('url');
-        if (request()->has('ext', 'post')) $data['ext'] = Input::Post('ext');
-        if (request()->has('size', 'post')) $data['size'] = Input::PostInt('size');
-        if (request()->has('upload_folder', 'post')) {
-            $data['upload_folder'] = $this->readUploadFolder('post');
+        if (request()->has('name', 'post')) {
+            $name = trim((string)Input::Post('name', false));
+            if ($name === '') {
+                Ret::Fail(400, null, 'Bucket 名称不能为空');
+            }
+            if (mb_strlen($name) > 100) {
+                Ret::Fail(400, null, 'Bucket 名称不能超过 100 个字符');
+            }
+            $data['name'] = $name;
         }
+        if (request()->has('path', 'post')) $data['path'] = $this->readPath('post');
+        if (request()->has('ext', 'post')) $data['ext'] = $this->readExt('post');
+        if (request()->has('size', 'post')) $data['size'] = max(1, Input::PostInt('size'));
+        if (request()->has('type', 'post')) $data['type'] = $this->readType('post');
+        if (request()->has('url', 'post')) $data['url'] = rtrim(trim((string)Input::Post('url', false)), '/');
         if (request()->has('status', 'post')) $data['status'] = Input::PostInt('status');
+
+        // 类型或凭据有变时，二者一起收敛：oss 必须有 tag，local 清空凭据
+        $finalType = $data['type'] ?? (string)$item['type'];
+        if (array_key_exists('type', $data) || request()->has('oss_tag', 'post')) {
+            $data['oss_tag'] = $this->readOssTag($finalType, 'post');
+            $data['oss_type'] = $finalType === 'oss' ? 'aliyun' : 'none';
+        }
+        $finalUrl = $data['url'] ?? (string)$item['url'];
+        if ($finalType === 'oss' && $finalUrl === '') {
+            Ret::Fail(400, null, '远程存储必须填写访问域名（URL 前缀）');
+        }
 
         $item->save($data);
         Ret::Success(0, [], '更新成功');
@@ -223,7 +326,7 @@ class V3Storage extends CommonController
         }
         $item = AdminV3StorageModel::findOrEmpty($id);
         if ($item->isEmpty()) {
-            Ret::Fail(404, null, '存储不存在');
+            Ret::Fail(404, null, 'Bucket 不存在');
         }
         $item->delete();
         Ret::Success(0, [], '删除成功');

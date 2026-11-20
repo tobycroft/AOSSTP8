@@ -2,9 +2,7 @@
 
 namespace app\v3\file\controller;
 
-use app\v1\file\action\OssSelectionAction;
 use app\v1\file\model\AttachmentModel;
-use app\v3\common\UploadFolder;
 use app\v3\storage\model\V3StorageModel;
 use BaseController\CommonController;
 use Exception;
@@ -21,19 +19,17 @@ use Throwable;
 /**
  * v3 文件上传：直传落盘入口（V3 独立实现，不继承 V1/V2）
  *
- * 上传落盘逻辑与 V1 upload_file 完全一致，但刻意在本控制器内独立实现一份，
- * 不继承 v2/file/index，避免 V3 与 V1/V2 的继承链耦合：V3 的存储来自独立表
- * ao_v3_storage，而 V2 写死从 ao_oss 装载 proc，两者链路不同。
+ * 上传落盘逻辑与 V1 upload_file 一致，但刻意在本控制器内独立实现一份，
+ * 不继承 v2/file/index，避免 V3 与 V1/V2 的继承链耦合：V3 的存储来自
+ * ao_v3_storage（Bucket），而 V2 写死从 ao_oss 装载 proc，两者链路不同。
  *
  * 鉴权方式：
  *   浏览器/客户端拿「一次性 token」直传，直传请求无法携带自定义鉴权头，
  *   也不能把 secret 交给前端。因此 V3 的凭证信封鉴权前移到签发接口
  *   （v3/file/token），直传阶段沿用 ao_attachment_token 的一次性 token。
  *
- * initialize 从一次性 token 里的 oss_token 定位 ao_v3_storage 行，直接作为
- * V1 落盘所需的 $proc（本表字段与 ao_oss 对齐），并用存储项的 upload_folder
- * 覆盖落盘目录：upload/{文件夹}/YYYYMMDD/md5.ext，为空回退存储名称。
- * local 存本站、OSS 传远程，逻辑与 V1 逐字一致。
+ * initialize 按一次性 token 里的 storage_id 定位 Bucket，由 Bucket 决定
+ * 落盘目录（Path）、允许后缀、大小上限以及本地/远程：upload/{Path}/YYYYMMDD/md5.ext。
  *
  * 可用入口：
  *   POST /v3/file/index/upfull      完整上传，返回文件地址
@@ -68,24 +64,14 @@ class index extends CommonController
             Ret::Fail(401, null, '临时token无效或已过期');
         }
 
-        $folder = UploadFolder::normalize($fileToken['upload_folder'] ?? '');
-
-        // 从独立存储表装载 proc（本表字段与 ao_oss 对齐，可直接作为 V1 落盘的 $proc）
-        $storageToken = (string)$fileToken['oss_token'];
-        $storage = V3StorageModel::api_find_token($storageToken);
-        if (empty($storage)) {
+        // 按一次性 token 记录的 storage_id 定位 Bucket，并组装落盘用 proc
+        $storageId = (int)($fileToken['storage_id'] ?? 0);
+        $bucket = V3StorageModel::api_find_id($storageId);
+        if (empty($bucket)) {
             Ret::Fail(401, null, '存储配置不可用');
         }
-        $this->token = $storageToken;
-        $this->proc = OssSelectionAction::App_find_byProc($storage);
-        if (($this->proc['type'] ?? 'none') === 'none') {
-            Ret::Fail(400, null, '本项目没有存储权限');
-        }
-
-        // upload_folder 覆盖落盘目录名；为空则保留存储名称（V1 默认行为）
-        if ($folder !== '' && UploadFolder::isValid($folder)) {
-            $this->proc['name'] = $folder;
-        }
+        $this->token = V3StorageModel::api_group_key($storageId);
+        $this->proc = V3StorageModel::api_proc($bucket);
 
         // IP 处理 + 标记 used（与 V1/V2 行为一致）
         $recordIp = request()->ip();
@@ -158,8 +144,10 @@ class index extends CommonController
     }
 
     /**
-     * 上传落盘主逻辑：与 V1 index::upload_file 逐字一致（唯一差异是 $proc 来自
-     * 独立的 ao_v3_storage，且 name 已被 initialize 按 upload_folder 覆盖）。
+     * 上传落盘主逻辑：对齐 V1 index::upload_file 的行为
+     *
+     * proc 由 Bucket 组装而来（name 已按 Path 覆盖，oss 时已合并 ao_oss_aliyun 凭据），
+     * 因此这里只需区分 local / oss 两种落点，没有 all / dp 之类的历史分支。
      */
     public function upload_file(Request $request, $full = 0, $type = null)
     {
@@ -178,9 +166,7 @@ class index extends CommonController
         $file_exists = AttachmentModel::where(['token' => $token, 'md5' => $md5, 'sha1' => $sha1, 'tag' => $this->upload_tag])->find();
 
         if ($file_exists) {
-            if ($proc['type'] != 'all' || file_exists('./upload/' . $file_exists['path'])) {
-                $sav = $this->getStr($full, $proc['url'], $file_exists, $type);
-            }
+            $sav = $this->getStr($full, $proc['url'], $file_exists, $type);
         }
         if ($file->getOriginalMime() == 'text/x-php' || $file->getOriginalMime() == 'text/html') {
             Ret::Fail(403, null, '禁止上传非法文件');
@@ -266,17 +252,11 @@ class index extends CommonController
             'ip' => $ip,
         ];
 
-        if ($proc["type"] == "local" || $proc["type"] == "all") {
-            if ($proc['main_type'] == 'local') {
-                $sav = ($full ? $proc['url'] . '/' : '') . $fileName;
-            }
-        }
-        if ($proc["type"] == "dp") {
-            $ret = Net::PostFile('http://' . $proc["endpoint"] . '/up?token=' . $proc["bucket"], realpath('./upload/' . $fileName), $file->getFileInfo('type'), $file->getFileInfo('name'));
-            $json = json_decode($ret, 1);
-            $sav = ($full ? $proc['url'] . '/' : '') . $json["data"];
-        }
-        if ($proc["type"] == "oss" || $proc["type"] == "all") {
+        // 返回地址：local 直接给出 upload/ 下的相对（或带域名）路径；oss 传完后再拼域名
+        $urlPrefix = rtrim((string)($proc['url'] ?? ''), '/');
+        $sav = ($full && $urlPrefix !== '') ? $urlPrefix . '/' . $fileName : $fileName;
+
+        if ($proc['type'] === 'oss') {
             try {
                 $oss = new AliyunOSS($proc);
                 $ret = $oss->uploadFile($proc['bucket'], $fileName, $info->getPathname());
@@ -286,12 +266,7 @@ class index extends CommonController
             if (empty($ret->getData()["info"]["url"])) {
                 Ret::Fail(200, null, "OSS不正常");
             }
-            if ($proc['main_type'] == 'oss') {
-                $sav = ($full ? $proc['url'] . '/' : '') . $fileName;
-            }
-            if ($proc["type"] != "all") {
-                unlink($info->getPathname());
-            }
+            unlink($info->getPathname());
         }
 
         AttachmentModel::create($file_info);
@@ -303,7 +278,7 @@ class index extends CommonController
 
                 case "complete":
                     $file_info["src"] = $sav;
-                    $file_info["url"] = $proc['url'] . '/' . $file_info['path'];
+                    $file_info["url"] = $urlPrefix !== '' ? $urlPrefix . '/' . $file_info['path'] : $file_info['path'];
                     $file_info["surl"] = $file_info['path'];
                     Ret::Success(0, $file_info);
                     break;
@@ -323,7 +298,8 @@ class index extends CommonController
 
     public function getStr(mixed $full, $url, AttachmentModel $file_exists, mixed $type): string
     {
-        $sav = ($full ? $url . '/' : '') . $file_exists['path'];
+        $urlPrefix = rtrim((string)$url, '/');
+        $sav = ($full && $urlPrefix !== '') ? $urlPrefix . '/' . $file_exists['path'] : $file_exists['path'];
         switch ($type) {
             case "ue":
                 Ret::Success(0, ['src' => $sav]);
@@ -331,7 +307,7 @@ class index extends CommonController
 
             case "complete":
                 $file_exists["src"] = $file_exists['path'];
-                $file_exists["url"] = $url . '/' . $file_exists['path'];
+                $file_exists["url"] = $urlPrefix !== '' ? $urlPrefix . '/' . $file_exists['path'] : $file_exists['path'];
                 $file_exists["surl"] = $file_exists['path'];
                 Ret::Success(0, $file_exists);
                 break;
