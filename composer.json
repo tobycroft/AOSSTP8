@@ -47,7 +47,7 @@
     "tobycroft/btapi": "^1.2",
     "topthink/think-view": "^2.0",
     "phpmailer/phpmailer": "^7.2",
-    "tobycroft/think-queue-lts": "^1.0"
+    "tobycroft/think-queue-lts": "^1.2"
   },
   "require-dev": {
     "symfony/var-dumper": ">=4.2",
