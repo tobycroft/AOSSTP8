@@ -4,7 +4,7 @@
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <h2>邮件服务器</h2>
         <div class="search-box">
-            <input type="text" id="searchInput" placeholder="搜索名称或 SMTP 主机" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 260px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
+            <input type="text" id="searchInput" placeholder="搜索名称或 SMTP 主机" value="{$search}" autocomplete="off" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 260px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
             <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
         </div>
         <button class="btn btn-primary" onclick="openCreate()">新增服务器</button>
@@ -64,8 +64,8 @@
                 </select>
             </div>
         </div>
-        <div class="form-group"><label>SMTP 账号</label><input type="text" id="formUsername" placeholder="通常是完整邮箱地址"></div>
-        <div class="form-group"><label>SMTP 密码 / 授权码</label><input type="password" id="formPassword" placeholder="编辑时留空表示不修改"><div id="pwdHint" style="font-size:12px;color:#8c8c8c;margin-top:4px;"></div></div>
+        <div class="form-group"><label>SMTP 账号</label><input type="text" id="formUsername" placeholder="通常是完整邮箱地址" autocomplete="off"></div>
+        <div class="form-group"><label>SMTP 密码 / 授权码</label><input type="password" id="formPassword" placeholder="编辑时留空表示不修改" autocomplete="new-password"><div id="pwdHint" style="font-size:12px;color:#8c8c8c;margin-top:4px;"></div></div>
         <div style="display:flex;gap:12px;">
             <div class="form-group" style="flex:1;"><label>默认发件人地址</label><input type="text" id="formFromAddr" placeholder="noreply@example.com"></div>
             <div class="form-group" style="flex:1;"><label>默认发件人显示名</label><input type="text" id="formFromName" placeholder="AOSS"></div>
@@ -81,7 +81,7 @@
     <div class="modal-box" style="width:460px;">
         <h3 id="testTitle">测试连接</h3>
         <input type="hidden" id="testId" value="">
-        <div class="form-group"><label>测试收件人邮箱</label><input type="email" id="testTo" placeholder="输入一个能收信的邮箱"></div>
+        <div class="form-group"><label>测试收件人邮箱</label><input type="email" id="testTo" placeholder="输入一个能收信的邮箱" autocomplete="off"></div>
         <div id="testResult" style="font-size:13px;color:#666;word-break:break-all;line-height:1.6;"></div>
         <div class="modal-actions">
             <button class="btn btn-cancel" onclick="document.getElementById('testModal').classList.remove('show')">关闭</button>
