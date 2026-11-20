@@ -1,0 +1,83 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>邮件发送日志</h2>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索收件人 / 主题 / kid / 服务器" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 300px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
+            <select id="successSelect" onchange="doSearch()" style="padding: 8px 10px; margin-left: 8px; border: 1px solid #d9d9d9; border-radius: 4px; outline: none;">
+                <option value="">全部结果</option>
+                <option value="1" {if $success==='1'}selected{/if}>仅成功</option>
+                <option value="0" {if $success==='0'}selected{/if}>仅失败</option>
+            </select>
+            <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
+        </div>
+    </div>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>时间</th>
+            <th>项目 kid</th>
+            <th>服务器</th>
+            <th>收件人 / 抄送</th>
+            <th>主题</th>
+            <th>结果</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td>{$item.date}</td>
+            <td style="font-family:monospace;font-size:12px;">{$item.kid}</td>
+            <td>{$item.server_name}</td>
+            <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.to_addr}{if $item.cc_addr}; {$item.cc_addr}{/if}">{$item.to_addr}</td>
+            <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.subject}">{$item.subject}</td>
+            <td>
+                {if $item.success==1}
+                <span class="status-badge success">成功</span>
+                {else/}
+                <span class="status-badge fail" onclick="showError(this)" data-err="{$item.error|addslashes}" style="cursor:pointer;" title="点击查看错误">失败</span>
+                {/if}
+            </td>
+            <td><button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button></td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination|raw}
+{/block}
+{block name="script"}
+{literal}
+<script>
+function doSearch() {
+    var search = document.getElementById('searchInput').value;
+    var success = document.getElementById('successSelect').value;
+    var url = '/admin/mail_log?page=1';
+    if (search) url += '&search=' + encodeURIComponent(search);
+    if (success !== '') url += '&success=' + success;
+    window.location.href = url;
+}
+function showError(el) {
+    alert(el.getAttribute('data-err') || '无错误信息');
+}
+function doDelete(id) {
+    if (!confirm('确定删除这条日志吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/mail_log', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res; try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            if (res.code == 0) location.reload(); else alert(res.echo);
+        }
+    };
+    xhr.send('id=' + id);
+}
+</script>
+{/literal}
+{/block}

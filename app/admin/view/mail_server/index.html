@@ -1,0 +1,206 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>邮件服务器</h2>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索名称或 SMTP 主机" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 260px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
+            <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
+        </div>
+        <button class="btn btn-primary" onclick="openCreate()">新增服务器</button>
+    </div>
+</div>
+<div class="card">
+    <p>此处维护 SMTP 服务器配置，供 v3 项目在「邮件授权」中分配使用。一个服务器可被多个项目授权；密码仅入库不回显，编辑时留空表示不修改。删除前需先解除全部项目授权。</p>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>名称</th>
+            <th>SMTP 主机</th>
+            <th>端口 / 加密</th>
+            <th>SMTP 账号</th>
+            <th>默认发件人</th>
+            <th>授权项目数</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td>{$item.name}</td>
+            <td>{$item.host}</td>
+            <td>{$item.port} / {$item.encryption}</td>
+            <td>{$item.username}</td>
+            <td>{$item.from_addr}</td>
+            <td>{$item.bound_count}</td>
+            <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
+            <td>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', '{$item.host|addslashes}', {$item.port}, '{$item.encryption}', '{$item.username|addslashes}', {$item.password_set}, '{$item.from_addr|addslashes}', '{$item.from_name|addslashes}', {$item.status})">编辑</button>
+                <button class="btn btn-sm" style="background:#13c2c2;color:#fff;margin-right:4px;" onclick="openTest({$item.id}, '{$item.name|addslashes}')">测试</button>
+                <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
+            </td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination|raw}
+<div class="modal" id="serverModal">
+    <div class="modal-box" style="width:520px;">
+        <h3 id="modalTitle">新增服务器</h3>
+        <input type="hidden" id="editId" value="">
+        <div class="form-group"><label>服务器名称</label><input type="text" id="formName" placeholder="例如「腾讯企业邮」"></div>
+        <div class="form-group"><label>SMTP 主机</label><input type="text" id="formHost" placeholder="smtp.exmail.qq.com"></div>
+        <div style="display:flex;gap:12px;">
+            <div class="form-group" style="flex:1;"><label>端口</label><input type="number" id="formPort" value="465"></div>
+            <div class="form-group" style="flex:1;"><label>加密方式</label>
+                <select id="formEncryption">
+                    <option value="ssl">SSL / SMTPS（465）</option>
+                    <option value="tls">TLS / STARTTLS（587）</option>
+                    <option value="none">无加密（25）</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group"><label>SMTP 账号</label><input type="text" id="formUsername" placeholder="通常是完整邮箱地址"></div>
+        <div class="form-group"><label>SMTP 密码 / 授权码</label><input type="password" id="formPassword" placeholder="编辑时留空表示不修改"><div id="pwdHint" style="font-size:12px;color:#8c8c8c;margin-top:4px;"></div></div>
+        <div style="display:flex;gap:12px;">
+            <div class="form-group" style="flex:1;"><label>默认发件人地址</label><input type="text" id="formFromAddr" placeholder="noreply@example.com"></div>
+            <div class="form-group" style="flex:1;"><label>默认发件人显示名</label><input type="text" id="formFromName" placeholder="AOSS"></div>
+        </div>
+        <div class="form-group"><label>状态</label><select id="formStatus"><option value="1">启用</option><option value="0">禁用</option></select></div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn btn-primary" onclick="submitForm()">确定</button>
+        </div>
+    </div>
+</div>
+<div class="modal" id="testModal">
+    <div class="modal-box" style="width:460px;">
+        <h3 id="testTitle">测试连接</h3>
+        <input type="hidden" id="testId" value="">
+        <div class="form-group"><label>测试收件人邮箱</label><input type="email" id="testTo" placeholder="输入一个能收信的邮箱"></div>
+        <div id="testResult" style="font-size:13px;color:#666;word-break:break-all;line-height:1.6;"></div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="document.getElementById('testModal').classList.remove('show')">关闭</button>
+            <button class="btn btn-primary" id="testSubmit" onclick="runTest()">发送测试邮件</button>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{literal}
+<script>
+function doSearch() {
+    var search = document.getElementById('searchInput').value;
+    var url = '/admin/mail_server?page=1';
+    if (search) url += '&search=' + encodeURIComponent(search);
+    window.location.href = url;
+}
+function closeModal() { document.getElementById('serverModal').classList.remove('show'); }
+function openCreate() {
+    document.getElementById('modalTitle').textContent = '新增服务器';
+    document.getElementById('editId').value = '';
+    document.getElementById('formName').value = '';
+    document.getElementById('formHost').value = '';
+    document.getElementById('formPort').value = '465';
+    document.getElementById('formEncryption').value = 'ssl';
+    document.getElementById('formUsername').value = '';
+    document.getElementById('formPassword').value = '';
+    document.getElementById('pwdHint').textContent = '';
+    document.getElementById('formFromAddr').value = '';
+    document.getElementById('formFromName').value = '';
+    document.getElementById('formStatus').value = '1';
+    document.getElementById('serverModal').classList.add('show');
+}
+function openEdit(id, name, host, port, encryption, username, passwordSet, fromAddr, fromName, status) {
+    document.getElementById('modalTitle').textContent = '编辑服务器';
+    document.getElementById('editId').value = id;
+    document.getElementById('formName').value = name;
+    document.getElementById('formHost').value = host;
+    document.getElementById('formPort').value = port;
+    document.getElementById('formEncryption').value = encryption;
+    document.getElementById('formUsername').value = username;
+    document.getElementById('formPassword').value = '';
+    document.getElementById('pwdHint').textContent = passwordSet ? '已设置密码，留空则不修改' : '尚未设置密码';
+    document.getElementById('formFromAddr').value = fromAddr;
+    document.getElementById('formFromName').value = fromName;
+    document.getElementById('formStatus').value = status;
+    document.getElementById('serverModal').classList.add('show');
+}
+function submitForm() {
+    var id = document.getElementById('editId').value;
+    var name = document.getElementById('formName').value.trim();
+    var host = document.getElementById('formHost').value.trim();
+    var port = document.getElementById('formPort').value;
+    if (!name) { alert('服务器名称不能为空'); return; }
+    if (!host) { alert('SMTP 主机不能为空'); return; }
+    if (!port || port < 1 || port > 65535) { alert('端口不合法'); return; }
+    var params = 'name=' + encodeURIComponent(name) + '&host=' + encodeURIComponent(host) + '&port=' + port
+        + '&encryption=' + encodeURIComponent(document.getElementById('formEncryption').value)
+        + '&username=' + encodeURIComponent(document.getElementById('formUsername').value)
+        + '&password=' + encodeURIComponent(document.getElementById('formPassword').value)
+        + '&from_addr=' + encodeURIComponent(document.getElementById('formFromAddr').value)
+        + '&from_name=' + encodeURIComponent(document.getElementById('formFromName').value)
+        + '&status=' + document.getElementById('formStatus').value;
+    if (id) params += '&id=' + id;
+    var xhr = new XMLHttpRequest();
+    xhr.open(id ? 'POST' : 'PUT', '/admin/mail_server', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res; try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            if (res.code == 0) location.reload(); else alert(res.echo);
+        }
+    };
+    xhr.send(params);
+}
+function openTest(id, name) {
+    document.getElementById('testTitle').textContent = '测试连接 - ' + name;
+    document.getElementById('testId').value = id;
+    document.getElementById('testTo').value = '';
+    document.getElementById('testResult').textContent = '';
+    document.getElementById('testSubmit').disabled = false;
+    document.getElementById('testModal').classList.add('show');
+}
+function runTest() {
+    var id = document.getElementById('testId').value;
+    var to = document.getElementById('testTo').value.trim();
+    var result = document.getElementById('testResult');
+    var btn = document.getElementById('testSubmit');
+    if (!to) { alert('请填写测试收件人邮箱'); return; }
+    result.textContent = '正在发送测试邮件，请稍候...'; result.style.color = '#faad14'; btn.disabled = true;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/mail_server/test', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            btn.disabled = false;
+            var res; try { res = JSON.parse(xhr.responseText); } catch(e) { result.textContent = '响应解析失败'; result.style.color = '#ff4d4f'; return; }
+            if (res.code == 0) { result.textContent = '测试邮件已发送，请检查收件箱（含垃圾箱）。'; result.style.color = '#52c41a'; }
+            else { result.textContent = res.echo; result.style.color = '#ff4d4f'; }
+        }
+    };
+    xhr.send('id=' + id + '&to=' + encodeURIComponent(to));
+}
+function doDelete(id) {
+    if (!confirm('确定删除该邮件服务器吗？仍被项目授权时将无法删除。')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/mail_server', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res; try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            if (res.code == 0) location.reload(); else alert(res.echo);
+        }
+    };
+    xhr.send('id=' + id);
+}
+</script>
+{/literal}
+{/block}

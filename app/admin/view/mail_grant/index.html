@@ -1,0 +1,184 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>邮件授权</h2>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索项目名称" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 240px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
+            <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
+        </div>
+    </div>
+</div>
+<div class="card">
+    <p>将邮件服务器分配给 v3 项目：一个项目可被授权多个服务器，标记为「默认」的服务器供 v3 发信接口实际使用。被授权的项目即可调用 <code style="background:#f2f3f5;padding:1px 5px;border-radius:3px;">/v3/mail/send/index</code>。</p>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>项目名称</th>
+            <th>已授权服务器</th>
+            <th>默认服务器</th>
+            <th>项目状态</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td>{$item.name}</td>
+            <td>
+                {if $item.grant_count > 0}
+                    {foreach $item.grant_names as $gname}
+                    <span class="status-badge active" style="margin-right:4px;">{$gname}</span>
+                    {/foreach}
+                {else/}
+                <span style="color:#8c8c8c;">未授权（不可用邮件）</span>
+                {/if}
+            </td>
+            <td>{if $item.default_name}<span style="color:#fa541c;">{$item.default_name}</span>{else/}<span style="color:#8c8c8c;">-</span>{/if}</td>
+            <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
+            <td>
+                <button class="btn btn-sm btn-edit" onclick="openAssign({$item.id}, '{$item.name|addslashes}', {$item.default_id})">分配服务器</button>
+                <button class="btn btn-sm" style="background:#13c2c2;color:#fff;" onclick="openTest({$item.id}, '{$item.name|addslashes}')">发送测试</button>
+            </td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination|raw}
+<div class="modal" id="assignModal">
+    <div class="modal-box">
+        <h3 id="assignTitle">分配邮件服务器</h3>
+        <input type="hidden" id="assignProjectId" value="">
+        <div class="form-group">
+            <label>授权的邮件服务器（勾选后保存生效）</label>
+            <div id="serverCheckboxes" style="max-height:180px;overflow:auto;border:1px solid #d9d9d9;border-radius:4px;padding:8px 10px;">
+                {foreach $serverOptions as $opt}
+                <label style="display:block;font-size:14px;margin:4px 0;cursor:pointer;">
+                    <input type="checkbox" class="server-check" value="{$opt.id}" onchange="refreshDefaultOptions()" style="width:auto;margin-right:6px;"> {$opt.name}
+                </label>
+                {/foreach}
+                {if empty($serverOptions)}
+                <div style="font-size:12px;color:#8c8c8c;">暂无邮件服务器，请先到「邮件服务器」菜单添加。</div>
+                {/if}
+            </div>
+            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">SMTP 地址、账号、密码由「邮件服务器」统一提供。</div>
+        </div>
+        <div class="form-group">
+            <label>默认服务器（v3 发信实际使用）</label>
+            <select id="formDefaultServerId"><option value="0">-- 请先勾选 --</option></select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeAssign()">取消</button>
+            <button class="btn btn-primary" onclick="submitAssign()">保存</button>
+        </div>
+    </div>
+</div>
+<div class="modal" id="testModal">
+    <div class="modal-box" style="width:460px;">
+        <h3 id="testTitle">发送测试</h3>
+        <input type="hidden" id="testId" value="">
+        <div class="form-group"><label>测试收件人邮箱</label><input type="email" id="testTo" placeholder="输入一个能收信的邮箱"></div>
+        <div id="testResult" style="font-size:13px;color:#666;word-break:break-all;line-height:1.6;"></div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="document.getElementById('testModal').classList.remove('show')">关闭</button>
+            <button class="btn btn-primary" id="testSubmit" onclick="runTest()">发送测试邮件</button>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{literal}
+<script>
+function doSearch() {
+    var search = document.getElementById('searchInput').value;
+    var url = '/admin/mail_grant?page=1';
+    if (search) url += '&search=' + encodeURIComponent(search);
+    window.location.href = url;
+}
+function closeAssign() { document.getElementById('assignModal').classList.remove('show'); }
+function refreshDefaultOptions() {
+    var sel = document.getElementById('formDefaultServerId');
+    sel.innerHTML = '<option value="0">-- 请先勾选 --</option>';
+    document.querySelectorAll('.server-check:checked').forEach(function(box) {
+        var label = box.closest('label').textContent.trim();
+        var opt = document.createElement('option');
+        opt.value = box.value; opt.textContent = label;
+        sel.appendChild(opt);
+    });
+}
+function openAssign(id, name, defaultId) {
+    document.getElementById('assignTitle').textContent = '分配邮件服务器 - ' + name;
+    document.getElementById('assignProjectId').value = id;
+    document.querySelectorAll('.server-check').forEach(function(box) { box.checked = false; });
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/admin/mail_grant/grants?project_id=' + id, true);
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res; try { res = JSON.parse(xhr.responseText); } catch(e) { return; }
+            if (res.code == 0 && Array.isArray(res.data)) {
+                res.data.forEach(function(g) {
+                    var box = document.querySelector('.server-check[value="' + g.mail_server_id + '"]');
+                    if (box) box.checked = true;
+                });
+            }
+            refreshDefaultOptions();
+            if (defaultId > 0) document.getElementById('formDefaultServerId').value = String(defaultId);
+            document.getElementById('assignModal').classList.add('show');
+        }
+    };
+    xhr.send();
+}
+function submitAssign() {
+    var projectId = document.getElementById('assignProjectId').value;
+    if (!projectId) { alert('缺少项目'); return; }
+    var ids = [];
+    document.querySelectorAll('.server-check:checked').forEach(function(box) { ids.push(box.value); });
+    var defaultId = document.getElementById('formDefaultServerId').value;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/mail_grant', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res; try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            if (res.code == 0) location.reload(); else alert(res.echo);
+        }
+    };
+    xhr.send('project_id=' + projectId + '&server_ids=' + ids.join(',') + '&default_server_id=' + defaultId);
+}
+function openTest(id, name) {
+    document.getElementById('testTitle').textContent = '发送测试 - ' + name;
+    document.getElementById('testId').value = id;
+    document.getElementById('testTo').value = '';
+    document.getElementById('testResult').textContent = '';
+    document.getElementById('testSubmit').disabled = false;
+    document.getElementById('testModal').classList.add('show');
+}
+function runTest() {
+    var id = document.getElementById('testId').value;
+    var to = document.getElementById('testTo').value.trim();
+    var result = document.getElementById('testResult');
+    var btn = document.getElementById('testSubmit');
+    if (!to) { alert('请填写测试收件人邮箱'); return; }
+    result.textContent = '正在发送测试邮件，请稍候...'; result.style.color = '#faad14'; btn.disabled = true;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/mail_grant/test', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            btn.disabled = false;
+            var res; try { res = JSON.parse(xhr.responseText); } catch(e) { result.textContent = '响应解析失败'; result.style.color = '#ff4d4f'; return; }
+            if (res.code == 0) { result.textContent = '测试邮件已发送，请检查收件箱（含垃圾箱）。'; result.style.color = '#52c41a'; }
+            else { result.textContent = res.echo; result.style.color = '#ff4d4f'; }
+        }
+    };
+    xhr.send('project_id=' + id + '&to=' + encodeURIComponent(to));
+}
+</script>
+{/literal}
+{/block}
