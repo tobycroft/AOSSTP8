@@ -34,6 +34,7 @@ class MailLog extends CommonController
         $limit = 15;
         $search = input('get.search', '', 'trim');
         $success = input('get.success', '');
+        $mailType = input('get.mail_type', '', 'trim');
 
         $model = new AdminMailLogModel();
         $query = $model->where('id', '>', 0);
@@ -48,12 +49,16 @@ class MailLog extends CommonController
         if ($success === '1' || $success === '0') {
             $query->where('success', (int)$success);
         }
+        if (in_array($mailType, ['captcha', 'marketing', 'custom'], true)) {
+            $query->where('mail_type', $mailType);
+        }
         $query->order('id', 'desc');
         $list = $query->paginate($limit, false, ['page' => $page]);
 
         $extraParams = [];
         if (!empty($search)) $extraParams['search'] = $search;
         if ($success !== '') $extraParams['success'] = $success;
+        if ($mailType !== '') $extraParams['mail_type'] = $mailType;
 
         $items = [];
         foreach ($list as $item) {
@@ -65,6 +70,8 @@ class MailLog extends CommonController
                 'to_addr' => $item['to_addr'] ?? '',
                 'cc_addr' => $item['cc_addr'] ?? '',
                 'subject' => $item['subject'] ?? '',
+                'mail_type' => $item['mail_type'] ?? '',
+                'template_code' => $item['template_code'] ?? '',
                 'success' => $item['success'],
                 'error' => $item['error'] ?? '',
                 'date' => $item['date'] ?? '',
@@ -77,6 +84,7 @@ class MailLog extends CommonController
             'list' => $items,
             'search' => $search,
             'success' => $success,
+            'mail_type' => $mailType,
             'pagination' => $pagination,
         ], '发送日志', 'mail', 'mail_log');
     }

@@ -111,12 +111,13 @@
     \think\facade\Route::any('admin/v3_project/resetSecret', '\app\admin\controller\V3Project@resetSecret');
     \think\facade\Route::any('admin/v3_project', '\app\admin\controller\V3Project@index');
 
-    // 邮件管理（供 v3 邮件接口使用：服务器配置 → 项目授权 → 发送日志）
+    // 邮件管理（供 v3 邮件接口使用：服务器配置 → 项目授权 → 内容模板 → 发送日志）
     \think\facade\Route::any('admin/mail_server/test', '\app\admin\controller\MailServer@test');
     \think\facade\Route::any('admin/mail_server', '\app\admin\controller\MailServer@index');
     \think\facade\Route::any('admin/mail_grant/grants', '\app\admin\controller\MailGrant@grants');
     \think\facade\Route::any('admin/mail_grant/test', '\app\admin\controller\MailGrant@test');
     \think\facade\Route::any('admin/mail_grant', '\app\admin\controller\MailGrant@index');
+    \think\facade\Route::any('admin/mail_template', '\app\admin\controller\MailTemplate@index');
     \think\facade\Route::any('admin/mail_log', '\app\admin\controller\MailLog@index');
 
     // DNSPod 管理（密钥独立存储，接入 dnspod 官方接口）

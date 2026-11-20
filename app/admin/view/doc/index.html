@@ -111,7 +111,7 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
             <h1>开放接口文档</h1>
             <p>本文档说明系统对外接口的<strong style="color:#fff;">访问方式</strong>（凭据与鉴权）、<strong style="color:#fff;">链接方式</strong>（地址拼装与路由规则）、<strong style="color:#fff;">加密方式</strong>（签名与密钥），以及各业务域的接口清单、统一响应结构与证书接口链路。内容按现有代码实现整理。</p>
             <div class="meta">
-                <span>版本 v1.5</span>
+                <span>版本 v1.6</span>
                 <span>更新 2026-11-20</span>
                 <span>接口域名 upload.tuuz.cc:433</span>
                 <span>默认时区 Asia/Shanghai</span>
@@ -261,37 +261,63 @@ curl -s https://upload.tuuz.cc:433/v3/ai/messages/index \
             <div class="note warn"><strong>v3 已废弃 <code class="inline">?token=</code> 明文传参</strong>：请求必须携带 <code class="inline">X-Aoss-Ts</code>、<code class="inline">X-Aoss-Kid</code>、<code class="inline">X-Aoss-Auth</code> 三个鉴权字段，<code class="inline">auth</code> 为 <code class="inline">secret|ts</code> 的 AES-256-GCM 密文。协议与代码示例见 <a href="#doc-sign-envelope" style="color:#1677ff;">v3 凭证信封</a>。无法设置请求头的调用方可改用同名表单参数 <code class="inline">ts</code> / <code class="inline">kid</code> / <code class="inline">auth</code>。</div>
 
             <h3 id="doc-api-mail">邮件（SMTP）</h3>
-            <p>通过配置的 SMTP 服务器发送邮件，走 v3 凭证信封鉴权（与 AI 共用同一套项目 Secret）。前置条件：项目已在后台「邮件管理 → 邮件授权」中被分配至少一台启用中的邮件服务器（<code class="inline">/admin/mail_server</code> 维护主机、端口、加密、账号与密码）。未授权服务器的项目鉴权阶段即返回 <code class="inline">401 项目不可用</code>。</p>
+            <p>通过配置的 SMTP 服务器发送邮件，走 v3 凭证信封鉴权（与 AI 共用同一套项目 Secret）。前置条件：项目已在后台「邮件管理 → 邮件授权」中被分配至少一台启用中的邮件服务器（<code class="inline">/admin/mail_server</code>），且使用模板的类型已在「邮件管理 → 邮件模板」中配置并启用（<code class="inline">/admin/mail_template</code>）。未授权服务器的项目鉴权阶段即返回 <code class="inline">401 项目不可用</code>。</p>
             <table>
-                <thead><tr><th style="width:150px;">能力</th><th style="width:400px;">方法与链接</th><th>关键参数</th></tr></thead>
+                <thead><tr><th style="width:150px;">内容类型</th><th style="width:400px;">方法与链接</th><th>关键参数</th></tr></thead>
                 <tbody>
-                    <tr><td>发送邮件</td><td><span class="pill green">POST</span> <code class="inline">/v3/mail/send/index</code></td><td><code class="inline">to, subject, body</code>（必填）；<code class="inline">cc, alt_body, is_html, from_addr, from_name, server_id</code>（可选）</td></tr>
+                    <tr><td>验证码</td><td><span class="pill green">POST</span> <code class="inline">/v3/mail/send/captcha</code></td><td><code class="inline">to, template, code</code>（必填）</td></tr>
+                    <tr><td>营销</td><td><span class="pill green">POST</span> <code class="inline">/v3/mail/send/marketing</code></td><td><code class="inline">to, template, vars</code>（必填）</td></tr>
+                    <tr><td>自定义</td><td><span class="pill green">POST</span> <code class="inline">/v3/mail/send/custom</code></td><td><code class="inline">to, subject, body</code>（必填）</td></tr>
+                    <tr><td>自定义（兼容旧入口）</td><td><span class="pill green">POST</span> <code class="inline">/v3/mail/send/index</code></td><td>等同 <code class="inline">/v3/mail/send/custom</code></td></tr>
                 </tbody>
             </table>
             <table>
-                <thead><tr><th style="width:150px;">参数</th><th style="width:90px;">必填</th><th>说明</th></tr></thead>
+                <thead><tr><th style="width:150px;">公共参数</th><th style="width:90px;">必填</th><th>说明</th></tr></thead>
                 <tbody>
                     <tr><td><code class="inline">to</code></td><td>是</td><td>收件人，逗号或分号分隔多个，或 JSON 数组；非法邮箱自动忽略</td></tr>
-                    <tr><td><code class="inline">subject</code></td><td>是</td><td>邮件主题，最长 200 字</td></tr>
-                    <tr><td><code class="inline">body</code></td><td>是</td><td>邮件正文，最长 1 MB；按 <code class="inline">is_html</code> 决定 HTML 或纯文本</td></tr>
                     <tr><td><code class="inline">cc</code></td><td>否</td><td>抄送，格式同 <code class="inline">to</code></td></tr>
                     <tr><td><code class="inline">alt_body</code></td><td>否</td><td>HTML 邮件的纯文本备选，缺省从正文去除标签生成</td></tr>
-                    <tr><td><code class="inline">is_html</code></td><td>否</td><td>1 为 HTML 正文，0 为纯文本，默认 0</td></tr>
                     <tr><td><code class="inline">from_addr</code> / <code class="inline">from_name</code></td><td>否</td><td>覆盖默认发件人；留空取服务器配置</td></tr>
                     <tr><td><code class="inline">server_id</code></td><td>否</td><td>指定某台已授权服务器；不传则用项目默认服务器</td></tr>
                 </tbody>
             </table>
-            <p>无论成功失败均写入 <code class="inline">ao_mail_log</code>（项目 kid、服务器、收件人、主题、结果与错误），可在后台「邮件管理 → 发送日志」审计。</p>
+            <table>
+                <thead><tr><th style="width:150px;">类型专属参数</th><th style="width:90px;">必填</th><th>说明</th></tr></thead>
+                <tbody>
+                    <tr><td><code class="inline">template</code></td><td>验证码/营销必填</td><td>后台模板标识（<code class="inline">ao_mail_template.code</code>）；类型不符、停用或不存在均返回 404</td></tr>
+                    <tr><td><code class="inline">code</code></td><td>验证码必填</td><td>验证码内容，最长 <strong>16 字符</strong>；模板须含 <code class="inline">{code}</code> 占位符</td></tr>
+                    <tr><td><code class="inline">vars</code></td><td>营销必填</td><td>JSON 对象，如 <code class="inline">{"link":"https://example.com"}</code>；按 <code class="inline">{变量名}</code> 替换，最多 50 个，单值最长 1000 字符，仅接受标量。未填充的占位符会导致请求失败，避免用户收到残缺邮件</td></tr>
+                    <tr><td><code class="inline">subject</code> / <code class="inline">body</code></td><td>自定义必填</td><td>主题最长 200 字，正文最长 1 MB</td></tr>
+                    <tr><td><code class="inline">is_html</code></td><td>否</td><td>仅自定义类型生效，1 为 HTML、0 为纯文本，默认 0；模板类型的正文格式由后台模板决定</td></tr>
+                </tbody>
+            </table>
+            <div class="note"><strong>模板内容规则</strong>：验证码与营销邮件的主题/正文在后台「邮件模板」统一维护，调用方只提供变量。模板占位符统一写作 <code class="inline">{变量名}</code>；营销变量值按原样插入（含链接），请由可信业务系统传值，勿直接透传用户输入。渲染后若仍有未替换的占位符，接口返回 400 且不发信。</div>
+            <p>无论成功失败均写入 <code class="inline">ao_mail_log</code>（项目 kid、服务器、收件人、主题、内容类型 <code class="inline">mail_type</code>、模板标识 <code class="inline">template_code</code>、结果与错误），可在后台「邮件管理 → 发送日志」按类型筛选审计。</p>
             <div class="note"><strong>流控（每 60 秒固定窗口）</strong>：按项目 kid 独立计数，与 AI / Excel 应用分开计数（前缀 <code class="inline">v3_mail_rl:</code>）。配额优先取项目 <code class="inline">rate_limit</code>（后台「项目管理 v3」配置）；项目未配置（≤0）时默认 <code class="inline">30 封/分钟</code>。超限返回 <code class="inline">429</code> 并带 <code class="inline">Retry-After</code>（距下一窗口的秒数），响应体 data 含 <code class="inline">limit / window / retry_after</code>。计数存于限流专用 File 缓存，不依赖 Redis，缓存异常时降级放行以保证可用。</div>
-            <pre class="code"><span class="lang">cURL</span>curl -s https://upload.tuuz.cc:433/v3/mail/send/index \
+            <pre class="code"><span class="lang">cURL</span># 验证码：模板 login_code 内含 {code}
+curl -s https://upload.tuuz.cc:433/v3/mail/send/captcha \
+  -H "X-Aoss-Ts: $TS" -H "X-Aoss-Kid: $KID" -H "X-Aoss-Auth: $AUTH" \
+  --data-urlencode 'to=alice@example.com' \
+  --data-urlencode 'template=login_code' \
+  --data-urlencode 'code=882913'
+
+# 营销：模板 promo_spring 内含 {link} 与 {name}
+curl -s https://upload.tuuz.cc:433/v3/mail/send/marketing \
   -H "X-Aoss-Ts: $TS" -H "X-Aoss-Kid: $KID" -H "X-Aoss-Auth: $AUTH" \
   --data-urlencode 'to=alice@example.com,bob@example.com' \
+  --data-urlencode 'template=promo_spring' \
+  --data-urlencode 'vars={"link":"https://example.com/promo","name":"张三"}'
+
+# 自定义：主题与正文全部由调用方提供
+curl -s https://upload.tuuz.cc:433/v3/mail/send/custom \
+  -H "X-Aoss-Ts: $TS" -H "X-Aoss-Kid: $KID" -H "X-Aoss-Auth: $AUTH" \
+  --data-urlencode 'to=alice@example.com' \
   --data-urlencode 'subject=系统通知' \
   --data-urlencode 'body=&lt;h3&gt;您好&lt;/h3&gt;&lt;p&gt;这是一封测试邮件。&lt;/p&gt;' \
   --data-urlencode 'is_html=1'
 
 # 成功响应
-{"code":0,"data":{"message_id":"&lt;xxx@host&gt;"},"echo":"邮件已提交发送"}</pre>
+{"code":0,"data":{"message_id":"&lt;xxx@host&gt;","type":"captcha"},"echo":"邮件已提交发送"}</pre>
             <div class="note"><strong>成功仅代表已提交给 SMTP 服务器</strong>，不代表对方已收信；具体投递状态以邮件服务器为准。加密方式：<code class="inline">ssl</code> 走 SMTPS（默认 465）、<code class="inline">tls</code> 走 STARTTLS（默认 587）、<code class="inline">none</code> 走明文（默认 25）。</div>
 
             <h3 id="doc-api-hook">Hook</h3>

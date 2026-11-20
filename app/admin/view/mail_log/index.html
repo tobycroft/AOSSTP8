@@ -4,7 +4,13 @@
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <h2>邮件发送日志</h2>
         <div class="search-box">
-            <input type="text" id="searchInput" placeholder="搜索收件人 / 主题 / kid / 服务器" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 300px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
+            <input type="text" id="searchInput" placeholder="搜索收件人 / 主题 / kid / 服务器" value="{$search}" autocomplete="off" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 300px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
+            <select id="typeSelect" onchange="doSearch()" style="padding: 8px 10px; margin-left: 8px; border: 1px solid #d9d9d9; border-radius: 4px; outline: none;">
+                <option value="">全部类型</option>
+                <option value="captcha" {if $mail_type==='captcha'}selected{/if}>验证码</option>
+                <option value="marketing" {if $mail_type==='marketing'}selected{/if}>营销</option>
+                <option value="custom" {if $mail_type==='custom'}selected{/if}>自定义</option>
+            </select>
             <select id="successSelect" onchange="doSearch()" style="padding: 8px 10px; margin-left: 8px; border: 1px solid #d9d9d9; border-radius: 4px; outline: none;">
                 <option value="">全部结果</option>
                 <option value="1" {if $success==='1'}selected{/if}>仅成功</option>
@@ -21,6 +27,7 @@
             <th>时间</th>
             <th>项目 kid</th>
             <th>服务器</th>
+            <th>类型 / 模板</th>
             <th>收件人 / 抄送</th>
             <th>主题</th>
             <th>结果</th>
@@ -34,6 +41,7 @@
             <td>{$item.date}</td>
             <td style="font-family:monospace;font-size:12px;">{$item.kid}</td>
             <td>{$item.server_name}</td>
+            <td>{if $item.mail_type=='captcha'}验证码{elseif $item.mail_type=='marketing'}营销{elseif $item.mail_type=='custom'}自定义{else/}—{/if}{if $item.template_code}<br><span style="font-family:monospace;font-size:11px;color:#8c8c8c;">{$item.template_code}</span>{/if}</td>
             <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.to_addr}{if $item.cc_addr}; {$item.cc_addr}{/if}">{$item.to_addr}</td>
             <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.subject}">{$item.subject}</td>
             <td>
@@ -55,9 +63,11 @@
 <script>
 function doSearch() {
     var search = document.getElementById('searchInput').value;
+    var mailType = document.getElementById('typeSelect').value;
     var success = document.getElementById('successSelect').value;
     var url = '/admin/mail_log?page=1';
     if (search) url += '&search=' + encodeURIComponent(search);
+    if (mailType !== '') url += '&mail_type=' + encodeURIComponent(mailType);
     if (success !== '') url += '&success=' + success;
     window.location.href = url;
 }

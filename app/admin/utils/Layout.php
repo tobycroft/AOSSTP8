@@ -97,6 +97,7 @@ class Layout
             'items' => [
                 'mail_server' => ['label' => '邮件服务器', 'url' => '/admin/mail_server'],
                 'mail_grant' => ['label' => '邮件授权', 'url' => '/admin/mail_grant'],
+                'mail_template' => ['label' => '邮件模板', 'url' => '/admin/mail_template'],
                 'mail_log' => ['label' => '发送日志', 'url' => '/admin/mail_log'],
             ],
         ],

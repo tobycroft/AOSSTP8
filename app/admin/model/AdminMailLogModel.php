@@ -14,6 +14,8 @@ CREATE TABLE `ao_mail_log` (
   `to_addr` varchar(255) DEFAULT NULL COMMENT '收件人',
   `cc_addr` varchar(255) DEFAULT NULL COMMENT '抄送',
   `subject` varchar(255) DEFAULT NULL COMMENT '主题',
+  `mail_type` varchar(16) DEFAULT NULL COMMENT '内容类型：captcha/marketing/custom',
+  `template_code` varchar(64) DEFAULT NULL COMMENT '模板标识（模板类型时记录）',
   `success` tinyint(1) DEFAULT 0 COMMENT '是否成功：1成功 0失败',
   `error` varchar(1000) DEFAULT NULL COMMENT '错误信息',
   `date` datetime DEFAULT CURRENT_TIMESTAMP,

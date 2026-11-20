@@ -1,0 +1,164 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>邮件模板</h2>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索模板标识或名称" value="{$search}" autocomplete="off" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 260px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
+            <select id="typeSelect" onchange="doSearch()" style="padding: 8px 10px; margin-left: 8px; border: 1px solid #d9d9d9; border-radius: 4px; outline: none;">
+                <option value="">全部类型</option>
+                <option value="captcha" {if $type==='captcha'}selected{/if}>验证码</option>
+                <option value="marketing" {if $type==='marketing'}selected{/if}>营销</option>
+            </select>
+            <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
+        </div>
+        <button class="btn btn-primary" onclick="openCreate()">新增模板</button>
+    </div>
+</div>
+<div class="card">
+    <p>验证码与营销邮件的主题、正文在此统一维护，v3 接口只提供少量变量。<strong>占位符写法：</strong>验证码模板用 <code>{code}</code>（调用方传入 1~16 位）；营销模板用 <code>{变量名}</code>（如 <code>{link}</code>），调用方通过 <code>vars</code> 传入。模板停用后接口立即不可用；正文勾选 HTML 时按 HTML 发送。</p>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>模板标识</th>
+            <th>名称</th>
+            <th>类型</th>
+            <th>主题预览</th>
+            <th>正文格式</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td style="font-family:monospace;font-size:12px;">{$item.code|htmlspecialchars}</td>
+            <td>{$item.name|htmlspecialchars}</td>
+            <td>{$item.type_label}</td>
+            <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.subject|htmlspecialchars}">{$item.subject|htmlspecialchars}</td>
+            <td>{if $item.is_html==1}HTML{else/}纯文本{/if}</td>
+            <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}停用{/if}</span></td>
+            <td>
+                <button class="btn btn-sm btn-edit" data-json="{$item.json|raw}" onclick="openEdit(this)">编辑</button>
+                <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
+            </td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination|raw}
+<div class="modal" id="templateModal">
+    <div class="modal-box" style="width:680px;">
+        <h3 id="modalTitle">新增模板</h3>
+        <input type="hidden" id="editId" value="">
+        <div style="display:flex;gap:12px;">
+            <div class="form-group" style="flex:1;"><label>模板标识（API 用 template 引用）</label><input type="text" id="formCode" placeholder="例如 login_code" autocomplete="off"></div>
+            <div class="form-group" style="flex:1;"><label>模板名称</label><input type="text" id="formName" placeholder="例如 登录验证码" autocomplete="off"></div>
+        </div>
+        <div style="display:flex;gap:12px;">
+            <div class="form-group" style="flex:1;"><label>类型</label>
+                <select id="formType">
+                    <option value="captcha">验证码（{code}）</option>
+                    <option value="marketing">营销（{变量名}）</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex:1;"><label>正文格式</label>
+                <select id="formIsHtml"><option value="1">HTML</option><option value="0">纯文本</option></select>
+            </div>
+            <div class="form-group" style="flex:1;"><label>状态</label>
+                <select id="formStatus"><option value="1">启用</option><option value="0">停用</option></select>
+            </div>
+        </div>
+        <div class="form-group"><label>主题模板（最长 200 字符，可含占位符）</label><input type="text" id="formSubject" placeholder="例如：【AOSS】您的验证码是 {code}" autocomplete="off"></div>
+        <div class="form-group"><label>正文模板</label><textarea id="formBody" rows="10" style="width:100%;padding:8px;border:1px solid #d9d9d9;border-radius:4px;font-family:monospace;font-size:12px;box-sizing:border-box;" placeholder="验证码模板使用 {code}；营销模板使用 {变量名}"></textarea></div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn btn-primary" onclick="submitForm()">确定</button>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{literal}
+<script>
+function doSearch() {
+    var search = document.getElementById('searchInput').value;
+    var type = document.getElementById('typeSelect').value;
+    var url = '/admin/mail_template?page=1';
+    if (search) url += '&search=' + encodeURIComponent(search);
+    if (type !== '') url += '&type=' + encodeURIComponent(type);
+    window.location.href = url;
+}
+function closeModal() { document.getElementById('templateModal').classList.remove('show'); }
+function openCreate() {
+    document.getElementById('modalTitle').textContent = '新增模板';
+    document.getElementById('editId').value = '';
+    document.getElementById('formCode').value = '';
+    document.getElementById('formName').value = '';
+    document.getElementById('formType').value = 'captcha';
+    document.getElementById('formIsHtml').value = '1';
+    document.getElementById('formStatus').value = '1';
+    document.getElementById('formSubject').value = '';
+    document.getElementById('formBody').value = '';
+    document.getElementById('templateModal').classList.add('show');
+}
+function openEdit(btn) {
+    var d = JSON.parse(btn.getAttribute('data-json'));
+    document.getElementById('modalTitle').textContent = '编辑模板 - ' + d.code;
+    document.getElementById('editId').value = d.id;
+    document.getElementById('formCode').value = d.code;
+    document.getElementById('formName').value = d.name;
+    document.getElementById('formType').value = d.type;
+    document.getElementById('formIsHtml').value = String(d.is_html);
+    document.getElementById('formStatus').value = String(d.status);
+    document.getElementById('formSubject').value = d.subject;
+    document.getElementById('formBody').value = d.body;
+    document.getElementById('templateModal').classList.add('show');
+}
+function submitForm() {
+    var id = document.getElementById('editId').value;
+    var code = document.getElementById('formCode').value.trim();
+    var name = document.getElementById('formName').value.trim();
+    var subject = document.getElementById('formSubject').value.trim();
+    var body = document.getElementById('formBody').value;
+    if (!code || !name || !subject || !body) { alert('标识、名称、主题、正文均不能为空'); return; }
+    var params = 'code=' + encodeURIComponent(code)
+        + '&name=' + encodeURIComponent(name)
+        + '&type=' + encodeURIComponent(document.getElementById('formType').value)
+        + '&subject=' + encodeURIComponent(subject)
+        + '&body=' + encodeURIComponent(body)
+        + '&is_html=' + document.getElementById('formIsHtml').value
+        + '&status=' + document.getElementById('formStatus').value;
+    if (id) params += '&id=' + id;
+    var xhr = new XMLHttpRequest();
+    xhr.open(id ? 'POST' : 'PUT', '/admin/mail_template', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res; try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            if (res.code == 0) location.reload(); else alert(res.echo);
+        }
+    };
+    xhr.send(params);
+}
+function doDelete(id) {
+    if (!confirm('确定删除该邮件模板吗？删除后引用该模板的接口将报错。')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/mail_template', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res; try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            if (res.code == 0) location.reload(); else alert(res.echo);
+        }
+    };
+    xhr.send('id=' + id);
+}
+</script>
+{/literal}
+{/block}

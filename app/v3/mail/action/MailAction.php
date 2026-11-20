@@ -310,8 +310,10 @@ class MailAction
             'server_name' => (string)($log['server_name'] ?? ''),
             'to_addr'     => mb_substr((string)($log['to_addr'] ?? ''), 0, 255),
             'cc_addr'     => mb_substr((string)($log['cc_addr'] ?? ''), 0, 255),
-            'subject'     => mb_substr((string)($log['subject'] ?? ''), 0, 255),
-            'success'     => !empty($log['success']) ? 1 : 0,
+            'subject'       => mb_substr((string)($log['subject'] ?? ''), 0, 255),
+            'mail_type'     => (string)($log['mail_type'] ?? ''),
+            'template_code' => (string)($log['template_code'] ?? ''),
+            'success'       => !empty($log['success']) ? 1 : 0,
             'error'       => mb_substr((string)($log['error'] ?? ''), 0, 1000),
         ]);
     }
