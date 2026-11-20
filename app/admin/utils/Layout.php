@@ -70,6 +70,12 @@ class Layout
                 'sms_log' => ['label' => '发送日志', 'url' => '/admin/sms_log'],
             ],
         ],
+        // 项目管理 v3：由原 v3 二级分组提升为一级链接（link 型，无子项）
+        'v3' => [
+            'title' => '项目管理 v3',
+            'link' => '/admin/v3_project',
+        ],
+        // AI 管理：目录顺序紧跟「项目管理 v3」
         'ai' => [
             'title' => 'AI 管理',
             'items' => [
@@ -77,10 +83,13 @@ class Layout
                 'v3_grant' => ['label' => 'AI 授权', 'url' => '/admin/v3_grant'],
             ],
         ],
-        'v3' => [
-            'title' => 'v3',
+        // 邮件管理：供 v3 邮件接口使用，独立分组
+        'mail' => [
+            'title' => '邮件管理',
             'items' => [
-                'v3_project' => ['label' => '项目管理 v3', 'url' => '/admin/v3_project'],
+                'mail_server' => ['label' => '邮件服务器', 'url' => '/admin/mail_server'],
+                'mail_grant' => ['label' => '邮件授权', 'url' => '/admin/mail_grant'],
+                'mail_log' => ['label' => '发送日志', 'url' => '/admin/mail_log'],
             ],
         ],
         'dnspod' => [
@@ -211,6 +220,12 @@ CSS;
         $html .= '<a class="menu-item' . ($activeItem === 'console' ? ' active' : '') . '" href="/admin/console">控制台</a>';
 
         foreach (self::$menuGroups as $groupKey => $group) {
+            // link 型分组：无子项，渲染为与「控制台」同级的一级菜单项
+            if (!empty($group['link'])) {
+                $isLinkActive = ($groupKey === $activeGroup) || ($groupKey === $activeItem);
+                $html .= '<a class="menu-item' . ($isLinkActive ? ' active' : '') . '" href="' . $group['link'] . '">' . $group['title'] . '</a>';
+                continue;
+            }
             $isActive = ($groupKey === $activeGroup);
             $html .= '<div class="menu-group">';
             $html .= '<div class="menu-group-title' . ($isActive ? ' open' : '') . '" onclick="toggleGroup(this)">';
