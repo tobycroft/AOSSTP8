@@ -46,7 +46,8 @@
     "ext-imagick": "*",
     "tobycroft/btapi": "^1.2",
     "topthink/think-view": "^2.0",
-    "phpmailer/phpmailer": "^7.2"
+    "phpmailer/phpmailer": "^7.2",
+    "tobycroft/think-queue-lts": "^4.0"
   },
   "require-dev": {
     "symfony/var-dumper": ">=4.2",
