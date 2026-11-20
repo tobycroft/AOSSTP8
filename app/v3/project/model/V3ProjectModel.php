@@ -11,6 +11,7 @@ CREATE TABLE `ao_v3_project`:
   `rate_limit` int unsigned DEFAULT 0 COMMENT 'v3接口每60秒请求上限，0表示不限速',
   `model_alias` varchar(64) DEFAULT '' COMMENT '对外返回的模型名别名（AI 应用），为空回退 aoss',
   `secret` varchar(64) NOT NULL DEFAULT '' COMMENT 'v3 凭证，64 位随机十六进制，同时作为信封加密密钥',
+  `oss_token` varchar(100) NOT NULL DEFAULT '' COMMENT '绑定的 ao_oss.token，v3-file 上传落盘使用；空表示未绑定，上传接口返回未配置',
   `status` tinyint(1) DEFAULT '1' COMMENT '状态',
   `date` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -19,6 +20,8 @@ CREATE TABLE `ao_v3_project`:
 v3 项目为应用无关的通用凭证：一个项目（secret）可使用 v3 下全部应用。
 AI 应用凭「授权」使用 agnes key：ao_v3_project_agnes（多对多，is_default
 标记 AI 请求实际使用的 key）；后台在「AI 管理 → AI 授权」中维护。
+文件上传应用凭 oss_token 绑定一个 ao_oss 存储项目（存储配置在「存储项目」维护），
+一个项目一个存储；oss_token 为空表示未绑定，v3-file 接口返回未配置。
  */
 
 class V3ProjectModel extends Model
@@ -40,10 +43,13 @@ class V3ProjectModel extends Model
         if (preg_match('/^[0-9a-f]{8}$/', $kid) !== 1) {
             return [];
         }
-        return self::where('status', 1)
+        // 用查询构造器直接取数组：避开 Model::toArray() 在 PHP 8.6 下对字符串属性
+        // 调用 is_subclass_of(..., false) 触发的弃用告警（该告警在 debug 下会中断请求）。
+        // 凭证查询只需原始行，无需模型属性/关联转换。
+        return \think\facade\Db::name('ao_v3_project')
+            ->where('status', 1)
             ->whereRaw('LOWER(LEFT(SHA2(`secret`, 256), 8)) = ?', [$kid])
-            ->findOrEmpty()
-            ->toArray();
+            ->findOrEmpty();
     }
 
     /**

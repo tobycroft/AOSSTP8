@@ -109,6 +109,7 @@
 
     // v3 项目管理（v3 开放接口通用凭证；AI 授权等配置在 AI 授权页维护）
     \think\facade\Route::any('admin/v3_project/resetSecret', '\app\admin\controller\V3Project@resetSecret');
+    \think\facade\Route::any('admin/v3_project/storage_options', '\app\admin\controller\V3Project@storage_options');
     \think\facade\Route::any('admin/v3_project', '\app\admin\controller\V3Project@index');
 
     // 邮件管理（供 v3 邮件接口使用：服务器配置 → 项目授权 → 内容模板 → 发送日志）

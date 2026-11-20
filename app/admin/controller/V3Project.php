@@ -2,6 +2,7 @@
 
 namespace app\admin\controller;
 
+use app\admin\model\AdminOssModel;
 use app\admin\model\AdminV3ProjectModel;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
@@ -70,6 +71,8 @@ class V3Project extends CommonController
                 'secret_strong' => Envelope::isStrongSecret((string)$item['secret']),
                 'kid' => Envelope::kid((string)$item['secret']),
                 'rate_limit' => (int)($item['rate_limit'] ?? 0),
+                'oss_token' => (string)($item['oss_token'] ?? ''),
+                'storage_name' => $this->storageName((string)($item['oss_token'] ?? '')),
                 'status' => $item['status'],
             ];
         }
@@ -81,6 +84,60 @@ class V3Project extends CommonController
             'search' => $search,
             'pagination' => $pagination,
         ], '项目管理 v3', 'v3', 'v3_project');
+    }
+
+    /**
+     * 可选存储项目列表（供后台 oss_token 下拉框使用）
+     *
+     * 只返回启用中的 ao_oss 项目；token 即需要写入 v3 项目 oss_token 的值。
+     */
+    public function storage_options()
+    {
+        $rows = AdminOssModel::where('status', 1)
+            ->field('token, name, type')
+            ->order('id', 'desc')
+            ->select()
+            ->toArray();
+        $options = [];
+        foreach ($rows as $row) {
+            $token = (string)$row['token'];
+            if ($token === '') {
+                continue;
+            }
+            $options[] = [
+                'token' => $token,
+                'name' => (string)$row['name'],
+                'type' => (string)$row['type'],
+                'label' => $row['name'] . '（' . $row['type'] . '）',
+            ];
+        }
+        Ret::Success(0, $options);
+    }
+
+    /**
+     * 校验 oss_token 指向一个启用中的存储项目；空值允许（表示暂不绑定）
+     */
+    private function assertStorage(string $ossToken): void
+    {
+        if ($ossToken === '') {
+            return;
+        }
+        $row = AdminOssModel::where('token', $ossToken)->field('status, type')->find();
+        if (!$row || (int)$row['status'] !== 1 || (string)$row['type'] === 'none') {
+            Ret::Fail(400, null, '绑定的存储项目不存在、已停用或类型不可用');
+        }
+    }
+
+    /**
+     * 按 oss_token 反查存储项目名，仅用于列表展示
+     */
+    private function storageName(string $ossToken): string
+    {
+        if ($ossToken === '') {
+            return '未绑定';
+        }
+        $row = AdminOssModel::where('token', $ossToken)->field('name')->find();
+        return $row ? (string)$row['name'] : '已失效(' . $ossToken . ')';
     }
 
     /**
@@ -106,9 +163,13 @@ class V3Project extends CommonController
 
         // 凭证由服务端签发，不接受人工输入：secret 的熵直接决定信封机密性上限
         $secret = Envelope::randomSecret();
+        $ossToken = trim((string)Input::Put('oss_token', false));
+        $this->assertStorage($ossToken);
+
         $data = [
             'name' => $name,
             'secret' => $secret,
+            'oss_token' => $ossToken,
             'rate_limit' => Input::PutInt('rate_limit', 0),
             'status' => Input::PutInt('status', 1),
         ];
@@ -162,6 +223,11 @@ class V3Project extends CommonController
         if (request()->has('name', 'post')) $data['name'] = Input::Post('name');
         if (request()->has('rate_limit', 'post')) {
             $data['rate_limit'] = Input::PostInt('rate_limit', 0);
+        }
+        if (request()->has('oss_token', 'post')) {
+            $ossToken = trim((string)Input::Post('oss_token', false));
+            $this->assertStorage($ossToken);
+            $data['oss_token'] = $ossToken;
         }
         if (request()->has('status', 'post')) $data['status'] = Input::PostInt('status');
 
