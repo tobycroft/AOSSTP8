@@ -19,6 +19,9 @@ class index extends CommonController
 {
     use V3EnvelopeAuth;
 
+    /** 项目未配置 rate_limit 时的邮件接口兜底限流：每 60 秒 30 封 */
+    private const DEFAULT_RATE_LIMIT = 30;
+
     public function initialize()
     {
         parent::initialize();
@@ -33,6 +36,6 @@ class index extends CommonController
                 return [];
             }
             return $proc;
-        }, 'v3_mail_rl:');
+        }, 'v3_mail_rl:', self::DEFAULT_RATE_LIMIT);
     }
 }

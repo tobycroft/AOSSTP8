@@ -41,8 +41,9 @@ trait V3EnvelopeAuth
      * @param callable $finder function(string $kid): array 按 kid 定位可用项目，
      *                         返回空数组等价于「项目不可用」，返回数组必须含 secret
      * @param string $limiterPrefix 限流缓存 key 前缀，各应用独立计数
+     * @param int $defaultLimit 项目未配置 rate_limit（<=0）时使用的兜底额度；0 表示不限速
      */
-    protected function envelopeAuth(callable $finder, string $limiterPrefix = 'v3_ai_rl:'): void
+    protected function envelopeAuth(callable $finder, string $limiterPrefix = 'v3_ai_rl:', int $defaultLimit = 0): void
     {
         $ts = $this->authParam('x-aoss-ts', 'ts');
         $kid = $this->authParam('x-aoss-kid', 'kid');
@@ -91,8 +92,14 @@ trait V3EnvelopeAuth
         $this->kid = (string)$kid;
         $this->proc = $proc;
 
-        // 鉴权通过后再限流，按 kid 计数；rate_limit<=0（含未迁移字段的空值）不限速
-        RateLimiter::check($kid, (int)($proc['rate_limit'] ?? 0), $limiterPrefix);
+        // 鉴权通过后再限流，按 kid 计数。
+        // 额度优先取项目 rate_limit；项目未配置（<=0）时用应用兜底额度。
+        // 二者均 <=0 则不限速（RateLimiter 内部直接放行）。
+        $limit = (int)($proc['rate_limit'] ?? 0);
+        if ($limit <= 0) {
+            $limit = $defaultLimit;
+        }
+        RateLimiter::check($kid, $limit, $limiterPrefix);
     }
 
     /**

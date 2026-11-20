@@ -24,6 +24,17 @@ return [
             // 序列化机制 例如 ['serialize', 'unserialize']
             'serialize'  => [],
         ],
+        // v3 接口限流专用缓存：固定使用 File 驱动，与全局 CACHE_DRIVER 解耦。
+        // 目的：限流不依赖 Redis 等外部服务，Redis 抖动时不会让 v3 接口整体 500。
+        // 独立前缀避免与业务缓存键冲突；key 形如 v3rl:{prefix}{kid}:{窗口序号}。
+        'limiter' => [
+            'type'       => 'File',
+            'path'       => '',
+            'prefix'     => 'v3rl:',
+            'expire'     => 0,
+            'tag_prefix' => 'tag:',
+            'serialize'  => [],
+        ],
         // Redis 缓存（当 CACHE_DRIVER=redis 时启用）
         'redis' => [
             // 驱动方式

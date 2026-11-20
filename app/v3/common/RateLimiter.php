@@ -8,13 +8,18 @@ use think\facade\Cache;
  * v3 开放接口固定窗口限流器（公共）
  *
  * 按项目凭证 kid 计数，同一应用（前缀）内各接口共用同一配额。
- * 计数存于 TP 自带 Cache（默认 file 驱动），不引入 Redis 依赖。
+ * 计数存于限流专用 File 缓存 store（config/cache.php 的 limiter），
+ * 与全局 CACHE_DRIVER 解耦：即使全局切到 Redis 且 Redis 不可用，
+ * 限流也不会抛异常导致整个 v3 接口 500。
  *
  * 固定窗口：WINDOW 秒一个窗口，key 带窗口序号，窗口切换即重新计数。
  * 项目 rate_limit <= 0 表示不限速，直接放行（兼容未配置/未迁移的存量项目）。
  */
 class RateLimiter
 {
+    /** 限流专用缓存 store（见 config/cache.php） */
+    private const STORE = 'limiter';
+
     /** 固定窗口长度（秒） */
     public const WINDOW = 60;
 
@@ -34,12 +39,29 @@ class RateLimiter
             return;
         }
 
+        try {
+            self::doCheck($kid, $limit, $prefix);
+        } catch (\Throwable $e) {
+            // 缓存自身异常时放行，避免限流组件故障导致整个 v3 接口不可用；
+            // 这是可用性优先的降级策略，异常已记录便于排查。
+            if (function_exists('trace')) {
+                trace('RateLimiter 缓存异常，本次放行: ' . $e->getMessage(), 'error');
+            }
+        }
+    }
+
+    /**
+     * 实际的固定窗口计数逻辑（缓存异常由 check 统一兜底）
+     */
+    private static function doCheck(string $kid, int $limit, string $prefix): void
+    {
+        $cache = Cache::store(self::STORE);
         $key = $prefix . $kid . ':' . intdiv(time(), self::WINDOW);
-        $raw = Cache::get($key);
+        $raw = $cache->get($key);
 
         // 窗口内首次请求：写入计数 1 并带 TTL 后放行
         if ($raw === null) {
-            Cache::set($key, 1, self::TTL);
+            $cache->set($key, 1, self::TTL);
             return;
         }
 
@@ -57,6 +79,6 @@ class RateLimiter
             ], '请求过于频繁，请在 ' . $retry . ' 秒后重试');
         }
 
-        Cache::set($key, $count + 1, self::TTL);
+        $cache->set($key, $count + 1, self::TTL);
     }
 }

@@ -281,7 +281,8 @@ curl -s https://upload.tuuz.cc:433/v3/ai/messages/index \
                     <tr><td><code class="inline">server_id</code></td><td>否</td><td>指定某台已授权服务器；不传则用项目默认服务器</td></tr>
                 </tbody>
             </table>
-            <p>无论成功失败均写入 <code class="inline">ao_mail_log</code>（项目 kid、服务器、收件人、主题、结果与错误），可在后台「邮件管理 → 发送日志」审计。限流按项目 kid 独立计数（前缀 <code class="inline">v3_mail_rl:</code>），配额取项目 <code class="inline">rate_limit</code>，超限返回 <code class="inline">429</code> 并带 <code class="inline">Retry-After</code>。</p>
+            <p>无论成功失败均写入 <code class="inline">ao_mail_log</code>（项目 kid、服务器、收件人、主题、结果与错误），可在后台「邮件管理 → 发送日志」审计。</p>
+            <div class="note"><strong>流控（每 60 秒固定窗口）</strong>：按项目 kid 独立计数，与 AI / Excel 应用分开计数（前缀 <code class="inline">v3_mail_rl:</code>）。配额优先取项目 <code class="inline">rate_limit</code>（后台「项目管理 v3」配置）；项目未配置（≤0）时默认 <code class="inline">30 封/分钟</code>。超限返回 <code class="inline">429</code> 并带 <code class="inline">Retry-After</code>（距下一窗口的秒数），响应体 data 含 <code class="inline">limit / window / retry_after</code>。计数存于限流专用 File 缓存，不依赖 Redis，缓存异常时降级放行以保证可用。</div>
             <pre class="code"><span class="lang">cURL</span>curl -s https://upload.tuuz.cc:433/v3/mail/send/index \
   -H "X-Aoss-Ts: $TS" -H "X-Aoss-Kid: $KID" -H "X-Aoss-Auth: $AUTH" \
   --data-urlencode 'to=alice@example.com,bob@example.com' \
