@@ -7,7 +7,6 @@ use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
 use app\v3\mail\action\MailAction;
 use BaseController\CommonController;
-use Exception;
 use Input;
 use Ret;
 
@@ -179,18 +178,15 @@ class MailServer extends CommonController
         $subject = 'AOSS 邮件服务器连接测试';
         $body = '<h3>AOSS 邮件服务器连接测试</h3><p>这是一封由 AOSS 后台发出的测试邮件，收到即表示 SMTP 配置可用。</p><p>服务器：' . htmlspecialchars((string)$server['name']) . '</p><p>时间：' . date('Y-m-d H:i:s') . '</p>';
 
-        try {
-            $messageId = MailAction::send($server, [
-                'to' => $to,
-                'subject' => $subject,
-                'body' => $body,
-                'is_html' => 1,
-            ]);
-        } catch (Exception $e) {
-            // 后台测试不写项目日志（无 kid/project），仅回显错误
-            Ret::Fail(500, null, $e->getMessage());
-        }
-        Ret::Success(0, ['message_id' => $messageId], '测试邮件已发送');
+        // 分阶段诊断：DNS 解析 / TCP 连接 / SMTP 会话，结果放 data 供前端逐项展示。
+        // 始终以 code=0 返回（发信失败体现在 data.ok=false），保证前端拿到完整诊断信息。
+        $diag = MailAction::diagnose($server, [
+            'to'      => $to,
+            'subject' => $subject,
+            'body'    => $body,
+            'is_html' => 1,
+        ]);
+        Ret::Success(0, $diag, $diag['ok'] ? '测试邮件已发送' : '发送失败，请查看下方诊断');
     }
 
     private function delete()

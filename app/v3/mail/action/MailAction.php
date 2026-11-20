@@ -4,6 +4,7 @@ namespace app\v3\mail\action;
 
 use PHPMailer\PHPMailer\Exception as MailException;
 use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
 use think\Exception;
 
 /**
@@ -112,6 +113,189 @@ class MailAction
         return mb_check_encoding($converted, 'UTF-8')
             ? $converted
             : mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+    }
+
+    /**
+     * 诊断式发信：分阶段收集 DNS 解析 / TCP 连接 / SMTP 会话的详细信息，
+     * 供后台"测试连接"定位问题所在层级。全程不抛异常，错误纳入结果返回。
+     *
+     * @param array $server 邮件服务器配置
+     * @param array $mail   to, subject, body, is_html 等（同 send）
+     * @return array{ok:bool, stages:array, log:string, message_id:string, error:string}
+     */
+    public static function diagnose(array $server, array $mail): array
+    {
+        $host = (string)($server['host'] ?? '');
+        $port = (int)($server['port'] ?? 0);
+        $encryption = strtolower((string)($server['encryption'] ?? 'none'));
+        $stages = [];
+
+        // 阶段 1：DNS 解析（IP 直连则跳过）
+        $stages[] = self::probeDns($host);
+
+        // 阶段 2：TCP 连接（host:port 三次握手）
+        $stages[] = self::probeTcp($host, $port, $encryption);
+
+        // 阶段 3：SMTP 完整会话（开启协议日志 + 真实发信）
+        $smtp = self::probeSmtp($server, $mail);
+        $stages[] = $smtp['stage'];
+
+        $ok = $smtp['ok'];
+        return [
+            'ok'         => $ok,
+            'stages'     => $stages,
+            'log'        => $smtp['log'],
+            'message_id' => $smtp['message_id'],
+            'error'      => $smtp['error'],
+            'target'     => $host . ':' . $port,
+            'encryption' => $encryption,
+        ];
+    }
+
+    /**
+     * 阶段1：DNS 解析探测
+     */
+    private static function probeDns(string $host): array
+    {
+        $t0 = microtime(true);
+        if ($host === '') {
+            return self::stage('DNS 解析', false, 0, '主机名为空');
+        }
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            return self::stage('DNS 解析', true, 0, '目标为 IP 地址，无需解析：' . $host);
+        }
+        $ips = gethostbynamel($host);
+        $ms = self::elapsed($t0);
+        if (empty($ips)) {
+            return self::stage('DNS 解析', false, $ms, '无法解析域名 ' . $host . '（检查 DNS 配置或域名拼写）');
+        }
+        $shown = array_slice($ips, 0, 5);
+        return self::stage('DNS 解析', true, $ms, '解析到 ' . count($ips) . ' 个 IP：' . implode(', ', $shown));
+    }
+
+    /**
+     * 阶段2：TCP 连接探测（按加密方式选择 transport，SSL 直连用 ssl://）
+     */
+    private static function probeTcp(string $host, int $port, string $encryption): array
+    {
+        $t0 = microtime(true);
+        if ($host === '' || $port <= 0) {
+            return self::stage('TCP 连接', false, 0, '主机或端口未配置');
+        }
+        $transport = ($encryption === 'ssl') ? 'ssl' : 'tcp';
+        $errno = 0;
+        $errstr = '';
+        $ctx = stream_context_create([
+            'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+        ]);
+        $fp = @stream_socket_client(
+            $transport . '://' . $host . ':' . $port,
+            $errno,
+            $errstr,
+            10,
+            STREAM_CLIENT_CONNECT,
+            $ctx
+        );
+        $ms = self::elapsed($t0);
+        if ($fp === false) {
+            return self::stage('TCP 连接', false, $ms, '无法连接 ' . $host . ':' . $port . ' [errno ' . $errno . '] ' . self::toUtf8($errstr));
+        }
+        fclose($fp);
+        return self::stage('TCP 连接', true, $ms, '成功连接 ' . $host . ':' . $port . '（' . $transport . '）');
+    }
+
+    /**
+     * 阶段3：SMTP 完整会话（协议日志 + 真实发信）
+     *
+     * @return array{ok:bool, stage:array, log:string, message_id:string, error:string}
+     */
+    private static function probeSmtp(array $server, array $mail): array
+    {
+        $t0 = microtime(true);
+        $logLines = [];
+        $mailer = new PHPMailer(true);
+        // 捕获协议级日志（命令 + 响应），回调签名 (string $str, int $level)
+        $mailer->SMTPDebug = SMTP::DEBUG_SERVER;
+        $mailer->Debugoutput = function ($str) use (&$logLines) {
+            $line = self::toUtf8(rtrim((string)$str, "\r\n"));
+            if ($line !== '') {
+                $logLines[] = $line;
+            }
+        };
+
+        $error = '';
+        $messageId = '';
+        $ok = false;
+        try {
+            $mailer->CharSet = 'UTF-8';
+            $mailer->isSMTP();
+            $mailer->Host = (string)$server['host'];
+            $mailer->Port = (int)$server['port'];
+            $mailer->SMTPAuth = !empty($server['username']);
+            if ($mailer->SMTPAuth) {
+                $mailer->Username = (string)$server['username'];
+                $mailer->Password = (string)$server['password'];
+            }
+            $encryption = strtolower((string)($server['encryption'] ?? 'none'));
+            if ($encryption === 'ssl') {
+                $mailer->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            } elseif ($encryption === 'tls') {
+                $mailer->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            }
+            $mailer->Timeout = 30;
+
+            $fromAddr = (string)($mail['from_addr'] ?? '') ?: (string)($server['from_addr'] ?? '');
+            if ($fromAddr === '') {
+                throw new Exception('未配置发件人地址');
+            }
+            $fromName = (string)($mail['from_name'] ?? '') ?: (string)($server['from_name'] ?? '');
+            $mailer->setFrom($fromAddr, $fromName);
+            foreach (self::parseAddresses($mail['to'] ?? '') as $addr) {
+                $mailer->addAddress($addr);
+            }
+            $mailer->isHTML(!empty($mail['is_html']));
+            $mailer->Subject = (string)($mail['subject'] ?? '');
+            $mailer->Body = (string)($mail['body'] ?? '');
+
+            $mailer->send();
+            $messageId = (string)$mailer->getLastMessageID();
+            $ok = true;
+        } catch (MailException $e) {
+            $error = self::toUtf8($e->getMessage()) . ' | ' . self::toUtf8($mailer->ErrorInfo);
+        } catch (\Throwable $e) {
+            $error = self::toUtf8($e->getMessage());
+        } finally {
+            @$mailer->smtpClose();
+        }
+
+        $ms = self::elapsed($t0);
+        $stage = $ok
+            ? self::stage('SMTP 会话', true, $ms, '认证与发信成功，Message-ID：' . $messageId)
+            : self::stage('SMTP 会话', false, $ms, $error);
+        return [
+            'ok'         => $ok,
+            'stage'      => $stage,
+            'log'        => implode("\n", $logLines),
+            'message_id' => $messageId,
+            'error'      => $error,
+        ];
+    }
+
+    /** 构造统一阶段结果 */
+    private static function stage(string $label, bool $ok, int $ms, string $detail): array
+    {
+        return [
+            'label'  => $label,
+            'ok'     => $ok,
+            'ms'     => $ms,
+            'detail' => self::toUtf8($detail),
+        ];
+    }
+
+    /** 计算耗时（毫秒） */
+    private static function elapsed(float $t0): int
+    {
+        return (int)round((microtime(true) - $t0) * 1000);
     }
 
     /**

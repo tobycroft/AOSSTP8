@@ -77,11 +77,11 @@
     </div>
 </div>
 <div class="modal" id="testModal">
-    <div class="modal-box" style="width:460px;">
+    <div class="modal-box" style="width:640px;">
         <h3 id="testTitle">发送测试</h3>
         <input type="hidden" id="testId" value="">
-        <div class="form-group"><label>测试收件人邮箱</label><input type="email" id="testTo" placeholder="输入一个能收信的邮箱"></div>
-        <div id="testResult" style="font-size:13px;color:#666;word-break:break-all;line-height:1.6;"></div>
+        <div class="form-group"><label>测试收件人邮箱</label><input type="email" id="testTo" placeholder="输入一个能收信的邮箱" autocomplete="off"></div>
+        <div id="testResult" style="font-size:13px;color:#666;word-break:break-all;line-height:1.6;max-height:420px;overflow:auto;"></div>
         <div class="modal-actions">
             <button class="btn btn-cancel" onclick="document.getElementById('testModal').classList.remove('show')">关闭</button>
             <button class="btn btn-primary" id="testSubmit" onclick="runTest()">发送测试邮件</button>
@@ -158,13 +158,37 @@ function openTest(id, name) {
     document.getElementById('testSubmit').disabled = false;
     document.getElementById('testModal').classList.add('show');
 }
+function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+}
+function renderDiag(d) {
+    var html = '';
+    var ok = !!d.ok;
+    html += '<div style="padding:10px 12px;border-radius:4px;margin-bottom:12px;background:' + (ok ? '#f6ffed' : '#fff2f0') + ';border:1px solid ' + (ok ? '#b7eb8f' : '#ffccc7') + ';color:' + (ok ? '#389e0d' : '#cf1322') + ';font-weight:600;">'
+        + (ok ? '✓ 发送成功' : '✗ 发送失败') + ' · 目标 ' + esc(d.target || '') + ' · 加密 ' + esc(d.encryption || '') + '</div>';
+    (d.stages || []).forEach(function(s){
+        var sok = !!s.ok;
+        html += '<div style="border:1px solid #f0f0f0;border-left:3px solid ' + (sok ? '#52c41a' : '#ff4d4f') + ';border-radius:3px;padding:8px 12px;margin-bottom:8px;background:#fafafa;">'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;">'
+            + '<span style="font-weight:600;color:' + (sok ? '#389e0d' : '#cf1322') + ';">' + (sok ? '✓' : '✗') + ' ' + esc(s.label) + '</span>'
+            + '<span style="color:#8c8c8c;font-size:12px;">' + esc(s.ms) + ' ms</span></div>'
+            + '<div style="color:#595959;margin-top:4px;font-size:12px;">' + esc(s.detail) + '</div></div>';
+    });
+    if (d.log) {
+        html += '<details style="margin-top:10px;"><summary style="cursor:pointer;color:#1677ff;font-size:12px;">展开 SMTP 协议日志</summary>'
+            + '<pre style="background:#141414;color:#d9d9d9;padding:10px;border-radius:4px;overflow:auto;max-height:260px;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-all;">' + esc(d.log) + '</pre></details>';
+    }
+    return html;
+}
 function runTest() {
     var id = document.getElementById('testId').value;
     var to = document.getElementById('testTo').value.trim();
     var result = document.getElementById('testResult');
     var btn = document.getElementById('testSubmit');
     if (!to) { alert('请填写测试收件人邮箱'); return; }
-    result.textContent = '正在发送测试邮件，请稍候...'; result.style.color = '#faad14'; btn.disabled = true;
+    result.innerHTML = '<span style="color:#faad14;">正在诊断（DNS → 连接 → SMTP 发信），请稍候...</span>'; btn.disabled = true;
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/admin/mail_grant/test', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -172,9 +196,17 @@ function runTest() {
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4) {
             btn.disabled = false;
-            var res; try { res = JSON.parse(xhr.responseText); } catch(e) { result.textContent = '响应解析失败'; result.style.color = '#ff4d4f'; return; }
-            if (res.code == 0) { result.textContent = '测试邮件已发送，请检查收件箱（含垃圾箱）。'; result.style.color = '#52c41a'; }
-            else { result.textContent = res.echo; result.style.color = '#ff4d4f'; }
+            var res;
+            try { res = JSON.parse(xhr.responseText); }
+            catch(e) {
+                result.innerHTML = '<div style="color:#cf1322;">响应解析失败（HTTP ' + xhr.status + '）：<pre style="white-space:pre-wrap;word-break:break-all;font-size:11px;">' + esc(xhr.responseText ? xhr.responseText.substring(0, 1000) : '(空响应)') + '</pre></div>';
+                return;
+            }
+            if (res.code == 0 && res.data && res.data.stages) {
+                result.innerHTML = renderDiag(res.data);
+            } else {
+                result.innerHTML = '<div style="color:#cf1322;">请求失败：' + esc(res.echo || ('code=' + res.code)) + '</div>';
+            }
         }
     };
     xhr.send('project_id=' + id + '&to=' + encodeURIComponent(to));
