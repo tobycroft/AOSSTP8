@@ -73,6 +73,7 @@ class V3Project extends CommonController
                 'rate_limit' => (int)($item['rate_limit'] ?? 0),
                 'oss_token' => (string)($item['oss_token'] ?? ''),
                 'storage_name' => $this->storageName((string)($item['oss_token'] ?? '')),
+                'storage_invalid' => $this->storageInvalid((string)($item['oss_token'] ?? '')),
                 'status' => $item['status'],
             ];
         }
@@ -89,11 +90,13 @@ class V3Project extends CommonController
     /**
      * 可选存储项目列表（供后台 oss_token 下拉框使用）
      *
-     * 只返回启用中的 ao_oss 项目；token 即需要写入 v3 项目 oss_token 的值。
+     * 只返回启用中、且类型可用的 ao_oss 项目（与 assertStorage 校验保持一致），
+     * 避免下拉里出现「选了却保存失败」的选项。token 即写入 v3 项目 oss_token 的值。
      */
     public function storage_options()
     {
         $rows = AdminOssModel::where('status', 1)
+            ->where('type', '<>', 'none')
             ->field('token, name, type')
             ->order('id', 'desc')
             ->select()
@@ -138,6 +141,17 @@ class V3Project extends CommonController
         }
         $row = AdminOssModel::where('token', $ossToken)->field('name')->find();
         return $row ? (string)$row['name'] : '已失效(' . $ossToken . ')';
+    }
+
+    /**
+     * 绑定的存储项目是否已失效（被删除），仅用于列表标红提示
+     */
+    private function storageInvalid(string $ossToken): bool
+    {
+        if ($ossToken === '') {
+            return false;
+        }
+        return AdminOssModel::where('token', $ossToken)->field('id')->find() === null;
     }
 
     /**
