@@ -45,7 +45,8 @@
     "qwen-php/qwen-php-client": "^1.0",
     "ext-imagick": "*",
     "tobycroft/btapi": "^1.2",
-    "topthink/think-view": "^2.0"
+    "topthink/think-view": "^2.0",
+    "phpmailer/phpmailer": "^7.2"
   },
   "require-dev": {
     "symfony/var-dumper": ">=4.2",
