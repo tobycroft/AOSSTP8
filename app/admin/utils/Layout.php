@@ -78,10 +78,13 @@ class Layout
                 'sms_log' => ['label' => '发送日志', 'url' => '/admin/sms_log'],
             ],
         ],
-        // 项目管理 v3：由原 v3 二级分组提升为一级链接（link 型，无子项）
+        // V3 开放平台：项目凭证与存储配置各自独立维护
         'v3' => [
-            'title' => '项目管理 v3',
-            'link' => '/admin/v3_project',
+            'title' => 'V3 开放平台',
+            'items' => [
+                'v3_project' => ['label' => '项目管理 v3', 'url' => '/admin/v3_project'],
+                'v3_storage' => ['label' => '存储管理 v3', 'url' => '/admin/v3_storage'],
+            ],
         ],
         // AI 管理：目录顺序紧跟「项目管理 v3」
         'ai' => [

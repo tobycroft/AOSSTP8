@@ -2,22 +2,21 @@
 
 namespace app\admin\controller;
 
-use app\admin\model\AdminOssModel;
 use app\admin\model\AdminV3ProjectModel;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
-use app\v3\common\UploadFolder;
 use Aoss\Envelope;
 use BaseController\CommonController;
 use Input;
 use Ret;
 
 /**
- * 项目管理 v3：ao_v3_project 后台维护
+ * 项目管理 v3：ao_v3_project 后台维护（只维护鉴权信息）
  *
  * v3 项目为应用无关的通用凭证（secret + 信封鉴权），
- * 一个项目可使用 v3 下所有应用。AI key 使用权（agnes 授权）、
- * 对外模型名等 AI 配置在「AI 管理 → AI 授权」维护，AI 的归 AI。
+ * 一个项目可使用 v3 下所有应用。应用配置各自独立维护：
+ *   - AI key 使用权（agnes 授权）、对外模型名 →「AI 管理 → AI 授权」；
+ *   - 文件上传的存储与上传文件夹 →「存储管理 v3」（一项目一存储）。
  */
 class V3Project extends CommonController
 {
@@ -72,10 +71,6 @@ class V3Project extends CommonController
                 'secret_strong' => Envelope::isStrongSecret((string)$item['secret']),
                 'kid' => Envelope::kid((string)$item['secret']),
                 'rate_limit' => (int)($item['rate_limit'] ?? 0),
-                'oss_token' => (string)($item['oss_token'] ?? ''),
-                'storage_name' => $this->storageName((string)($item['oss_token'] ?? '')),
-                'storage_invalid' => $this->storageInvalid((string)($item['oss_token'] ?? '')),
-                'upload_folder' => (string)($item['upload_folder'] ?? ''),
                 'status' => $item['status'],
             ];
         }
@@ -87,89 +82,6 @@ class V3Project extends CommonController
             'search' => $search,
             'pagination' => $pagination,
         ], '项目管理 v3', 'v3', 'v3_project');
-    }
-
-    /**
-     * 可选存储项目列表（供后台 oss_token 下拉框使用）
-     *
-     * 只返回启用中、且类型可用的 ao_oss 项目（与 assertStorage 校验保持一致），
-     * 避免下拉里出现「选了却保存失败」的选项。token 即写入 v3 项目 oss_token 的值。
-     */
-    public function storage_options()
-    {
-        $rows = AdminOssModel::where('status', 1)
-            ->where('type', '<>', 'none')
-            ->field('token, name, type')
-            ->order('id', 'desc')
-            ->select()
-            ->toArray();
-        $options = [];
-        foreach ($rows as $row) {
-            $token = (string)$row['token'];
-            if ($token === '') {
-                continue;
-            }
-            $options[] = [
-                'token' => $token,
-                'name' => (string)$row['name'],
-                'type' => (string)$row['type'],
-                'label' => $row['name'] . '（' . $row['type'] . '）',
-            ];
-        }
-        Ret::Success(0, $options);
-    }
-
-    /**
-     * 校验 oss_token 指向一个启用中的存储项目；空值允许（表示暂不绑定）
-     */
-    private function assertStorage(string $ossToken): void
-    {
-        if ($ossToken === '') {
-            return;
-        }
-        $row = AdminOssModel::where('token', $ossToken)->field('status, type')->find();
-        if (!$row || (int)$row['status'] !== 1 || (string)$row['type'] === 'none') {
-            Ret::Fail(400, null, '绑定的存储项目不存在、已停用或类型不可用');
-        }
-    }
-
-    /**
-     * 读取并校验上传文件夹配置。
-     * 空值允许（表示回退存储项目名）；非空须为安全的相对目录段（防路径穿越）。
-     */
-    private function readUploadFolder(string $method): string
-    {
-        $raw = $method === 'put'
-            ? (string)Input::Put('upload_folder', false)
-            : (string)Input::Post('upload_folder', false);
-        $folder = UploadFolder::normalize($raw);
-        if (!UploadFolder::isValid($folder)) {
-            Ret::Fail(400, null, '上传文件夹不合法：仅允许字母/数字/下划线/连字符，多级用 / 分隔，不能用 . 或 .. 或绝对路径');
-        }
-        return $folder;
-    }
-
-    /**
-     * 按 oss_token 反查存储项目名，仅用于列表展示
-     */
-    private function storageName(string $ossToken): string
-    {
-        if ($ossToken === '') {
-            return '未绑定';
-        }
-        $row = AdminOssModel::where('token', $ossToken)->field('name')->find();
-        return $row ? (string)$row['name'] : '已失效(' . $ossToken . ')';
-    }
-
-    /**
-     * 绑定的存储项目是否已失效（被删除），仅用于列表标红提示
-     */
-    private function storageInvalid(string $ossToken): bool
-    {
-        if ($ossToken === '') {
-            return false;
-        }
-        return AdminOssModel::where('token', $ossToken)->field('id')->find() === null;
     }
 
     /**
@@ -195,15 +107,10 @@ class V3Project extends CommonController
 
         // 凭证由服务端签发，不接受人工输入：secret 的熵直接决定信封机密性上限
         $secret = Envelope::randomSecret();
-        $ossToken = trim((string)Input::Put('oss_token', false));
-        $this->assertStorage($ossToken);
-        $uploadFolder = $this->readUploadFolder('put');
 
         $data = [
             'name' => $name,
             'secret' => $secret,
-            'oss_token' => $ossToken,
-            'upload_folder' => $uploadFolder,
             'rate_limit' => Input::PutInt('rate_limit', 0),
             'status' => Input::PutInt('status', 1),
         ];
@@ -257,14 +164,6 @@ class V3Project extends CommonController
         if (request()->has('name', 'post')) $data['name'] = Input::Post('name');
         if (request()->has('rate_limit', 'post')) {
             $data['rate_limit'] = Input::PostInt('rate_limit', 0);
-        }
-        if (request()->has('oss_token', 'post')) {
-            $ossToken = trim((string)Input::Post('oss_token', false));
-            $this->assertStorage($ossToken);
-            $data['oss_token'] = $ossToken;
-        }
-        if (request()->has('upload_folder', 'post')) {
-            $data['upload_folder'] = $this->readUploadFolder('post');
         }
         if (request()->has('status', 'post')) $data['status'] = Input::PostInt('status');
 

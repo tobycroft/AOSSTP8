@@ -11,7 +11,7 @@
     </div>
 </div>
 <div class="card">
-    <p>v3 项目为通用凭证：一个项目（Secret）可使用 v3 下所有应用（AI、Excel、文件上传等），采用信封鉴权（请求只传 kid 与密文，Secret 永不明文传输）。AI key 的分配与对外模型名等 AI 配置在「AI 管理 → AI 授权」维护。<b>「绑定存储」+「上传文件夹」共同决定 v3 文件上传的落盘位置</b>：项目需绑定一个启用中的存储项目，否则 v3/file 接口返回 403；「上传文件夹」可指定落到 upload/ 下的哪个目录（留空则用存储项目名），local 存本站、OSS 传远程。</p>
+    <p>v3 项目只维护<b>鉴权信息</b>：一个项目（Secret）可使用 v3 下所有应用（AI、Excel、文件上传等），采用信封鉴权（请求只传 kid 与密文，Secret 永不明文传输）。AI key 的分配与对外模型名在「AI 管理 → AI 授权」维护；<b>v3 文件上传的存储配置在「存储管理 v3」独立维护</b>（一项目一存储，含上传文件夹），与「存储管理 → 存储项目」（V1/V2 的 ao_oss）无关。</p>
 </div>
 <table>
     <thead>
@@ -19,8 +19,6 @@
             <th>ID</th>
             <th>项目名称</th>
             <th>限流(次/60秒)</th>
-            <th>绑定存储（v3 文件上传）</th>
-            <th>上传文件夹</th>
             <th>Secret（v3 凭证）</th>
             <th>kid</th>
             <th>状态</th>
@@ -33,8 +31,6 @@
             <td>{$item.id}</td>
             <td>{$item.name}</td>
             <td>{if $item.rate_limit > 0}<span style="color:#fa541c;">{$item.rate_limit}</span>{else/}<span style="color:#8c8c8c;">不限</span>{/if}</td>
-            <td>{if $item.oss_token == ''}<span style="color:#8c8c8c;">未绑定</span>{elseif $item.storage_invalid}<span style="color:#fa541c;">{$item.storage_name}</span>{else/}<span style="color:#1677ff;">{$item.storage_name}</span>{/if}</td>
-            <td>{if $item.upload_folder == ''}<span style="color:#8c8c8c;">默认(存储项目名)</span>{else/}<span style="font-family:monospace;font-size:12px;color:#1677ff;">{$item.upload_folder}</span>{/if}</td>
             <td style="white-space:nowrap;">
                 <span style="font-family:monospace;font-size:12px;{if !$item.secret_strong}color:#fa541c;{/if}" title="{$item.secret}">{$item.secret_mask}</span>
                 <button class="btn btn-sm" style="background:#595959;color:#fff;margin-left:4px;padding:2px 8px;font-size:12px;" onclick="copySecret('{$item.secret}')">复制</button>
@@ -42,7 +38,7 @@
             <td style="font-family:monospace;font-size:12px;color:#8c8c8c;">{$item.kid}</td>
             <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
             <td>
-                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', {$item.rate_limit}, {$item.status}, '{$item.oss_token|addslashes}', '{$item.upload_folder|addslashes}')">编辑</button>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', {$item.rate_limit}, {$item.status})">编辑</button>
                 <button class="btn btn-sm" style="background:#fa8c16;color:#fff;margin-right:4px;" onclick="doResetSecret({$item.id})">重置Secret</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
@@ -63,16 +59,6 @@
             <label>接口限流（次 / 60 秒）</label>
             <input type="number" id="formRateLimit" min="0" step="1" placeholder="0" maxlength="10">
             <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">每个项目每 60 秒内允许的请求次数（v3 各应用独立计数）；0 或留空表示不限速。超限返回 429 并带 Retry-After。</div>
-        </div>
-        <div class="form-group">
-            <label>绑定存储项目（v3 文件上传落盘位置）</label>
-            <select id="formOssToken"><option value="">-- 不绑定（不支持 v3 文件上传） --</option></select>
-            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">v3/file 上传接口按此存储的 size/ext/ OSS 配置落盘；仅列出启用中的存储项目。未绑定时调用上传接口返回 403。存储项目在「存储管理 → 存储项目」维护。</div>
-        </div>
-        <div class="form-group">
-            <label>上传文件夹（相对 upload/）</label>
-            <input type="text" id="formUploadFolder" placeholder="例如 product 或 site-a/2026" autocomplete="off">
-            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">文件将存到 <code>upload/文件夹/YYYYMMDD/md5.ext</code>（local 存本站，OSS 传远程）。留空则用「绑定存储项目」的名称作文件夹。仅允许字母、数字、下划线、连字符，多级用 <code>/</code> 分隔。</div>
         </div>
         <div class="form-group" id="secretNote" style="display:none;">
             <label>v3 凭证（Secret）</label>
@@ -97,31 +83,6 @@
 {block name="script"}
 {literal}
 <script>
-// 加载可绑定的存储项目下拉选项（storage_options 只返回启用中的 ao_oss 项目）
-var storageOptionsLoaded = false;
-function loadStorageOptions(cb) {
-    var sel = document.getElementById('formOssToken');
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', '/admin/v3_project/storage_options', true);
-    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState != 4) return;
-        var res; try { res = JSON.parse(xhr.responseText); } catch(e) { res = null; }
-        var opts = (res && res.code == 0 && Array.isArray(res.data)) ? res.data : [];
-        sel.innerHTML = '<option value="">-- 不绑定（不支持 v3 文件上传） --</option>';
-        opts.forEach(function(o) {
-            var el = document.createElement('option');
-            el.value = o.token;
-            el.textContent = o.label;
-            sel.appendChild(el);
-        });
-        storageOptionsLoaded = true;
-        if (typeof cb === 'function') cb();
-    };
-    xhr.send();
-}
-// 首次进入页面就预加载，保证列表编辑按钮点开时选项已就绪
-loadStorageOptions();
 function doSearch() {
     var search = document.getElementById('searchInput').value;
     var url = '/admin/v3_project?page=1';
@@ -143,37 +104,21 @@ function copySecret(secret) {
 function closeModal() {
     document.getElementById('v3Modal').classList.remove('show');
 }
-function applyOssToken(token) {
-    var sel = document.getElementById('formOssToken');
-    // 若选项尚未加载完成，等加载好再回显
-    if (!storageOptionsLoaded) { loadStorageOptions(function() { sel.value = token || ''; }); return; }
-    sel.value = token || '';
-    // 绑定的存储若已失效（不在启用列表里），补一个只读选项以便管理员看到并纠正
-    if (token && sel.value !== token) {
-        var el = document.createElement('option');
-        el.value = token; el.textContent = '已失效的存储项目（' + token + '）';
-        sel.appendChild(el); sel.value = token;
-    }
-}
 function openCreate() {
     document.getElementById('modalTitle').textContent = '新增项目';
     document.getElementById('editId').value = '';
     document.getElementById('formName').value = '';
     document.getElementById('formRateLimit').value = '0';
     document.getElementById('formStatus').value = '1';
-    document.getElementById('formUploadFolder').value = '';
-    applyOssToken('');
     document.getElementById('secretNote').style.display = '';
     document.getElementById('v3Modal').classList.add('show');
 }
-function openEdit(id, name, rateLimit, status, ossToken, uploadFolder) {
+function openEdit(id, name, rateLimit, status) {
     document.getElementById('modalTitle').textContent = '编辑项目';
     document.getElementById('editId').value = id;
     document.getElementById('formName').value = name;
     document.getElementById('formRateLimit').value = rateLimit;
     document.getElementById('formStatus').value = status;
-    document.getElementById('formUploadFolder').value = uploadFolder || '';
-    applyOssToken(ossToken);
     document.getElementById('secretNote').style.display = 'none';
     document.getElementById('v3Modal').classList.add('show');
 }
@@ -181,14 +126,8 @@ function submitForm() {
     var id = document.getElementById('editId').value;
     var name = document.getElementById('formName').value;
     var rateLimit = document.getElementById('formRateLimit').value;
-    var ossToken = document.getElementById('formOssToken').value;
-    var uploadFolder = document.getElementById('formUploadFolder').value.trim();
     var status = document.getElementById('formStatus').value;
     if (!name) { alert('项目名称不能为空'); return; }
-    if (uploadFolder && !/^[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*$/.test(uploadFolder)) {
-        alert('上传文件夹不合法：仅允许字母/数字/下划线/连字符，多级用 / 分隔，不能用 . 或 .. 或绝对路径');
-        return;
-    }
     var xhr = new XMLHttpRequest();
     var method = id ? 'POST' : 'PUT';
     xhr.open(method, '/admin/v3_project', true);
@@ -208,7 +147,7 @@ function submitForm() {
             }
         }
     };
-    var params = 'name=' + encodeURIComponent(name) + '&rate_limit=' + rateLimit + '&oss_token=' + encodeURIComponent(ossToken) + '&upload_folder=' + encodeURIComponent(uploadFolder) + '&status=' + status;
+    var params = 'name=' + encodeURIComponent(name) + '&rate_limit=' + rateLimit + '&status=' + status;
     if (id) params += '&id=' + id;
     xhr.send(params);
 }

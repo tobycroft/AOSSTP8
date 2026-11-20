@@ -1,0 +1,244 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>存储管理 v3</h2>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索存储名称" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 240px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
+            <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
+        </div>
+        <button class="btn btn-primary" onclick="openCreate()">新增存储</button>
+    </div>
+</div>
+<div class="card">
+    <p>V3 文件上传的存储在<b>这里独立维护</b>，与「存储管理 → 存储项目」（V1/V2 的 ao_oss）无关。<b>一个 V3 项目对应一个存储</b>：在存储项里选择所属项目；「上传文件夹」也在此配置，文件落到 <code>upload/文件夹/YYYYMMDD/md5.ext</code>，留空则用存储名称作文件夹。<code>local</code> 存本站、<code>oss</code> 传远程，存储类型逻辑完全复用 V1。项目凭证在「项目管理 v3」维护。</p>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>所属项目</th>
+            <th>存储名称</th>
+            <th>类型</th>
+            <th>上传文件夹</th>
+            <th>访问域名</th>
+            <th>存储标识</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td>{$item.project_name}</td>
+            <td>{$item.name}</td>
+            <td><span style="font-family:monospace;font-size:12px;">{$item.type}{if $item.main_type != 'local'} / {$item.main_type}{/if}</span></td>
+            <td>{if $item.upload_folder == ''}<span style="color:#8c8c8c;">默认(存储名称)</span>{else/}<span style="font-family:monospace;font-size:12px;color:#1677ff;">{$item.upload_folder}</span>{/if}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.url}">{$item.url}</td>
+            <td style="font-family:monospace;font-size:11px;color:#8c8c8c;" title="{$item.token}">{$item.token_short}</td>
+            <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
+            <td>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, {$item.project_id}, '{$item.name|addslashes}', '{$item.type|addslashes}', '{$item.main_type|addslashes}', '{$item.code|addslashes}', '{$item.oss_type|addslashes}', '{$item.oss_tag|addslashes}', '{$item.url|addslashes}', '{$item.ext|addslashes}', {$item.size}, '{$item.upload_folder|addslashes}', {$item.status})">编辑</button>
+                <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
+            </td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination|raw}
+<div class="modal" id="v3StorageModal">
+    <div class="modal-box" style="max-height:90vh;overflow-y:auto;">
+        <h3 id="modalTitle">新增存储</h3>
+        <input type="hidden" id="editId" value="">
+        <div class="form-group">
+            <label>所属 V3 项目</label>
+            <select id="formProjectId"></select>
+            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">一个项目对应一个存储；已绑定存储的项目不会再出现在下拉里。项目凭证在「项目管理 v3」创建。</div>
+        </div>
+        <div class="form-group">
+            <label>存储名称</label>
+            <input type="text" id="formName" placeholder="例如 v3-files">
+            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">上传文件夹留空时，用此名称作落盘文件夹。</div>
+        </div>
+        <div class="form-group">
+            <label>存储类型</label>
+            <select id="formType">
+                <option value="local">local（存本站 upload/）</option>
+                <option value="oss">oss（传远程阿里云 OSS）</option>
+                <option value="all">all（本站 + OSS 双写）</option>
+                <option value="remote">remote（仅远程）</option>
+                <option value="none">none（不可用）</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>主存储（main_type）</label>
+            <select id="formMainType">
+                <option value="local">local</option>
+                <option value="oss">oss</option>
+            </select>
+            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">all 双写时，返回的地址取主存储。</div>
+        </div>
+        <div class="form-group" id="ossGroup">
+            <label>OSS 配置</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <input type="text" id="formOssType" placeholder="oss_type: aliyun/none" style="flex:1;min-width:140px;">
+                <input type="text" id="formOssTag" placeholder="oss_tag: 密钥标签" style="flex:1;min-width:140px;">
+            </div>
+            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">oss 类型时填写：oss_type 通常为 <code>aliyun</code>，oss_tag 对应「存储管理 → 阿里云OSS」里的标签（accesskey/endpoint/bucket 从那里读）。</div>
+        </div>
+        <div class="form-group">
+            <label>访问域名（url）</label>
+            <input type="text" id="formUrl" placeholder="https://image.example.com">
+            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">返回完整地址时用的前缀；留空则返回相对路径。</div>
+        </div>
+        <div class="form-group">
+            <label>上传文件夹（相对 upload/）</label>
+            <input type="text" id="formUploadFolder" placeholder="例如 product 或 site-a/2026" autocomplete="off">
+            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">文件将存到 <code>upload/文件夹/YYYYMMDD/md5.ext</code>。留空则用「存储名称」作文件夹。仅允许字母、数字、下划线、连字符，多级用 <code>/</code> 分隔。</div>
+        </div>
+        <div class="form-group" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:180px;">
+                <label>允许的后缀（ext）</label>
+                <input type="text" id="formExt" placeholder="jpg,png,gif,bmp,jpeg">
+            </div>
+            <div style="width:140px;">
+                <label>大小上限（KB）</label>
+                <input type="number" id="formSize" min="1" step="1" value="16384">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>备注编码（code）</label>
+            <input type="text" id="formCode" placeholder="可留空">
+        </div>
+        <div class="form-group">
+            <label>状态</label>
+            <select id="formStatus">
+                <option value="1">启用</option>
+                <option value="0">禁用</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn btn-primary" id="modalSubmit" onclick="submitForm()">确定</button>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{literal}
+<script>
+var projects = {foreach $projects as $p}{id:{$p.id}, name:'{$p.name|addslashes}', bound:{$p.bound}}{if !$p@last},{/if}{/foreach};
+function doSearch() {
+    var search = document.getElementById('searchInput').value;
+    var url = '/admin/v3_storage?page=1';
+    if (search) url += '&search=' + encodeURIComponent(search);
+    window.location.href = url;
+}
+function closeModal() { document.getElementById('v3StorageModal').classList.remove('show'); }
+function fillProjects(selectedId) {
+    var sel = document.getElementById('formProjectId');
+    sel.innerHTML = '';
+    var has = false;
+    projects.forEach(function(p) {
+        // 新增时排除已绑定项目；编辑时保留当前选中项
+        if (p.bound && p.id != selectedId) return;
+        var el = document.createElement('option');
+        el.value = p.id; el.textContent = p.name + ' (#' + p.id + ')';
+        sel.appendChild(el); has = true;
+    });
+    if (!has) {
+        var el = document.createElement('option');
+        el.value = ''; el.textContent = '-- 暂无可绑定的项目（请先在项目管理 v3 创建） --';
+        sel.appendChild(el);
+    }
+    if (selectedId) sel.value = selectedId;
+}
+function openCreate() {
+    document.getElementById('modalTitle').textContent = '新增存储';
+    document.getElementById('editId').value = '';
+    fillProjects('');
+    document.getElementById('formName').value = '';
+    document.getElementById('formType').value = 'local';
+    document.getElementById('formMainType').value = 'local';
+    document.getElementById('formOssType').value = '';
+    document.getElementById('formOssTag').value = 'default';
+    document.getElementById('formUrl').value = '';
+    document.getElementById('formUploadFolder').value = '';
+    document.getElementById('formExt').value = 'jpg,png,gif,bmp,jpeg';
+    document.getElementById('formSize').value = '16384';
+    document.getElementById('formCode').value = '';
+    document.getElementById('formStatus').value = '1';
+    document.getElementById('v3StorageModal').classList.add('show');
+}
+function openEdit(id, projectId, name, type, mainType, code, ossType, ossTag, url, ext, size, uploadFolder, status) {
+    document.getElementById('modalTitle').textContent = '编辑存储';
+    document.getElementById('editId').value = id;
+    fillProjects(projectId);
+    document.getElementById('formName').value = name;
+    document.getElementById('formType').value = type;
+    document.getElementById('formMainType').value = mainType;
+    document.getElementById('formOssType').value = ossType;
+    document.getElementById('formOssTag').value = ossTag;
+    document.getElementById('formUrl').value = url;
+    document.getElementById('formUploadFolder').value = uploadFolder || '';
+    document.getElementById('formExt').value = ext;
+    document.getElementById('formSize').value = size;
+    document.getElementById('formCode').value = code;
+    document.getElementById('formStatus').value = status;
+    document.getElementById('v3StorageModal').classList.add('show');
+}
+function submitForm() {
+    var id = document.getElementById('editId').value;
+    var projectId = document.getElementById('formProjectId').value;
+    var name = document.getElementById('formName').value;
+    var type = document.getElementById('formType').value;
+    var uploadFolder = document.getElementById('formUploadFolder').value.trim();
+    if (!projectId) { alert('请选择所属项目'); return; }
+    if (!name) { alert('存储名称不能为空'); return; }
+    if (uploadFolder && !/^[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*$/.test(uploadFolder)) {
+        alert('上传文件夹不合法：仅允许字母/数字/下划线/连字符，多级用 / 分隔');
+        return;
+    }
+    var params = 'project_id=' + projectId
+        + '&name=' + encodeURIComponent(name)
+        + '&type=' + encodeURIComponent(type)
+        + '&main_type=' + encodeURIComponent(document.getElementById('formMainType').value)
+        + '&code=' + encodeURIComponent(document.getElementById('formCode').value)
+        + '&oss_type=' + encodeURIComponent(document.getElementById('formOssType').value)
+        + '&oss_tag=' + encodeURIComponent(document.getElementById('formOssTag').value)
+        + '&url=' + encodeURIComponent(document.getElementById('formUrl').value)
+        + '&ext=' + encodeURIComponent(document.getElementById('formExt').value)
+        + '&size=' + document.getElementById('formSize').value
+        + '&upload_folder=' + encodeURIComponent(uploadFolder)
+        + '&status=' + document.getElementById('formStatus').value;
+    if (id) params += '&id=' + id;
+    var xhr = new XMLHttpRequest();
+    xhr.open(id ? 'POST' : 'PUT', '/admin/v3_storage', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res; try { res = JSON.parse(xhr.responseText); } catch(e) { alert('响应解析失败'); return; }
+            if (res.code == 0) location.reload(); else alert(res.echo);
+        }
+    };
+    xhr.send(params);
+}
+function doDelete(id) {
+    if (!confirm('确定删除该存储配置吗？删除后该项目的 v3 上传接口将返回未配置。')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/v3_storage', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.code == 0) location.reload(); else alert(res.echo);
+        }
+    };
+    xhr.send('id=' + id);
+}
+</script>
+{/literal}
+{/block}

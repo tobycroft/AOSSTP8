@@ -107,10 +107,12 @@
     \think\facade\Route::any('admin/v3_grant/grants', '\app\admin\controller\V3Grant@grants');
     \think\facade\Route::any('admin/v3_grant', '\app\admin\controller\V3Grant@index');
 
-    // v3 项目管理（v3 开放接口通用凭证；AI 授权等配置在 AI 授权页维护）
+    // v3 项目管理（只维护鉴权信息；AI 授权、存储配置在各自独立 menu 维护）
     \think\facade\Route::any('admin/v3_project/resetSecret', '\app\admin\controller\V3Project@resetSecret');
-    \think\facade\Route::any('admin/v3_project/storage_options', '\app\admin\controller\V3Project@storage_options');
     \think\facade\Route::any('admin/v3_project', '\app\admin\controller\V3Project@index');
+
+    // v3 存储管理（独立 menu；一项目一存储，与 ao_oss 无关）
+    \think\facade\Route::any('admin/v3_storage', '\app\admin\controller\V3Storage@index');
 
     // 邮件管理（供 v3 邮件接口使用：服务器配置 → 项目授权 → 内容模板 → 发送日志）
     \think\facade\Route::any('admin/mail_server/test', '\app\admin\controller\MailServer@test');

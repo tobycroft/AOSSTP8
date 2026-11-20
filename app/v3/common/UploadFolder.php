@@ -5,8 +5,9 @@ namespace app\v3\common;
 /**
  * V3 上传文件夹名的规范化与校验
  *
- * upload_folder 由后台为 V3 项目配置，最终会拼进 ./upload/{folder}/YYYYMMDD/md5.ext
- * 的相对路径里，因此必须约束为「安全的相对目录段」，防止路径穿越到 upload/ 之外。
+ * upload_folder 由后台在「存储管理 v3」的存储项里配置，最终会拼进
+ * ./upload/{folder}/YYYYMMDD/md5.ext 的相对路径里，因此必须约束为
+ * 「安全的相对目录段」，防止路径穿越到 upload/ 之外。
  *
  * 允许：字母、数字、下划线、连字符；多级用 / 分隔，如 a/b/c、site-2026。
  * 禁止：空段、. / ..、绝对路径、反斜杠、冒号及任何其它特殊字符。
