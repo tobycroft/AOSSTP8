@@ -1,12 +1,337 @@
 {extend name="layout/base" /}
 {block name="content"}
-<div class="welcome">欢迎回来，{$nickname}</div>
-<div class="card">
-    <h3>个人信息</h3>
-    <div class="info-row"><span class="label">用户名</span><span class="value">{$user.username}</span></div>
-    <div class="info-row"><span class="label">昵称</span><span class="value">{$user.nickname}</span></div>
-    <div class="info-row"><span class="label">邮箱</span><span class="value">{$user.email}</span></div>
-    <div class="info-row"><span class="label">手机</span><span class="value">{$user.phone}</span></div>
-    <div class="info-row"><span class="label">超级管理员</span><span class="value">{$user.is_super_text}</span></div>
+<style>
+.dash-wrap { max-width: 1400px; }
+.dash-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; gap: 8px; }
+.dash-head .welcome { margin-bottom: 4px; }
+.dash-head .meta { color: #999; font-size: 13px; }
+.dash-section-title { font-size: 15px; font-weight: 600; color: #333; margin: 24px 0 12px; padding-left: 10px; border-left: 3px solid #1677ff; }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+.kpi-card { position: relative; background: #fff; border-radius: 10px; padding: 18px 18px 16px; box-shadow: 0 1px 6px rgba(0,0,0,.05); overflow: hidden; }
+.kpi-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--tone, #1677ff); }
+.kpi-card .k-label { color: #888; font-size: 13px; margin-bottom: 8px; }
+.kpi-card .k-value { color: #1f1f1f; font-size: 28px; font-weight: 600; line-height: 1.1; }
+.kpi-card .k-value .k-unit { font-size: 12px; font-weight: 400; color: #999; margin-left: 4px; }
+.kpi-card .k-sub { color: #aaa; font-size: 12px; margin-top: 8px; }
+
+.chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(430px, 1fr)); gap: 16px; }
+.chart-card { background: #fff; border-radius: 10px; padding: 18px 20px; box-shadow: 0 1px 6px rgba(0,0,0,.05); min-width: 0; }
+.chart-card h3 { font-size: 15px; color: #333; margin-bottom: 4px; font-weight: 600; }
+.chart-card .chart-sub { font-size: 12px; color: #aaa; margin-bottom: 12px; }
+.chart-card svg { width: 100%; height: auto; display: block; }
+
+.donut-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.donut-row .donut-svg { width: 150px; height: 150px; flex: 0 0 150px; }
+.legend { flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 7px; }
+.legend-item { display: flex; align-items: center; font-size: 12px; color: #555; }
+.legend-item .dot { width: 9px; height: 9px; border-radius: 2px; margin-right: 8px; flex: 0 0 9px; }
+.legend-item .lg-name { flex: 1; }
+.legend-item .lg-val { color: #333; font-weight: 600; margin-left: 6px; }
+.legend-item .lg-pct { color: #aaa; margin-left: 8px; width: 40px; text-align: right; }
+
+.hbar { display: flex; flex-direction: column; gap: 10px; }
+.hbar-item { display: flex; align-items: center; font-size: 12px; color: #555; }
+.hbar-item .hb-name { width: 76px; flex: 0 0 76px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hbar-item .hb-track { flex: 1; height: 14px; background: #f2f5fa; border-radius: 7px; overflow: hidden; margin: 0 10px; }
+.hbar-item .hb-fill { height: 100%; border-radius: 7px; min-width: 2px; transition: width .5s ease; }
+.hbar-item .hb-val { width: 56px; flex: 0 0 56px; text-align: right; color: #333; font-weight: 600; }
+
+.health-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.health-card { background: #fff; border-radius: 10px; padding: 16px 18px; box-shadow: 0 1px 6px rgba(0,0,0,.05); }
+.health-card .h-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.health-card .h-label { font-size: 13px; color: #555; }
+.health-card .h-pct { font-size: 20px; font-weight: 600; }
+.health-card .h-track { height: 8px; background: #f2f5fa; border-radius: 4px; overflow: hidden; }
+.health-card .h-fill { height: 100%; border-radius: 4px; transition: width .5s ease; }
+.health-card .h-detail { font-size: 11px; color: #aaa; margin-top: 7px; }
+
+.res-group { background: #fff; border-radius: 10px; padding: 16px 18px; box-shadow: 0 1px 6px rgba(0,0,0,.05); margin-bottom: 14px; }
+.res-group h4 { font-size: 14px; color: #333; margin-bottom: 14px; font-weight: 600; }
+.res-group h4 .res-count { font-size: 12px; color: #aaa; font-weight: 400; margin-left: 8px; }
+.res-blocks { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.res-block { background: #f7f9fc; border-radius: 8px; padding: 12px 14px; }
+.res-block .rb-label { color: #888; font-size: 12px; margin-bottom: 6px; }
+.res-block .rb-value { color: #1677ff; font-size: 20px; font-weight: 600; }
+
+.tip { position: fixed; pointer-events: none; z-index: 9999; background: rgba(32,38,51,.94); color: #fff; font-size: 12px; padding: 6px 10px; border-radius: 5px; box-shadow: 0 4px 12px rgba(0,0,0,.2); display: none; white-space: nowrap; }
+.grid-line { stroke: #eef1f6; stroke-width: 1; }
+.axis-text { fill: #aab; font-size: 10px; }
+.line-point { cursor: pointer; }
+.bar-rect { cursor: pointer; transition: opacity .15s; }
+.bar-rect:hover { opacity: .75; }
+</style>
+<div class="dash-wrap">
+    <div class="dash-head">
+        <div>
+            <div class="welcome">欢迎回来，{$nickname}</div>
+            <div class="meta">数据更新于 {$dashboard.updatedAt} · 覆盖全系统 {$user.username} 可读数据</div>
+        </div>
+    </div>
+
+    <div class="dash-section-title">核心指标</div>
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <div class="dash-section-title">趋势分析</div>
+    <div class="chart-grid">
+        <div class="chart-card">
+            <h3>证书操作趋势</h3>
+            <div class="chart-sub">近 12 个月证书下发 / 更新操作量</div>
+            <div id="chartCertTrend"></div>
+        </div>
+        <div class="chart-card">
+            <h3>Hook 调用趋势</h3>
+            <div class="chart-sub">近 12 个月 Hook 推送调用量</div>
+            <div id="chartHookTrend"></div>
+        </div>
+    </div>
+
+    <div class="dash-section-title">数据分布</div>
+    <div class="chart-grid">
+        <div class="chart-card">
+            <h3>附件类型分布</h3>
+            <div class="chart-sub">按 MIME 大类统计的附件占比</div>
+            <div id="chartAttachType"></div>
+        </div>
+        <div class="chart-card">
+            <h3>证书操作类型</h3>
+            <div class="chart-sub">按操作来源统计</div>
+            <div id="chartCertOpType"></div>
+        </div>
+        <div class="chart-card">
+            <h3>附件扩展名 TOP 8</h3>
+            <div class="chart-sub">存量大头一目了然</div>
+            <div id="chartAttachExt"></div>
+        </div>
+        <div class="chart-card">
+            <h3>证书站点类型</h3>
+            <div class="chart-sub">Web / 邮件 / 面板分布</div>
+            <div id="chartCertSiteType"></div>
+        </div>
+        <div class="chart-card">
+            <h3>微信消息类型</h3>
+            <div class="chart-sub">事件 / 文本 / 语音等</div>
+            <div id="chartWechatMsgType"></div>
+        </div>
+        <div class="chart-card">
+            <h3>DNS 解析记录类型</h3>
+            <div class="chart-sub">A / AAAA / CNAME 等</div>
+            <div id="chartDnsRecordType"></div>
+        </div>
+    </div>
+
+    <div class="dash-section-title">运行健康度</div>
+    <div class="health-grid" id="healthGrid"></div>
+
+    <div class="dash-section-title">资源总览</div>
+    <div id="resourceWrap"></div>
 </div>
+<div class="tip" id="dashTip"></div>
+{/block}
+
+{block name="script"}
+<script>var DASH = {$dashboardJson|raw};</script>
+{literal}
+<script>
+(function () {
+  'use strict';
+  var PALETTE = ['#1677ff','#13c2c2','#52c41a','#faad14','#722ed1','#ff4d4f','#eb2f96','#2f54eb','#08979c','#7cb305'];
+  var TONES = { blue:'#1677ff', cyan:'#13c2c2', purple:'#722ed1', green:'#52c41a', orange:'#fa8c16', red:'#ff4d4f' };
+  var tip = document.getElementById('dashTip');
+  var uid = 0;
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function fmt(n) { return Number(n).toLocaleString('en-US'); }
+  function showTip(e, html) { tip.innerHTML = html; tip.style.display = 'block'; moveTip(e); }
+  function moveTip(e) { tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; }
+  function hideTip() { tip.style.display = 'none'; }
+
+  // ---------- KPI 卡片 ----------
+  function renderKpi() {
+    var html = '';
+    (DASH.kpi || []).forEach(function (k) {
+      var color = TONES[k.tone] || '#1677ff';
+      html += '<div class="kpi-card" style="--tone:' + color + '">' +
+        '<div class="k-label">' + esc(k.label) + '</div>' +
+        '<div class="k-value">' + esc(k.value) + '<span class="k-unit">' + esc(k.unit) + '</span></div>' +
+        '<div class="k-sub">' + esc(k.sub) + '</div></div>';
+    });
+    document.getElementById('kpiGrid').innerHTML = html;
+  }
+
+  // ---------- 折线图（面积渐变） ----------
+  function lineChart(el, data, color) {
+    var labels = data.labels || [], values = data.values || [];
+    var W = 560, H = 230, PL = 40, PR = 14, PT = 18, PB = 34;
+    var iw = W - PL - PR, ih = H - PT - PB;
+    var max = Math.max.apply(null, values.concat([1]));
+    var niceMax = Math.ceil(max / 4) * 4 || 4;
+    var n = values.length;
+    var x = function (i) { return PL + (n <= 1 ? iw / 2 : i * iw / (n - 1)); };
+    var y = function (v) { return PT + ih - (v / niceMax) * ih; };
+    var gid = 'grad' + (++uid);
+    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">';
+    s += '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
+         '<stop offset="0%" stop-color="' + color + '" stop-opacity="0.28"/>' +
+         '<stop offset="100%" stop-color="' + color + '" stop-opacity="0"/></linearGradient></defs>';
+    for (var g = 0; g <= 4; g++) {
+      var gy = PT + ih - g * ih / 4;
+      s += '<line class="grid-line" x1="' + PL + '" y1="' + gy + '" x2="' + (W - PR) + '" y2="' + gy + '"/>';
+      s += '<text class="axis-text" x="' + (PL - 8) + '" y="' + (gy + 3) + '" text-anchor="end">' + Math.round(niceMax * g / 4) + '</text>';
+    }
+    var linePts = '', areaPts = 'M ' + x(0) + ' ' + (PT + ih);
+    for (var i = 0; i < n; i++) {
+      linePts += (i ? ' L ' : 'M ') + x(i) + ' ' + y(values[i]);
+      areaPts += ' L ' + x(i) + ' ' + y(values[i]);
+    }
+    areaPts += ' L ' + x(n - 1) + ' ' + (PT + ih) + ' Z';
+    s += '<path d="' + areaPts + '" fill="url(#' + gid + ')"/>';
+    s += '<path d="' + linePts + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+    var step = n > 8 ? Math.ceil(n / 8) : 1;
+    for (var j = 0; j < n; j++) {
+      var px = x(j), py = y(values[j]);
+      s += '<circle class="line-point" cx="' + px + '" cy="' + py + '" r="3.2" fill="#fff" stroke="' + color + '" stroke-width="2" data-i="' + j + '"/>';
+      if (j % step === 0 || j === n - 1) {
+        s += '<text class="axis-text" x="' + px + '" y="' + (H - 12) + '" text-anchor="middle">' + esc(labels[j]) + '</text>';
+      }
+    }
+    s += '</svg>';
+    el.innerHTML = s;
+    Array.prototype.forEach.call(el.querySelectorAll('.line-point'), function (c) {
+      var i = +c.getAttribute('data-i');
+      c.addEventListener('mousemove', function (e) { showTip(e, '<b>' + esc(labels[i]) + '</b>&nbsp; ' + fmt(values[i]) + ' 次'); });
+      c.addEventListener('mouseleave', hideTip);
+    });
+  }
+
+  // ---------- 纵向柱状图 ----------
+  function barChart(el, data, color) {
+    var labels = data.labels || [], values = data.values || [];
+    var W = 560, H = 220, PL = 36, PR = 12, PT = 16, PB = 40;
+    var iw = W - PL - PR, ih = H - PT - PB;
+    var max = Math.max.apply(null, values.concat([1]));
+    var niceMax = Math.ceil(max / 4) * 4 || 4;
+    var n = values.length;
+    var slot = iw / Math.max(n, 1);
+    var bw = Math.min(slot * 0.62, 46);
+    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">';
+    for (var g = 0; g <= 4; g++) {
+      var gy = PT + ih - g * ih / 4;
+      s += '<line class="grid-line" x1="' + PL + '" y1="' + gy + '" x2="' + (W - PR) + '" y2="' + gy + '"/>';
+      s += '<text class="axis-text" x="' + (PL - 8) + '" y="' + (gy + 3) + '" text-anchor="end">' + Math.round(niceMax * g / 4) + '</text>';
+    }
+    for (var i = 0; i < n; i++) {
+      var bh = (values[i] / niceMax) * ih;
+      var bx = PL + slot * i + (slot - bw) / 2;
+      var by = PT + ih - bh;
+      s += '<rect class="bar-rect" x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + bh + '" rx="3" fill="' + color + '" data-i="' + i + '"/>';
+      s += '<text class="axis-text" x="' + (bx + bw / 2) + '" y="' + (by - 5) + '" text-anchor="middle">' + fmt(values[i]) + '</text>';
+      s += '<text class="axis-text" x="' + (bx + bw / 2) + '" y="' + (H - 14) + '" text-anchor="middle">' + esc(labels[i]) + '</text>';
+    }
+    s += '</svg>';
+    el.innerHTML = s;
+    Array.prototype.forEach.call(el.querySelectorAll('.bar-rect'), function (r) {
+      var i = +r.getAttribute('data-i');
+      r.addEventListener('mousemove', function (e) { showTip(e, '<b>' + esc(labels[i]) + '</b>&nbsp; ' + fmt(values[i])); });
+      r.addEventListener('mouseleave', hideTip);
+    });
+  }
+
+  // ---------- 环形图 + 图例 ----------
+  function donutChart(el, data) {
+    var labels = data.labels || [], values = data.values || [];
+    var total = values.reduce(function (a, b) { return a + b; }, 0);
+    var R = 56, C = 2 * Math.PI * R, cx = 75, cy = 75;
+    var s = '<svg class="donut-svg" viewBox="0 0 150 150">';
+    s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '" fill="none" stroke="#f2f5fa" stroke-width="18"/>';
+    var acc = 0;
+    for (var i = 0; i < values.length; i++) {
+      var frac = total ? values[i] / total : 0;
+      var len = frac * C;
+      var color = PALETTE[i % PALETTE.length];
+      s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '" fill="none" stroke="' + color + '" stroke-width="18" ' +
+           'stroke-dasharray="' + len + ' ' + (C - len) + '" stroke-dashoffset="' + (-acc) + '" ' +
+           'transform="rotate(-90 ' + cx + ' ' + cy + ')" data-i="' + i + '" class="line-point"/>';
+      acc += len;
+    }
+    s += '<text x="' + cx + '" y="' + (cy - 2) + '" text-anchor="middle" font-size="18" font-weight="600" fill="#1f1f1f">' + fmt(total) + '</text>';
+    s += '<text x="' + cx + '" y="' + (cy + 14) + '" text-anchor="middle" font-size="10" fill="#aaa">总计</text>';
+    s += '</svg>';
+    var lg = '<div class="legend">';
+    for (var k = 0; k < labels.length; k++) {
+      var pct = total ? (values[k] / total * 100).toFixed(1) : '0.0';
+      lg += '<div class="legend-item"><span class="dot" style="background:' + PALETTE[k % PALETTE.length] + '"></span>' +
+            '<span class="lg-name">' + esc(labels[k]) + '</span>' +
+            '<span class="lg-val">' + fmt(values[k]) + '</span>' +
+            '<span class="lg-pct">' + pct + '%</span></div>';
+    }
+    lg += '</div>';
+    el.innerHTML = '<div class="donut-row">' + s + lg + '</div>';
+    Array.prototype.forEach.call(el.querySelectorAll('circle[data-i]'), function (c) {
+      var i = +c.getAttribute('data-i');
+      var pct = total ? (values[i] / total * 100).toFixed(1) : '0.0';
+      c.addEventListener('mousemove', function (e) { showTip(e, '<b>' + esc(labels[i]) + '</b>&nbsp; ' + fmt(values[i]) + ' (' + pct + '%)'); });
+      c.addEventListener('mouseleave', hideTip);
+    });
+  }
+
+  // ---------- 横向条形图 ----------
+  function hbarChart(el, data) {
+    var labels = data.labels || [], values = data.values || [];
+    var max = Math.max.apply(null, values.concat([1]));
+    var html = '<div class="hbar">';
+    for (var i = 0; i < labels.length; i++) {
+      var w = (values[i] / max * 100).toFixed(1);
+      html += '<div class="hbar-item"><span class="hb-name" title="' + esc(labels[i]) + '">' + esc(labels[i]) + '</span>' +
+              '<span class="hb-track"><span class="hb-fill" style="width:' + w + '%;background:' + PALETTE[i % PALETTE.length] + '"></span></span>' +
+              '<span class="hb-val">' + fmt(values[i]) + '</span></div>';
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  }
+
+  // ---------- 健康度 ----------
+  function renderHealth() {
+    var html = '';
+    (DASH.health || []).forEach(function (h) {
+      var p = Number(h.value) || 0;
+      var color = p >= 95 ? '#52c41a' : p >= 80 ? '#1677ff' : p >= 60 ? '#faad14' : '#ff4d4f';
+      html += '<div class="health-card">' +
+        '<div class="h-top"><span class="h-label">' + esc(h.label) + '</span>' +
+        '<span class="h-pct" style="color:' + color + '">' + p + '%</span></div>' +
+        '<div class="h-track"><div class="h-fill" style="width:' + p + '%;background:' + color + '"></div></div>' +
+        '<div class="h-detail">' + esc(h.detail || '') + '</div></div>';
+    });
+    document.getElementById('healthGrid').innerHTML = html;
+  }
+
+  // ---------- 资源总览 ----------
+  function renderResources() {
+    var html = '';
+    (DASH.resources || []).forEach(function (g) {
+      html += '<div class="res-group"><h4>' + esc(g.domain) + '<span class="res-count">' + g.rows.length + ' 项</span></h4><div class="res-blocks">';
+      g.rows.forEach(function (r) {
+        html += '<div class="res-block"><div class="rb-label">' + esc(r.label) + '</div><div class="rb-value">' + esc(r.value) + '</div></div>';
+      });
+      html += '</div></div>';
+    });
+    document.getElementById('resourceWrap').innerHTML = html;
+  }
+
+  // ---------- 启动 ----------
+  function safe(fn) { try { fn(); } catch (e) { console.error('[dashboard]', e); } }
+  safe(renderKpi);
+  safe(function () { lineChart(document.getElementById('chartCertTrend'), DASH.charts.certTrend, '#1677ff'); });
+  safe(function () { lineChart(document.getElementById('chartHookTrend'), DASH.charts.hookTrend, '#722ed1'); });
+  safe(function () { donutChart(document.getElementById('chartAttachType'), DASH.charts.attachType); });
+  safe(function () { barChart(document.getElementById('chartCertOpType'), DASH.charts.certOpType, '#13c2c2'); });
+  safe(function () { hbarChart(document.getElementById('chartAttachExt'), DASH.charts.attachExt); });
+  safe(function () { donutChart(document.getElementById('chartCertSiteType'), DASH.charts.certSiteType); });
+  safe(function () { barChart(document.getElementById('chartWechatMsgType'), DASH.charts.wechatMsgType, '#52c41a'); });
+  safe(function () { barChart(document.getElementById('chartDnsRecordType'), DASH.charts.dnsRecordType, '#faad14'); });
+  safe(renderHealth);
+  safe(renderResources);
+})();
+</script>
+{/literal}
 {/block}
