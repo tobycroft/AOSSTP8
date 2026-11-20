@@ -6,7 +6,15 @@ class Layout
 {
     public static function getMenuGroups(): array
     {
-        return self::$menuGroups;
+        $groups = self::$menuGroups;
+        // 兜底：确保所有分组都带 items 键，避免 link 型分组在模板 foreach 时
+        // 触发 Undefined array key "items"（兼容任何仍按旧结构渲染的模板）。
+        foreach ($groups as $key => $group) {
+            if (!array_key_exists('items', $group)) {
+                $groups[$key]['items'] = [];
+            }
+        }
+        return $groups;
     }
 
     private static $menuGroups = [

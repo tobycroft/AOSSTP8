@@ -109,6 +109,9 @@ tr:hover { background: #fafafa; }
 <div class="sidebar">
     <a class="menu-item {$activeItem=='console' ? 'active' : ''}" href="/admin/console">控制台</a>
     {foreach $menuGroups as $groupKey => $group}
+    {if !empty($group.link)}
+    <a class="menu-item {if $groupKey==$activeGroup || $groupKey==$activeItem}active{/if}" href="{$group.link}">{$group.title}</a>
+    {else/}
     <div class="menu-group">
         <div class="menu-group-title {$groupKey==$activeGroup ? 'open' : ''}" onclick="toggleGroup(this)">
             <span>{$group.title}</span>
@@ -120,6 +123,7 @@ tr:hover { background: #fafafa; }
             {/foreach}
         </div>
     </div>
+    {/if}
     {/foreach}
 </div>
 <div class="main">
