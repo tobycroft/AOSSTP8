@@ -4,14 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{$title|default='接口文档'} - AOSS 开放接口</title>
+<script>
+(function () {
+    var t = 'dark';
+    try {
+        var saved = localStorage.getItem('admin_theme');
+        if (saved === 'light' || saved === 'dark') t = saved;
+    } catch (e) {}
+    document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f7fa; color: #333; }
 .doc-top { position: fixed; top: 0; left: 0; right: 0; height: 56px; z-index: 100; background: #001529; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; color: #fff; }
 .doc-top .brand { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 500; }
 .doc-top .brand .badge { font-size: 11px; font-weight: 400; padding: 2px 8px; border-radius: 10px; background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.82); }
+.doc-top .actions { display: flex; align-items: center; gap: 8px; }
 .doc-top .actions a { display: inline-block; color: #fff; font-size: 13px; text-decoration: none; padding: 5px 12px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.08); transition: background 0.2s, border-color 0.2s; }
 .doc-top .actions a:hover { background: #1677ff; border-color: #1677ff; }
+.doc-top .actions .btn-theme { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border-radius: 4px; border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.08); color: #fff; font-size: 13px; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
+.doc-top .actions .btn-theme:hover { background: #1677ff; border-color: #1677ff; }
+.doc-top .actions .btn-theme svg { width: 15px; height: 15px; display: block; }
+.doc-top .icon-sun { display: none; }
+[data-theme="dark"] .doc-top .icon-moon { display: none; }
+[data-theme="dark"] .doc-top .icon-sun { display: block; }
 .doc-wrap { display: flex; gap: 22px; align-items: flex-start; max-width: 1280px; margin: 0 auto; padding: 80px 24px 40px; }
 .doc-toc { width: 216px; flex: 0 0 216px; position: sticky; top: 76px; background: #fff; border-radius: 8px; padding: 14px 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); max-height: calc(100vh - 104px); overflow-y: auto; }
 .doc-toc .toc-title { font-size: 13px; color: #999; padding: 4px 10px 10px; letter-spacing: 1px; }
@@ -58,6 +75,32 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
 .doc-grid .cell span { font-size: 12.5px; color: #6b7280; line-height: 1.75; }
 .doc-footer { text-align: center; color: #b0b4bb; font-size: 12px; padding: 4px 0 8px; }
 @media (max-width: 1180px) { .doc-toc { display: none; } .doc-wrap { display: block; padding: 76px 16px 32px; } .doc-grid { grid-template-columns: 1fr; } .doc-section { overflow-x: auto; } .doc-section table { min-width: 700px; } }
+[data-theme="dark"] { color-scheme: dark; }
+[data-theme="dark"] body { background: #0e131b; color: #d5dde8; }
+[data-theme="dark"] .doc-top { background: #0a1018; }
+[data-theme="dark"] .doc-toc, [data-theme="dark"] .doc-section { background: #171e29; box-shadow: 0 1px 8px rgba(0,0,0,0.35); }
+[data-theme="dark"] .doc-toc .toc-title, [data-theme="dark"] .doc-footer { color: #7b889a; }
+[data-theme="dark"] .doc-toc a { color: #a3afbf; }
+[data-theme="dark"] .doc-toc a:hover, [data-theme="dark"] .doc-toc a.active { background: #1b3557; color: #85a5ff; }
+[data-theme="dark"] .doc-toc a.sub { color: #8b98a9; }
+[data-theme="dark"] .doc-hero { background: linear-gradient(120deg, #0a1018 0%, #16305c 100%); }
+[data-theme="dark"] .doc-section h2, [data-theme="dark"] .doc-section h3,
+[data-theme="dark"] .doc-section strong, [data-theme="dark"] .doc-grid .cell b { color: #eef3f9; }
+[data-theme="dark"] .doc-section p, [data-theme="dark"] .doc-section li,
+[data-theme="dark"] .doc-grid .cell span { color: #a3afbf; }
+[data-theme="dark"] .doc-section table, [data-theme="dark"] .doc-grid .cell { border-color: #2b3543; }
+[data-theme="dark"] .doc-section th { background: #1d2532; color: #a3afbf; border-bottom-color: #2b3543; }
+[data-theme="dark"] .doc-section td { color: #d5dde8; border-bottom-color: #28313e; }
+[data-theme="dark"] .doc-section tr:hover td { background: #1d2532; }
+[data-theme="dark"] code.inline { background: #28313e; color: #ff85c0; }
+[data-theme="dark"] .note { background: rgba(22,119,255,0.12); color: #91caff; }
+[data-theme="dark"] .note.warn { background: rgba(250,173,20,0.12); color: #ffd666; }
+[data-theme="dark"] .note.danger { background: rgba(255,77,79,0.12); color: #ff7875; }
+[data-theme="dark"] .pill.blue { background: rgba(22,119,255,0.16); color: #91caff; }
+[data-theme="dark"] .pill.green { background: rgba(82,196,26,0.15); color: #95de64; }
+[data-theme="dark"] .pill.orange { background: rgba(250,173,20,0.15); color: #ffd666; }
+[data-theme="dark"] .pill.red { background: rgba(255,77,79,0.15); color: #ff7875; }
+[data-theme="dark"] .pill.gray { background: #28313e; color: #a3afbf; }
 </style>
 </head>
 <body>
@@ -67,6 +110,10 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
         <span class="badge">API Reference</span>
     </div>
     <div class="actions">
+        <button class="btn-theme" type="button" onclick="toggleDocTheme()" title="切换亮色 / 暗色模式" aria-label="切换亮色 / 暗色模式">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+        </button>
         <a href="/admin/console">返回后台</a>
     </div>
 </div>
@@ -510,6 +557,12 @@ $sign      = md5($projectToken . $timestamp);</pre>
 </div>
 
 <script>
+function toggleDocTheme() {
+    var root = document.documentElement;
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('admin_theme', next); } catch (e) {}
+}
 (function () {
     var toc = document.getElementById('docToc');
     if (!toc) return;
