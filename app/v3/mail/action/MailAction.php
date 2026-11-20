@@ -92,10 +92,26 @@ class MailAction
             $mailer->send();
             return (string)$mailer->getLastMessageID();
         } catch (MailException $e) {
-            throw new Exception('邮件发送失败: ' . $e->getMessage() . ' | ' . $mailer->ErrorInfo);
+            throw new Exception('邮件发送失败: ' . self::toUtf8($e->getMessage()) . ' | ' . self::toUtf8($mailer->ErrorInfo));
         } finally {
             $mailer->smtpClose();
         }
+    }
+
+    /**
+     * 将非 UTF-8 文本归一化为 UTF-8，避免非法字节进入 JSON 响应。
+     * 国内 SMTP 服务器错误信息常为 GBK 编码，直接拼接会导致 json_encode 失败。
+     */
+    private static function toUtf8(string $text): string
+    {
+        if ($text === '' || mb_check_encoding($text, 'UTF-8')) {
+            return $text;
+        }
+        // 先从常见 GBK 转；转换后仍非法则用替换符兜底，杜绝非法字节外泄
+        $converted = mb_convert_encoding($text, 'UTF-8', 'GBK');
+        return mb_check_encoding($converted, 'UTF-8')
+            ? $converted
+            : mb_convert_encoding($text, 'UTF-8', 'UTF-8');
     }
 
     /**

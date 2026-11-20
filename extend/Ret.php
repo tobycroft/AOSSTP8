@@ -56,11 +56,14 @@ class Ret
         if (!isset($data)) {
             $data = [];
         }
+        // JSON_INVALID_UTF8_SUBSTITUTE：下游文本（如 SMTP 返回的 GBK 错误消息）可能含非法
+        // UTF-8 字节，若不加此标志 json_encode 会返回 false，echo 空串导致前端 JSON.parse
+        // 报“响应解析失败”。此标志将非法字节替换为 U+FFFD，保证始终输出合法 JSON。
         echo json_encode([
             'code' => $code,
             'data' => $data,
             'echo' => $echo
-        ], 320);
+        ], 320 | JSON_INVALID_UTF8_SUBSTITUTE);
         exit(0);
     }
 
