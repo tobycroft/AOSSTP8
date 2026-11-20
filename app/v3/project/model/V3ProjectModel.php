@@ -12,6 +12,7 @@ CREATE TABLE `ao_v3_project`:
   `model_alias` varchar(64) DEFAULT '' COMMENT '对外返回的模型名别名（AI 应用），为空回退 aoss',
   `secret` varchar(64) NOT NULL DEFAULT '' COMMENT 'v3 凭证，64 位随机十六进制，同时作为信封加密密钥',
   `oss_token` varchar(100) NOT NULL DEFAULT '' COMMENT '绑定的 ao_oss.token，v3-file 上传落盘使用；空表示未绑定，上传接口返回未配置',
+  `upload_folder` varchar(100) NOT NULL DEFAULT '' COMMENT 'v3 文件上传落盘文件夹，相对 upload/；为空回退存储项目名',
   `status` tinyint(1) DEFAULT '1' COMMENT '状态',
   `date` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -22,6 +23,8 @@ AI 应用凭「授权」使用 agnes key：ao_v3_project_agnes（多对多，is_
 标记 AI 请求实际使用的 key）；后台在「AI 管理 → AI 授权」中维护。
 文件上传应用凭 oss_token 绑定一个 ao_oss 存储项目（存储配置在「存储项目」维护），
 一个项目一个存储；oss_token 为空表示未绑定，v3-file 接口返回未配置。
+upload_folder 指定落盘文件夹（相对 upload/，形如 a/b），为空时回退存储项目名 name；
+local 存本站 ./upload/，oss 传远程，存储类型逻辑完全复用 V1。
  */
 
 class V3ProjectModel extends Model

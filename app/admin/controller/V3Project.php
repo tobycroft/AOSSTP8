@@ -6,6 +6,7 @@ use app\admin\model\AdminOssModel;
 use app\admin\model\AdminV3ProjectModel;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
+use app\v3\common\UploadFolder;
 use Aoss\Envelope;
 use BaseController\CommonController;
 use Input;
@@ -74,6 +75,7 @@ class V3Project extends CommonController
                 'oss_token' => (string)($item['oss_token'] ?? ''),
                 'storage_name' => $this->storageName((string)($item['oss_token'] ?? '')),
                 'storage_invalid' => $this->storageInvalid((string)($item['oss_token'] ?? '')),
+                'upload_folder' => (string)($item['upload_folder'] ?? ''),
                 'status' => $item['status'],
             ];
         }
@@ -132,6 +134,22 @@ class V3Project extends CommonController
     }
 
     /**
+     * 读取并校验上传文件夹配置。
+     * 空值允许（表示回退存储项目名）；非空须为安全的相对目录段（防路径穿越）。
+     */
+    private function readUploadFolder(string $method): string
+    {
+        $raw = $method === 'put'
+            ? (string)Input::Put('upload_folder', false)
+            : (string)Input::Post('upload_folder', false);
+        $folder = UploadFolder::normalize($raw);
+        if (!UploadFolder::isValid($folder)) {
+            Ret::Fail(400, null, '上传文件夹不合法：仅允许字母/数字/下划线/连字符，多级用 / 分隔，不能用 . 或 .. 或绝对路径');
+        }
+        return $folder;
+    }
+
+    /**
      * 按 oss_token 反查存储项目名，仅用于列表展示
      */
     private function storageName(string $ossToken): string
@@ -179,11 +197,13 @@ class V3Project extends CommonController
         $secret = Envelope::randomSecret();
         $ossToken = trim((string)Input::Put('oss_token', false));
         $this->assertStorage($ossToken);
+        $uploadFolder = $this->readUploadFolder('put');
 
         $data = [
             'name' => $name,
             'secret' => $secret,
             'oss_token' => $ossToken,
+            'upload_folder' => $uploadFolder,
             'rate_limit' => Input::PutInt('rate_limit', 0),
             'status' => Input::PutInt('status', 1),
         ];
@@ -242,6 +262,9 @@ class V3Project extends CommonController
             $ossToken = trim((string)Input::Post('oss_token', false));
             $this->assertStorage($ossToken);
             $data['oss_token'] = $ossToken;
+        }
+        if (request()->has('upload_folder', 'post')) {
+            $data['upload_folder'] = $this->readUploadFolder('post');
         }
         if (request()->has('status', 'post')) $data['status'] = Input::PostInt('status');
 

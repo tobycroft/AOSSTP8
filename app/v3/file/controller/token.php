@@ -3,6 +3,7 @@
 namespace app\v3\file\controller;
 
 use app\v2\file\model\FileTokenModel;
+use app\v3\common\UploadFolder;
 use app\v3\common\V3EnvelopeAuth;
 use app\v3\project\model\V3ProjectModel;
 use BaseController\CommonController;
@@ -15,10 +16,11 @@ use Ret;
  * 与 v2/file/token 功能一致（换取一次性上传 token / 上传地址 / hash 查询），
  * 区别有二：
  *   1. 鉴权走 V3EnvelopeAuth（X-Aoss-Ts/Kid/Auth），不再用 oss token + md5 签名；
- *   2. 存储配置不来自请求参数，而来自 v3 项目绑定的 ao_oss.token（ao_v3_project.oss_token）。
+ *   2. 存储配置不来自请求参数，而来自 v3 项目绑定的 ao_oss.token（ao_v3_project.oss_token）；
+ *      落盘文件夹来自 v3 项目的 upload_folder（为空回退存储项目名）。
  *
- * 签发的一次性 token 仍落 ao_attachment_token，oss_token 列写入绑定到的 ao_oss.token，
- * 供 v3/file/index 直传时定位存储配置（与 v2 行为一致）。
+ * 签发的一次性 token 仍落 ao_attachment_token：oss_token 列写入绑定到的 ao_oss.token，
+ * upload_folder 列写入项目配置的文件夹，供 v3/file/index 直传时定位存储与落盘目录。
  *
  * 四个接口：
  *   POST /v3/file/token/create          换取临时 token
@@ -120,13 +122,15 @@ class token extends CommonController
      * 签发一次性上传 token 并落 ao_attachment_token
      *
      * 与 v2/file/token 逻辑一致；oss_token 写入项目绑定到的 ao_oss.token，
-     * 使直传阶段（v3/file/index）能复用 V1 的落盘逻辑。
+     * upload_folder 写入项目配置的落盘文件夹（为空时留空，直传阶段回退存储项目名），
+     * 使直传阶段（v3/file/index）能复用 V1 的落盘逻辑并使用配置的文件夹。
      *
      * @return array{token:string, expired_at:string}
      */
     private function issueToken(): array
     {
         $ossToken = (string)$this->storage['token'];
+        $uploadFolder = UploadFolder::normalize($this->proc['upload_folder'] ?? '');
         $ip = Input::Post('ip', false);
 
         $now = time();
@@ -136,6 +140,7 @@ class token extends CommonController
         $data = [
             'token' => $tempToken,
             'oss_token' => $ossToken,
+            'upload_folder' => $uploadFolder,
             'created_at' => date('Y-m-d H:i:s', $now),
             'expired_at' => $expiredAt,
             'is_used' => 0,

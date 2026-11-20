@@ -11,7 +11,7 @@
     </div>
 </div>
 <div class="card">
-    <p>v3 项目为通用凭证：一个项目（Secret）可使用 v3 下所有应用（AI、Excel、文件上传等），采用信封鉴权（请求只传 kid 与密文，Secret 永不明文传输）。AI key 的分配与对外模型名等 AI 配置在「AI 管理 → AI 授权」维护。<b>「绑定存储」决定 v3 文件上传的落盘位置</b>：项目需绑定一个启用中的存储项目，否则 v3/file 接口返回 403；如需上传能力请在编辑中指定。</p>
+    <p>v3 项目为通用凭证：一个项目（Secret）可使用 v3 下所有应用（AI、Excel、文件上传等），采用信封鉴权（请求只传 kid 与密文，Secret 永不明文传输）。AI key 的分配与对外模型名等 AI 配置在「AI 管理 → AI 授权」维护。<b>「绑定存储」+「上传文件夹」共同决定 v3 文件上传的落盘位置</b>：项目需绑定一个启用中的存储项目，否则 v3/file 接口返回 403；「上传文件夹」可指定落到 upload/ 下的哪个目录（留空则用存储项目名），local 存本站、OSS 传远程。</p>
 </div>
 <table>
     <thead>
@@ -20,6 +20,7 @@
             <th>项目名称</th>
             <th>限流(次/60秒)</th>
             <th>绑定存储（v3 文件上传）</th>
+            <th>上传文件夹</th>
             <th>Secret（v3 凭证）</th>
             <th>kid</th>
             <th>状态</th>
@@ -33,6 +34,7 @@
             <td>{$item.name}</td>
             <td>{if $item.rate_limit > 0}<span style="color:#fa541c;">{$item.rate_limit}</span>{else/}<span style="color:#8c8c8c;">不限</span>{/if}</td>
             <td>{if $item.oss_token == ''}<span style="color:#8c8c8c;">未绑定</span>{elseif $item.storage_invalid}<span style="color:#fa541c;">{$item.storage_name}</span>{else/}<span style="color:#1677ff;">{$item.storage_name}</span>{/if}</td>
+            <td>{if $item.upload_folder == ''}<span style="color:#8c8c8c;">默认(存储项目名)</span>{else/}<span style="font-family:monospace;font-size:12px;color:#1677ff;">{$item.upload_folder}</span>{/if}</td>
             <td style="white-space:nowrap;">
                 <span style="font-family:monospace;font-size:12px;{if !$item.secret_strong}color:#fa541c;{/if}" title="{$item.secret}">{$item.secret_mask}</span>
                 <button class="btn btn-sm" style="background:#595959;color:#fff;margin-left:4px;padding:2px 8px;font-size:12px;" onclick="copySecret('{$item.secret}')">复制</button>
@@ -40,7 +42,7 @@
             <td style="font-family:monospace;font-size:12px;color:#8c8c8c;">{$item.kid}</td>
             <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
             <td>
-                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', {$item.rate_limit}, {$item.status}, '{$item.oss_token|addslashes}')">编辑</button>
+                <button class="btn btn-sm btn-edit" onclick="openEdit({$item.id}, '{$item.name|addslashes}', {$item.rate_limit}, {$item.status}, '{$item.oss_token|addslashes}', '{$item.upload_folder|addslashes}')">编辑</button>
                 <button class="btn btn-sm" style="background:#fa8c16;color:#fff;margin-right:4px;" onclick="doResetSecret({$item.id})">重置Secret</button>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
@@ -66,6 +68,11 @@
             <label>绑定存储项目（v3 文件上传落盘位置）</label>
             <select id="formOssToken"><option value="">-- 不绑定（不支持 v3 文件上传） --</option></select>
             <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">v3/file 上传接口按此存储的 size/ext/ OSS 配置落盘；仅列出启用中的存储项目。未绑定时调用上传接口返回 403。存储项目在「存储管理 → 存储项目」维护。</div>
+        </div>
+        <div class="form-group">
+            <label>上传文件夹（相对 upload/）</label>
+            <input type="text" id="formUploadFolder" placeholder="例如 product 或 site-a/2026" autocomplete="off">
+            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">文件将存到 <code>upload/文件夹/YYYYMMDD/md5.ext</code>（local 存本站，OSS 传远程）。留空则用「绑定存储项目」的名称作文件夹。仅允许字母、数字、下划线、连字符，多级用 <code>/</code> 分隔。</div>
         </div>
         <div class="form-group" id="secretNote" style="display:none;">
             <label>v3 凭证（Secret）</label>
@@ -154,16 +161,18 @@ function openCreate() {
     document.getElementById('formName').value = '';
     document.getElementById('formRateLimit').value = '0';
     document.getElementById('formStatus').value = '1';
+    document.getElementById('formUploadFolder').value = '';
     applyOssToken('');
     document.getElementById('secretNote').style.display = '';
     document.getElementById('v3Modal').classList.add('show');
 }
-function openEdit(id, name, rateLimit, status, ossToken) {
+function openEdit(id, name, rateLimit, status, ossToken, uploadFolder) {
     document.getElementById('modalTitle').textContent = '编辑项目';
     document.getElementById('editId').value = id;
     document.getElementById('formName').value = name;
     document.getElementById('formRateLimit').value = rateLimit;
     document.getElementById('formStatus').value = status;
+    document.getElementById('formUploadFolder').value = uploadFolder || '';
     applyOssToken(ossToken);
     document.getElementById('secretNote').style.display = 'none';
     document.getElementById('v3Modal').classList.add('show');
@@ -173,8 +182,13 @@ function submitForm() {
     var name = document.getElementById('formName').value;
     var rateLimit = document.getElementById('formRateLimit').value;
     var ossToken = document.getElementById('formOssToken').value;
+    var uploadFolder = document.getElementById('formUploadFolder').value.trim();
     var status = document.getElementById('formStatus').value;
     if (!name) { alert('项目名称不能为空'); return; }
+    if (uploadFolder && !/^[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*$/.test(uploadFolder)) {
+        alert('上传文件夹不合法：仅允许字母/数字/下划线/连字符，多级用 / 分隔，不能用 . 或 .. 或绝对路径');
+        return;
+    }
     var xhr = new XMLHttpRequest();
     var method = id ? 'POST' : 'PUT';
     xhr.open(method, '/admin/v3_project', true);
@@ -194,7 +208,7 @@ function submitForm() {
             }
         }
     };
-    var params = 'name=' + encodeURIComponent(name) + '&rate_limit=' + rateLimit + '&oss_token=' + encodeURIComponent(ossToken) + '&status=' + status;
+    var params = 'name=' + encodeURIComponent(name) + '&rate_limit=' + rateLimit + '&oss_token=' + encodeURIComponent(ossToken) + '&upload_folder=' + encodeURIComponent(uploadFolder) + '&status=' + status;
     if (id) params += '&id=' + id;
     xhr.send(params);
 }
