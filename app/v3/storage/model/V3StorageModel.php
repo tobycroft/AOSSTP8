@@ -12,7 +12,7 @@ CREATE TABLE `ao_v3_storage`:
   `type` enum('local','oss','all','remote','none') NOT NULL DEFAULT 'none',
   `main_type` enum('oss','local') NOT NULL DEFAULT 'local',
   `code` varchar(100) NOT NULL DEFAULT '',
-  `token` varchar(100) NOT NULL DEFAULT '' COMMENT '存储标识，写入一次性 token 供直传定位',
+  `token` varchar(100) NOT NULL DEFAULT '' COMMENT '存储标识，写入一次性 token 供直传定位；实际使用须 <= 64 字符（会写入 ao_attachment_token.oss_token / ao_attachment.token）',
   `oss_type` enum('none','aliyun','tencent') DEFAULT 'none',
   `oss_tag` varchar(255) DEFAULT 'default',
   `url` varchar(255) DEFAULT '',

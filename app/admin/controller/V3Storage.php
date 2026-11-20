@@ -152,7 +152,13 @@ class V3Storage extends CommonController
         $token = trim((string)Input::Put('token', false));
         if ($token === '') {
             $token = md5(uniqid('v3s_', true) . $projectId . microtime());
-        } elseif (AdminV3StorageModel::where('token', $token)->field('id')->find()) {
+        }
+        // 该标识会原样写入 ao_attachment_token.oss_token 与 ao_attachment.token（均 varchar(64)），
+        // 超长会在签发/落库阶段报错或被截断，故在此限制长度
+        if (mb_strlen($token) > 64) {
+            Ret::Fail(400, null, '存储标识不能超过 64 个字符');
+        }
+        if (AdminV3StorageModel::where('token', $token)->field('id')->find()) {
             Ret::Fail(400, null, '存储标识已存在');
         }
 
