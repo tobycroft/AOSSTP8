@@ -35,6 +35,7 @@ use Throwable;
  *   POST /v3/file/index/upfull      完整上传，返回完整文件地址
  *   POST /v3/file/index/up          完整上传（相对路径）
  *   POST /v3/file/index/up_ue       编辑器上传，返回 src
+ *   POST /v3/file/index/up_wangeditor wangEditor 自定义上传，返回 {errno,data:{url,alt,href}}
  *   POST /v3/file/index/uphash      hash 模式，仅返回 md5
  *   POST /v3/file/index/up_complete 返回完整文件信息
  *
@@ -139,6 +140,25 @@ class index extends CommonController
         }
     }
 
+    /**
+     * wangEditor 自定义上传（v5 customUpload）
+     *
+     * 前端把选中的文件以 file 字段 multipart 提交到本接口，
+     * 返回 {errno:0,data:{url,alt,href}}；失败返回 {errno:1,message}。
+     * 鉴权沿用一次性 token：?token=xxx（由 v3/file/token/create 签发）。
+     */
+    public function up_wangeditor(Request $request)
+    {
+        try {
+            if (!$request->file('file')) {
+                $this->fail('wangeditor', 400, '请上传文件');
+            }
+            $this->upload_file($request, 1, 'wangeditor');
+        } catch (Throwable $e) {
+            $this->fail('wangeditor', 400, $e->getMessage());
+        }
+    }
+
     public function uphash(Request $request)
     {
         $this->upload_file($request, 1, 'hash');
@@ -171,7 +191,7 @@ class index extends CommonController
 
         $file = $request->file('file');
         if (!$file) {
-            Ret::Fail(400, null, 'file字段没有用文件提交');
+            $this->fail($type, 400, 'file字段没有用文件提交');
         }
         $file_name = $file->getOriginalName();
         $md5 = $file->md5();
@@ -184,19 +204,19 @@ class index extends CommonController
             $sav = $this->getStr($full, $proc['url'], $file_exists, $type);
         }
         if ($file->getOriginalMime() == 'text/x-php' || $file->getOriginalMime() == 'text/html') {
-            Ret::Fail(403, null, '禁止上传非法文件');
+            $this->fail($type, 403, '禁止上传非法文件');
         }
         if ($file->getSize() >= $proc['size'] * 1024) {
-            Ret::Fail(400, null, '大小不符合规范');
+            $this->fail($type, 400, '大小不符合规范');
         }
         if (!in_array($file->getOriginalExtension(), explode(',', $proc['ext']))) {
-            Ret::Fail(403, null, '后缀不符合规范');
+            $this->fail($type, 403, '后缀不符合规范');
         }
 
         $sav_path = $proc['name'] . DIRECTORY_SEPARATOR . date("Ymd");
         $info = $file->move('./upload' . DIRECTORY_SEPARATOR . $sav_path, $file->md5() . '.' . $file->getOriginalExtension());
         if (!$info) {
-            Ret::Fail(300, null, '文件错误');
+            $this->fail($type, 300, '文件错误');
         }
 
         $fileName = $sav_path . '/' . $info->getFilename();
@@ -276,10 +296,10 @@ class index extends CommonController
                 $oss = new AliyunOSS($proc);
                 $ret = $oss->uploadFile($proc['bucket'], $fileName, $info->getPathname());
             } catch (OssException $e) {
-                Ret::Fail(200, null, $e->getMessage());
+                $this->fail($type, 200, $e->getMessage());
             }
             if (empty($ret->getData()["info"]["url"])) {
-                Ret::Fail(200, null, "OSS不正常");
+                $this->fail($type, 200, "OSS不正常");
             }
             unlink($info->getPathname());
         }
@@ -302,12 +322,16 @@ class index extends CommonController
                     Ret::Success(0, $file_info['md5']);
                     break;
 
+                case "wangeditor":
+                    $this->wangEditorSuccess($sav, $file_name);
+                    break;
+
                 default:
                     Ret::Success(0, $sav);
                     break;
             }
         } else {
-            Ret::Fail(300, null, null);
+            $this->fail($type, 300, null);
         }
     }
 
@@ -331,10 +355,47 @@ class index extends CommonController
                 Ret::Success(0, $file_exists['md5']);
                 break;
 
+            case "wangeditor":
+                $this->wangEditorSuccess($sav, (string)($file_exists['name'] ?? ''));
+                break;
+
             default:
                 Ret::Success(0, $sav);
                 break;
         }
         return $sav;
+    }
+
+    /**
+     * wangEditor 上传成功响应：{errno:0,data:{url,alt,href}}
+     */
+    private function wangEditorSuccess(string $url, string $alt = ''): void
+    {
+        header('Content-type: application/json');
+        echo json_encode([
+            'errno' => 0,
+            'data' => [
+                'url' => $url,
+                'alt' => $alt,
+                'href' => $url,
+            ],
+        ], 320 | JSON_INVALID_UTF8_SUBSTITUTE);
+        exit(0);
+    }
+
+    /**
+     * 失败响应：wangeditor 模式输出 {errno:1,message}，其余沿用 Ret 信封
+     */
+    private function fail(mixed $type, int $code, ?string $echo): void
+    {
+        if ($type === 'wangeditor') {
+            header('Content-type: application/json');
+            echo json_encode([
+                'errno' => 1,
+                'message' => ($echo === null || $echo === '') ? '上传失败' : $echo,
+            ], 320 | JSON_INVALID_UTF8_SUBSTITUTE);
+            exit(0);
+        }
+        Ret::Fail($code, null, (string)$echo);
     }
 }
