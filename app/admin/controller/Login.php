@@ -14,6 +14,12 @@ class Login extends CommonController
 {
     public function index()
     {
+        // 登录页由 Index@index 渲染（已登录会直接跳控制台），此接口只接受登录提交
+        if (!request()->isPost()) {
+            header('Location: /admin/login');
+            exit;
+        }
+
         $username = Input::Post('username');
         $password = Input::Post('password');
         // 验证码仅在风控要求时必需，此处不做必填校验

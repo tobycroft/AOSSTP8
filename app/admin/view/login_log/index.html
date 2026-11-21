@@ -1,11 +1,48 @@
 {extend name="layout/base" /}
 {block name="content"}
+<style>
+.stat-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.stat-card { flex: 1; min-width: 150px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; box-shadow: var(--shadow); }
+.stat-card .label { color: var(--text-muted); font-size: 13px; margin-bottom: 6px; }
+.stat-card .value { color: var(--text-strong); font-size: 22px; font-weight: 600; line-height: 1.2; }
+.stat-card .sub { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
+.stat-card.danger .value { color: var(--badge-danger-text); }
+.stat-card.ok .value { color: var(--badge-success-text); }
+</style>
 <div class="toolbar">
-    <h2>登录日志</h2>
+    <h2>管理员登录日志</h2>
     <form method="get" action="/admin/login_log" style="display:flex;gap:8px;align-items:center;">
-        <input type="text" name="search" value="{$search}" placeholder="搜索用户名 / IP" style="padding:8px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;outline:none;">
+        {if $result != 'all'}<input type="hidden" name="result" value="{$result}">{/if}
+        <input type="text" name="search" value="{$search}" placeholder="搜索用户名 / IP" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-surface);color:var(--text);font-size:14px;outline:none;">
         <button type="submit" class="btn btn-primary">搜索</button>
     </form>
+</div>
+<div class="stat-row">
+    <div class="stat-card">
+        <div class="label">登录尝试</div>
+        <div class="value">{$stats.total}</div>
+        <div class="sub">全部历史记录</div>
+    </div>
+    <div class="stat-card ok">
+        <div class="label">成功</div>
+        <div class="value">{$stats.success}</div>
+        <div class="sub">登录成功次数</div>
+    </div>
+    <div class="stat-card danger">
+        <div class="label">失败</div>
+        <div class="value">{$stats.fail}</div>
+        <div class="sub">含密码错误、验证码错误等</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">今日尝试</div>
+        <div class="value">{$stats.today}</div>
+        <div class="sub">今日失败 {$stats.today_fail} 次</div>
+    </div>
+</div>
+<div class="tab-bar">
+    <a class="tab-item {if $result=='all'}active{/if}" href="/admin/login_log{if $search}?search={$search}{/if}">全部 ({$stats.total})</a>
+    <a class="tab-item {if $result=='success'}active{/if}" href="/admin/login_log?result=success{if $search}&search={$search}{/if}">成功 ({$stats.success})</a>
+    <a class="tab-item {if $result=='fail'}active{/if}" href="/admin/login_log?result=fail{if $search}&search={$search}{/if}">失败 ({$stats.fail})</a>
 </div>
 <table>
     <thead>
@@ -30,13 +67,18 @@
             <td>{$item.ip}</td>
             <td>{if $item.success == 1}<span class="status-badge success">成功</span>{else/}<span class="status-badge fail">失败</span>{/if}</td>
             <td>{$item.reason}</td>
-            <td>{if $item.success == 1}<span style="color:#999;">-</span>{else/}{$item.password}{/if}</td>
+            <td>{if $item.success == 1}<span style="color:var(--text-muted);">-</span>{else/}{$item.password}{/if}</td>
             <td>{$item.create_time}</td>
             <td>
                 <button class="btn btn-sm btn-del" onclick="doDelete({$item.id})">删除</button>
             </td>
         </tr>
         {/foreach}
+        {if empty($list)}
+        <tr>
+            <td colspan="9" style="text-align:center;color:var(--text-muted);">暂无日志</td>
+        </tr>
+        {/if}
     </tbody>
 </table>
 {$pagination|raw}
@@ -45,22 +87,23 @@
 {literal}
 <script>
 function doDelete(id) {
-    if (!confirm('确定要删除该日志吗？')) return;
-    var xhr = new XMLHttpRequest();
-    xhr.open('DELETE', '/admin/login_log', true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-            var res = JSON.parse(xhr.responseText);
-            if (res.code == 0) {
-                location.reload();
-            } else {
-                alert(res.echo);
+    showConfirm('确定要删除该日志吗？', function () {
+        var xhr = new XMLHttpRequest();
+        xhr.open('DELETE', '/admin/login_log', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4) {
+                var res = JSON.parse(xhr.responseText);
+                if (res.code == 0) {
+                    location.reload();
+                } else {
+                    showToast(res.echo, 'error');
+                }
             }
-        }
-    };
-    xhr.send('id=' + id);
+        };
+        xhr.send('id=' + id);
+    }, '删除登录日志');
 }
 </script>
 {/literal}

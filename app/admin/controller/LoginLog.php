@@ -33,6 +33,11 @@ class LoginLog extends CommonController
         $page = input('get.page', 1, 'intval');
         $limit = 15;
         $search = input('get.search', '', 'trim');
+        // 结果筛选：all=全部 success=成功 fail=失败
+        $result = input('get.result', 'all', 'trim');
+        if (!in_array($result, ['all', 'success', 'fail'], true)) {
+            $result = 'all';
+        }
 
         $model = new AdminLoginLogModel();
         $query = $model->where('id', '>', 0);
@@ -41,6 +46,11 @@ class LoginLog extends CommonController
                 $q->whereOr('username', 'like', "%{$search}%")
                     ->whereOr('ip', 'like', "%{$search}%");
             });
+        }
+        if ($result === 'success') {
+            $query->where('success', '=', 1);
+        } elseif ($result === 'fail') {
+            $query->where('success', '=', 0);
         }
         $query->order('id', 'desc');
         $list = $query->paginate($limit, false, ['page' => $page]);
@@ -52,6 +62,9 @@ class LoginLog extends CommonController
         $extraParams = [];
         if (!empty($search)) {
             $extraParams['search'] = $search;
+        }
+        if ($result !== 'all') {
+            $extraParams['result'] = $result;
         }
 
         $items = [];
@@ -73,8 +86,25 @@ class LoginLog extends CommonController
         return $this->renderPage('login_log/index', [
             'list' => $items,
             'search' => $search,
+            'result' => $result,
+            'stats' => $this->stats(),
             'pagination' => $pagination,
         ], '登录日志', 'admin', 'login_log');
+    }
+
+    /**
+     * 顶部统计：总尝试、成功、失败、今日尝试（不受筛选影响，始终看全局）
+     */
+    private function stats(): array
+    {
+        $today = date('Y-m-d 00:00:00');
+        return [
+            'total' => intval(AdminLoginLogModel::where('id', '>', 0)->count()),
+            'success' => intval(AdminLoginLogModel::where('success', '=', 1)->count()),
+            'fail' => intval(AdminLoginLogModel::where('success', '=', 0)->count()),
+            'today' => intval(AdminLoginLogModel::where('create_time', '>=', $today)->count()),
+            'today_fail' => intval(AdminLoginLogModel::where('success', '=', 0)->where('create_time', '>=', $today)->count()),
+        ];
     }
 
     private function delete()

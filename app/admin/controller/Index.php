@@ -2,6 +2,7 @@
 
 namespace app\admin\controller;
 
+use app\admin\utils\AdminAuth;
 use app\admin\utils\LoginGuard;
 use BaseController\CommonController;
 
@@ -9,6 +10,12 @@ class Index extends CommonController
 {
     public function index()
     {
+        // 已登录（admin_token 有效）直接进控制台，不再重复输入密码
+        if (!empty(AdminAuth::getLoginUser())) {
+            header('Location: /admin/console');
+            exit;
+        }
+
         // 风控：该 IP 存在失败登录记录才展示验证码；最近一次登录成功则免验证码
         $isNeedCaptcha = LoginGuard::needCaptcha();
         $captchaStyle = $isNeedCaptcha ? '' : ' style="display:none"';

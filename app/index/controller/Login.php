@@ -48,11 +48,13 @@ class Login extends CommonController
             // 验证验证码（从 cookie 读取 hash）
             $captchaHash = $_COOKIE['user_captcha'] ?? null;
             if (empty($captchaHash)) {
+                LoginLogModel::addLog(0, (string)$username, $ip, 0, '未获取验证码', (string)$password);
                 Ret::Fail(400, ['need_captcha' => true], '请先获取验证码');
             }
             if (!password_verify(mb_strtolower($code, 'UTF-8'), $captchaHash)) {
                 setcookie('user_captcha', '', time() - 3600, '/');
                 $fails = LoginGuard::markFail($ip);
+                LoginLogModel::addLog(0, (string)$username, $ip, 0, '验证码错误', (string)$password);
                 Ret::Fail(400, ['need_captcha' => $fails >= 1], '验证码错误');
             }
             setcookie('user_captcha', '', time() - 3600, '/');
@@ -63,16 +65,19 @@ class Login extends CommonController
 
         if ($user->isEmpty()) {
             $fails = LoginGuard::markFail($ip);
+            LoginLogModel::addLog(0, (string)$username, $ip, 0, '用户名不存在', (string)$password);
             Ret::Fail(401, ['need_captcha' => $fails >= 1], '用户名或密码错误');
         }
 
         if ($user['status'] != 1) {
             $fails = LoginGuard::markFail($ip);
+            LoginLogModel::addLog(intval($user['id']), (string)$user['username'], $ip, 0, '账号已被禁用', (string)$password);
             Ret::Fail(403, ['need_captcha' => $fails >= 1], '账号已被禁用');
         }
 
         if (!password_verify($password, $user['password'])) {
             $fails = LoginGuard::markFail($ip);
+            LoginLogModel::addLog(intval($user['id']), (string)$user['username'], $ip, 0, '密码错误', (string)$password);
             Ret::Fail(401, ['need_captcha' => $fails >= 1], '用户名或密码错误');
         }
 
@@ -88,7 +93,7 @@ class Login extends CommonController
         ]);
 
         // 记录登录日志
-        LoginLogModel::addLog(intval($user['id']), strval($user['username']), $ip);
+        LoginLogModel::addLog(intval($user['id']), strval($user['username']), $ip, 1, '登录成功');
 
         setcookie('user_token', $token, time() + 86400, '/');
 

@@ -39,6 +39,7 @@ class Layout
             'title' => '门户用户',
             'items' => [
                 'invite_code' => ['label' => '邀请码管理', 'url' => '/admin/invite_code'],
+                'portal_login_log' => ['label' => '登录记录', 'url' => '/admin/portal_login_log'],
             ],
         ],
         'storage' => [

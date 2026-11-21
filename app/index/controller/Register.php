@@ -107,7 +107,7 @@ class Register extends CommonController
         ]);
 
         // 记录登录日志（注册即首次登录）
-        LoginLogModel::addLog(intval($model->id), $username, $ip);
+        LoginLogModel::addLog(intval($model->id), $username, $ip, 1, '注册并登录');
 
         setcookie('user_token', $token, time() + 86400, '/');
 

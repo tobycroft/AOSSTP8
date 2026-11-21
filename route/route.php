@@ -32,6 +32,7 @@
     \think\facade\Route::any('', '\app\admin\controller\Index@index');
     \think\facade\Route::any('admin/captcha/gif', '\app\admin\controller\Captcha@gif');
     \think\facade\Route::any('admin/login/index', '\app\admin\controller\Login@index');
+    \think\facade\Route::any('admin/login', '\app\admin\controller\Index@index');
     \think\facade\Route::any('admin/login/logout', '\app\admin\controller\Login@logout');
     \think\facade\Route::any('admin/login/info', '\app\admin\controller\Login@info');
     \think\facade\Route::any('admin/user', '\app\admin\controller\User@index');
@@ -41,6 +42,7 @@
     \think\facade\Route::any('admin/role/getUserRoles', '\app\admin\controller\Role@getUserRoles');
     \think\facade\Route::any('admin/menu', '\app\admin\controller\Menu@index');
     \think\facade\Route::any('admin/login_log', '\app\admin\controller\LoginLog@index');
+    \think\facade\Route::any('admin/portal_login_log', '\app\admin\controller\PortalLoginLog@index');
     \think\facade\Route::any('admin/cert/updateSite', '\app\admin\controller\Cert@updateSite');
     \think\facade\Route::any('admin/cert', '\app\admin\controller\Cert@index');
     \think\facade\Route::any('admin/cert_url/updateSSL', '\app\admin\controller\CertUrl@updateSSL');

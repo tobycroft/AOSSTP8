@@ -156,6 +156,7 @@ class DashboardService
             self::rate('证书下发成功率', 'ao_cert_log'),
             self::rate('Hook 调用成功率', 'ao_hook_log'),
             self::rate('管理员登录成功率', 'admin_login_log'),
+            self::rate('门户登录成功率', 'ao_login_log'),
             [
                 'label' => '证书站点启用率',
                 'value' => self::percent(self::count('ao_cert_website', 'status = 1'), self::count('ao_cert_website')),
