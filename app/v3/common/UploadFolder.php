@@ -5,7 +5,7 @@ namespace app\v3\common;
 /**
  * V3 Bucket 落盘 Path 的规范化与校验
  *
- * Bucket 的 Path 由后台在「存储管理 v3」里配置，最终会拼进
+ * Bucket 的 Path 由后台在「存储管理 V3」里配置，最终会拼进
  * ./upload/{Path}/YYYYMMDD/md5.ext 的相对路径里，因此必须约束为
  * 「安全的相对目录段」，防止路径穿越到 upload/ 之外。
  *

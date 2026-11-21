@@ -16,7 +16,7 @@ use Ret;
  * v3 项目为应用无关的通用凭证（secret + 信封鉴权），
  * 一个项目可使用 v3 下所有应用。应用配置各自独立维护：
  *   - AI key 使用权（agnes 授权）、对外模型名 →「AI 管理 → AI 授权」；
- *   - 文件上传的存储与上传文件夹 →「存储管理 v3」（一项目一存储）。
+ *   - 文件上传的存储（Bucket）→「存储管理 V3」（一项目一 Bucket）。
  */
 class V3Project extends CommonController
 {

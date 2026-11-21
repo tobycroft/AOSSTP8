@@ -20,7 +20,7 @@ v3 项目为应用无关的通用凭证：一个项目（secret）可使用 v3 �
 只维护鉴权信息（name / secret / rate_limit / model_alias / status），不承载业务配置。
 AI 应用凭「授权」使用 agnes key：ao_v3_project_agnes（多对多，is_default
 标记 AI 请求实际使用的 key）；后台在「AI 管理 → AI 授权」中维护。
-文件上传应用的存储配置在独立表 ao_v3_storage 中维护（后台「存储管理 v3」），
+文件上传应用的存储配置在独立表 ao_v3_storage 中维护（后台「存储管理 V3」），
 一项目一存储，通过 storage.project_id 关联，与 ao_oss 无关。
 local 存本站 ./upload/，oss 传远程，存储类型逻辑完全复用 V1。
  */

@@ -17,7 +17,7 @@ CREATE TABLE `ao_v3_project`:
   KEY `idx_secret` (`secret`)
 
 V3 项目只维护鉴权信息，不承载存储等应用配置。
-存储配置在独立表 ao_v3_storage（后台「存储管理 v3」），一项目一存储。
+存储配置在独立表 ao_v3_storage（后台「存储管理 V3」），一项目一 Bucket。
  */
 class AdminV3ProjectModel extends Model
 {

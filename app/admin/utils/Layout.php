@@ -48,6 +48,11 @@ class Layout
                 'oss_aliyun' => ['label' => '阿里云OSS', 'url' => '/admin/oss_aliyun'],
             ],
         ],
+        // 存储管理 V3：v3 的 Bucket，独立于 ao_oss 的「存储项目」，故单列一级菜单
+        'v3_storage' => [
+            'title' => '存储管理 V3',
+            'link' => '/admin/v3_storage',
+        ],
         'hook' => [
             'title' => 'Hook管理',
             'items' => [
@@ -78,13 +83,10 @@ class Layout
                 'sms_log' => ['label' => '发送日志', 'url' => '/admin/sms_log'],
             ],
         ],
-        // V3 开放平台：项目凭证与存储配置各自独立维护
+        // V3 开放平台：仅保留项目凭证；存储（Bucket）已单列为「存储管理 V3」
         'v3' => [
-            'title' => 'V3 开放平台',
-            'items' => [
-                'v3_project' => ['label' => '项目管理 v3', 'url' => '/admin/v3_project'],
-                'v3_storage' => ['label' => '存储管理 v3', 'url' => '/admin/v3_storage'],
-            ],
+            'title' => '项目管理 v3',
+            'link' => '/admin/v3_project',
         ],
         // AI 管理：目录顺序紧跟「项目管理 v3」
         'ai' => [

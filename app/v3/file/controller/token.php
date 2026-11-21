@@ -49,7 +49,7 @@ class token extends CommonController
         $projectId = (int)($this->proc['id'] ?? 0);
         $bucket = V3StorageModel::api_find_project($projectId);
         if (empty($bucket)) {
-            Ret::Fail(403, null, '项目未配置存储，请在后台「存储管理 v3」为该项目创建 Bucket');
+            Ret::Fail(403, null, '项目未配置存储，请在后台「存储管理 V3」为该项目创建 Bucket');
         }
         $this->bucket = $bucket;
     }

@@ -13,7 +13,7 @@ use Input;
 use Ret;
 
 /**
- * 存储管理 v3：ao_v3_storage 后台维护（独立 menu）
+ * 存储管理 V3：ao_v3_storage 后台维护（独立一级菜单）
  *
  * 这里的每一项就是一个 Bucket：一个 V3 项目对应一个 Bucket，Bucket 自身描述
  *   - 落盘 Path（相对 upload/，留空回退 Bucket 名称）
@@ -108,7 +108,7 @@ class V3Storage extends CommonController
             'projects' => $projects,
             'search' => $search,
             'pagination' => $pagination,
-        ], '存储管理 v3', 'v3', 'v3_storage');
+        ], '存储管理 V3', 'v3_storage', 'v3_storage');
     }
 
     /**
