@@ -208,11 +208,17 @@ class V3Attachment extends CommonController
         $thumbUrl = $isRaster ? ($publicUrl !== '' ? $publicUrl : $proxyUrl) : '';
         $fallbackUrl = $isRaster && $publicUrl !== '' ? $proxyUrl : '';
 
+        $width = (int)($row['width'] ?? 0);
+        $height = (int)($row['height'] ?? 0);
+        $duration = (int)($row['duration'] ?? 0);
+
         return [
             'id' => $id,
             'token' => (string)($row['token'] ?? ''),
+            'tag' => (string)($row['tag'] ?? ''),
             'bucket_id' => $bucketId,
             'bucket_name' => $bucketName,
+            'bucket_type' => (string)($bucket['type'] ?? ''),
             'project_id' => $projectId,
             'project_name' => $projectId > 0 ? ($projectNames[$projectId] ?? ('已删除项目(' . $projectId . ')')) : '-',
             'name' => (string)($row['name'] ?? ''),
@@ -220,12 +226,19 @@ class V3Attachment extends CommonController
             'ext' => $ext,
             'mime' => (string)($row['mime'] ?? ''),
             'size' => $this->formatSize((int)($row['size'] ?? 0)),
+            'size_bytes' => (int)($row['size'] ?? 0),
+            'resolution' => ($width > 0 && $height > 0) ? ($width . ' × ' . $height) : '-',
+            'duration' => $duration > 0 ? (string)($row['duration_str'] ?? '') : '-',
+            'bitrate' => (float)($row['bitrate'] ?? 0),
             'md5' => (string)($row['md5'] ?? ''),
+            'sha1' => (string)($row['sha1'] ?? ''),
             'ip' => (string)($row['ip'] ?? ''),
             'create_time' => (string)($row['create_time'] ?? '-'),
             'is_raster' => $isRaster,
             'thumb_url' => $thumbUrl,
             'fallback_url' => $fallbackUrl,
+            // 对外文件地址（图片站/OSS 域名 + path），供展示与复制
+            'public_url' => $publicUrl,
             // 查看：光栅图跳图片站原图；其余走后台受控接口（远程 Bucket 会 302 到 OSS）
             'open_url' => $isRaster && $publicUrl !== '' ? $publicUrl : $proxyUrl,
             // 下载：本地强制 attachment，远程直接使用 OSS 地址

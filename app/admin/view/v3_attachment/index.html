@@ -38,12 +38,15 @@
     <p>这里只展示 <b>V3 上传</b>的附件（按 Bucket 归组），可按项目 / Bucket / 后缀 / 关键字过滤。图片地址优先拼接 Bucket 的访问域名（本地 Bucket 未配置时用图片站 <code>https://image.tuuz.cc:433</code>），加载失败自动回退站内受控代理。仅对 jpg / png / gif / bmp / webp / ico 内联展示，并校验真实文件类型；<b>SVG、HTML、PDF 等一律不内联渲染，只能下载</b>，避免图片中暗藏脚本在后台执行。</p>
 </div>
 {if $view == 'list'}
+<div class="table-wrap">
 <table>
     <thead>
         <tr>
             <th style="width:64px;">预览</th>
             <th>ID</th>
             <th>文件名</th>
+            <th>Path</th>
+            <th>文件地址</th>
             <th>项目 / Bucket</th>
             <th>类型</th>
             <th>大小</th>
@@ -62,15 +65,35 @@
                      data-id="{$item.id}" data-name="{$item.name}" data-ext="{$item.ext}"
                      data-size="{$item.size}" data-open="{$item.open_url}" data-download="{$item.download_url}"
                      data-fallback="{$item.fallback_url}" onerror="attachFallback(this)"
+                     data-project="{$item.project_name}" data-bucket="{$item.bucket_name}" data-type="{$item.bucket_type}"
+                     data-path="{$item.path}" data-mime="{$item.mime}" data-resolution="{$item.resolution}"
+                     data-duration="{$item.duration}" data-md5="{$item.md5}" data-sha1="{$item.sha1}"
+                     data-ip="{$item.ip}" data-time="{$item.create_time}" data-token="{$item.token}"
+                     data-public="{$item.public_url}"
                      data-previewable="1" onclick="openPreview(this)">
                 {else/}
                 <span class="attach-badge" data-id="{$item.id}" data-name="{$item.name}" data-ext="{$item.ext}"
                       data-size="{$item.size}" data-open="{$item.open_url}" data-download="{$item.download_url}"
+                      data-project="{$item.project_name}" data-bucket="{$item.bucket_name}" data-type="{$item.bucket_type}"
+                      data-path="{$item.path}" data-mime="{$item.mime}" data-resolution="{$item.resolution}"
+                      data-duration="{$item.duration}" data-md5="{$item.md5}" data-sha1="{$item.sha1}"
+                      data-ip="{$item.ip}" data-time="{$item.create_time}" data-token="{$item.token}"
+                      data-public="{$item.public_url}"
                       data-previewable="0" onclick="openPreview(this)">{$item.ext|default='file'}</span>
                 {/if}
             </td>
             <td>{$item.id}</td>
             <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.name}">{$item.name}</td>
+            <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.path}">
+                <span class="mono">{$item.path|default='-'}</span>
+            </td>
+            <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.public_url}">
+                {if $item.public_url !== ''}
+                <a class="mono" href="{$item.public_url}" target="_blank" rel="noopener noreferrer">{$item.public_url}</a>
+                {else/}
+                <span style="color:var(--text-muted);">-</span>
+                {/if}
+            </td>
             <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.project_name} / {$item.bucket_name}">
                 {$item.project_name} / {$item.bucket_name}
             </td>
@@ -81,23 +104,30 @@
             <td>{$item.create_time}</td>
             <td style="white-space:nowrap;">
                 <button class="btn btn-sm btn-edit" onclick="openPreview(this.closest('tr').querySelector('[data-id]'))">查看</button>
+                <button class="btn btn-sm" style="background:var(--bg-subtle);color:var(--text);border:1px solid var(--border-strong);" onclick="openPreview(this.closest('tr').querySelector('[data-id]'))">详情</button>
                 <a class="btn btn-sm" style="background:var(--bg-subtle);color:var(--text);border:1px solid var(--border-strong);text-decoration:none;" href="{$item.download_url}" target="_blank" rel="noopener noreferrer">下载</a>
             </td>
         </tr>
         {/foreach}
         {if empty($list)}
         <tr>
-            <td colspan="10" style="text-align:center;color:var(--text-muted);padding:32px;">暂无附件</td>
+            <td colspan="12" style="text-align:center;color:var(--text-muted);padding:32px;">暂无附件</td>
         </tr>
         {/if}
     </tbody>
 </table>
+</div>
 {else/}
 <div class="attach-grid">
     {foreach $list as $item}
     <div class="attach-card"
          data-id="{$item.id}" data-name="{$item.name}" data-ext="{$item.ext}" data-size="{$item.size}"
          data-open="{$item.open_url}" data-download="{$item.download_url}"
+         data-project="{$item.project_name}" data-bucket="{$item.bucket_name}" data-type="{$item.bucket_type}"
+         data-path="{$item.path}" data-mime="{$item.mime}" data-resolution="{$item.resolution}"
+         data-duration="{$item.duration}" data-md5="{$item.md5}" data-sha1="{$item.sha1}"
+         data-ip="{$item.ip}" data-time="{$item.create_time}" data-token="{$item.token}"
+         data-public="{$item.public_url}"
          data-previewable="{if $item.thumb_url != ''}1{else/}0{/if}" onclick="openPreview(this)">
         {if $item.thumb_url != ''}
         <img class="grid-thumb" src="{$item.thumb_url}" alt="" loading="lazy" referrerpolicy="no-referrer"
@@ -107,13 +137,17 @@
         {/if}
         <div class="grid-info">
             <div class="grid-name" title="{$item.name}">{$item.name}</div>
+            <div class="grid-path mono" title="{$item.path}">{$item.path}</div>
             <div class="grid-meta">
                 <span title="{$item.project_name} / {$item.bucket_name}">{$item.project_name} / {$item.bucket_name}</span>
                 <span>{$item.size}</span>
             </div>
             <div class="grid-meta">
                 <span>{$item.create_time}</span>
-                <a href="{$item.download_url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">下载</a>
+                <span class="grid-actions">
+                    <a href="javascript:;" onclick="event.stopPropagation();openPreview(this.closest('.attach-card'))">详情</a>
+                    <a href="{$item.download_url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">下载</a>
+                </span>
             </div>
         </div>
     </div>
@@ -131,7 +165,7 @@
             <img id="previewImg" src="" alt="" referrerpolicy="no-referrer" style="display:none;max-width:80vw;max-height:64vh;border-radius:6px;background:var(--bg-inset);">
             <div id="previewTip" style="display:none;color:var(--text-secondary);font-size:14px;line-height:1.8;padding:24px 8px;"></div>
         </div>
-        <div style="margin-top:12px;font-size:12px;color:var(--text-muted);word-break:break-all;" id="previewMeta"></div>
+        <div class="detail-list" id="previewMeta"></div>
         <div class="modal-actions">
             <a class="btn btn-cancel" id="previewDownload" href="#" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">下载</a>
             <button class="btn btn-primary" onclick="closePreview()">关闭</button>
@@ -165,6 +199,22 @@
 .grid-meta a { color:var(--primary); text-decoration:none; flex:none; }
 .grid-meta a:hover { text-decoration:underline; }
 .grid-empty { grid-column:1/-1; text-align:center; color:var(--text-muted); padding:40px 0; background:var(--bg-surface); border-radius:8px; }
+.grid-path { font-size:12px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:2px; }
+.grid-actions a + a { margin-left:10px; }
+
+/* 表格与详情 */
+.table-wrap { overflow-x:auto; }
+.mono { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; color:var(--primary); text-decoration:none; }
+a.mono:hover { text-decoration:underline; }
+.detail-list { margin-top:14px; border-top:1px solid var(--divider); padding-top:10px; min-width:520px; }
+.detail-row { display:flex; gap:12px; padding:6px 0; font-size:13px; line-height:1.6; border-bottom:1px dashed var(--divider); }
+.detail-row:last-child { border-bottom:none; }
+.detail-row .k { flex:0 0 88px; color:var(--text-muted); text-align:right; }
+.detail-row .v { flex:1; color:var(--text); word-break:break-all; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; }
+.detail-row .v a { color:var(--primary); text-decoration:none; }
+.detail-row .v a:hover { text-decoration:underline; }
+.copy-btn { margin-left:8px; padding:0 6px; font-size:11px; line-height:18px; border:1px solid var(--border-strong); border-radius:3px; background:var(--bg-surface); color:var(--text-secondary); cursor:pointer; font-family:inherit; }
+.copy-btn:hover { border-color:var(--primary); color:var(--primary); }
 </style>
 <script>
 // 项目筛选联动：只保留该项目下的 Bucket 选项
@@ -190,6 +240,70 @@ function attachFallback(img) {
     if (fb) img.src = fb;
 }
 
+// 复制文本：优先 Clipboard API，失败回退 execCommand
+function copyValue(text, btn) {
+    if (!text || text === '-') return;
+    var done = function() {
+        var old = btn.textContent;
+        btn.textContent = '已复制';
+        setTimeout(function() { btn.textContent = old; }, 1200);
+    };
+    var fallback = function() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+    } else {
+        fallback();
+    }
+}
+
+// 详情弹窗：完整展示 attachment 各列，地址类字段可点击/复制
+function renderDetail(meta, rows) {
+    meta.innerHTML = '';
+    rows.forEach(function(r) {
+        var row = document.createElement('div');
+        row.className = 'detail-row';
+        var k = document.createElement('div');
+        k.className = 'k';
+        k.textContent = r[0];
+        var v = document.createElement('div');
+        v.className = 'v';
+        var value = r[1] || '-';
+
+        if (r[2] === 'url' && value !== '-') {
+            var a = document.createElement('a');
+            a.href = value;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = value;
+            v.appendChild(a);
+        } else {
+            v.textContent = value;
+        }
+
+        if ((r[2] === 'copy' || r[2] === 'url') && value !== '-') {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'copy-btn';
+            btn.textContent = '复制';
+            btn.onclick = function() { copyValue(value, btn); };
+            v.appendChild(btn);
+        }
+
+        row.appendChild(k);
+        row.appendChild(v);
+        meta.appendChild(row);
+    });
+}
+
 function openPreview(el) {
     if (!el) return;
     var d = el.dataset;
@@ -201,8 +315,26 @@ function openPreview(el) {
     var dl = document.getElementById('previewDownload');
 
     title.textContent = d.name || ('附件 #' + (d.id || ''));
-    meta.textContent = 'ID: ' + (d.id || '-') + '　类型: ' + (d.ext || '-') + '　大小: ' + (d.size || '-');
     dl.href = d.download || '#';
+
+    renderDetail(meta, [
+        ['ID', d.id],
+        ['项目', d.project],
+        ['Bucket', (d.bucket || '-') + (d.type ? '（' + d.type + '）' : '')],
+        ['文件名', d.name],
+        ['Path', d.path, 'copy'],
+        ['文件地址', d.public, 'url'],
+        ['下载地址', d.download, 'url'],
+        ['MIME', d.mime],
+        ['大小', d.size],
+        ['尺寸', d.resolution],
+        ['时长', d.duration],
+        ['MD5', d.md5, 'copy'],
+        ['SHA1', d.sha1, 'copy'],
+        ['上传 IP', d.ip],
+        ['上传时间', d.time],
+        ['Token', d.token, 'copy']
+    ]);
 
     if (d.previewable === '1') {
         img.src = el.tagName === 'IMG' ? el.src : (d.open || '');
