@@ -116,15 +116,24 @@
                 <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">拼接返回地址用，远程必填。</div>
             </div>
         </div>
-        <div class="form-group" style="display:flex;gap:8px;flex-wrap:wrap;">
-            <div style="flex:1;min-width:200px;">
-                <label>允许上传的后缀</label>
-                <input type="text" id="formExt" placeholder="jpg,png,gif,bmp,jpeg">
+        <div class="form-group">
+            <label>允许上传的后缀</label>
+            <div class="ext-toolbar">
+                <span class="ext-count" id="extCount">已选 0 项</span>
+                <span class="ext-actions">
+                    <a href="javascript:;" onclick="extSelectAll(true)">全选</a>
+                    <span class="sep">|</span>
+                    <a href="javascript:;" onclick="extSelectAll(false)">清空</a>
+                </span>
             </div>
-            <div style="width:150px;">
-                <label>大小上限（KB）</label>
-                <input type="number" id="formSize" min="1" step="1" value="16384">
-            </div>
+            <div class="ext-chips" id="extChips"></div>
+            <input type="hidden" id="formExt" value="">
+            <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">点击切换：<b>选中为蓝色、未选为灰色</b>。不在所选列表内的后缀，上传接口会直接返回 <code>403 后缀不符合规范</code>。</div>
+        </div>
+        <div class="form-group">
+            <label>大小上限（KB）</label>
+            <input type="number" id="formSize" min="1" step="1" value="16384">
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">单文件超过该大小将被拒绝。</div>
         </div>
         <div class="form-group">
             <label>状态</label>
@@ -142,7 +151,99 @@
 {/block}
 {block name="script"}
 {literal}
+<style>
+.ext-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: var(--text-secondary); }
+.ext-toolbar .ext-actions a { color: var(--primary); text-decoration: none; font-size: 13px; }
+.ext-toolbar .ext-actions a:hover { text-decoration: underline; }
+.ext-toolbar .ext-actions .sep { margin: 0 8px; color: var(--border); }
+.ext-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-surface); max-height: 190px; overflow-y: auto; }
+.ext-cat { flex: 0 0 100%; font-size: 12px; color: var(--text-muted); margin: 4px 0 0; }
+.ext-cat:first-child { margin-top: 0; }
+.ext-chip { padding: 3px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-subtle); color: var(--text-muted); font-size: 13px; line-height: 20px; cursor: pointer; user-select: none; transition: all .15s; }
+.ext-chip:hover { border-color: var(--primary); color: var(--primary); }
+.ext-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.ext-chip.on:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+.ext-chip[data-extra="1"]::after { content: " *"; opacity: .75; }
+</style>
 <script>
+var EXT_GROUPS = [
+    { label: '图片', items: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'heic', 'avif', 'tif', 'tiff'] },
+    { label: '文档', items: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'md', 'csv', 'rtf'] },
+    { label: '音视频', items: ['mp3', 'wav', 'flac', 'aac', 'ogg', 'mp4', 'mov', 'webm', 'avi', 'mkv'] },
+    { label: '压缩 / 数据', items: ['zip', 'rar', '7z', 'tar', 'gz', 'json', 'xml'] },
+    { label: '安装包', items: ['apk', 'ipa'] }
+];
+var extSelected = {};
+
+function makeExtChip(ext) {
+    var el = document.createElement('span');
+    el.className = 'ext-chip';
+    el.setAttribute('data-ext', ext);
+    el.textContent = ext;
+    el.onclick = function() { toggleExt(ext); };
+    return el;
+}
+
+function renderExtChips() {
+    var box = document.getElementById('extChips');
+    box.innerHTML = '';
+    EXT_GROUPS.forEach(function(g) {
+        var cat = document.createElement('div');
+        cat.className = 'ext-cat';
+        cat.textContent = g.label;
+        box.appendChild(cat);
+        g.items.forEach(function(ext) { box.appendChild(makeExtChip(ext)); });
+    });
+    syncExt();
+}
+
+function toggleExt(ext) {
+    if (extSelected[ext]) delete extSelected[ext]; else extSelected[ext] = true;
+    syncExt();
+}
+
+// 统一回写：芯片高亮 + 隐藏域取值 + 计数
+function syncExt() {
+    var box = document.getElementById('extChips');
+    Array.prototype.forEach.call(box.querySelectorAll('.ext-chip'), function(el) {
+        var e = el.getAttribute('data-ext');
+        if (extSelected[e]) el.classList.add('on'); else el.classList.remove('on');
+    });
+    var keys = Object.keys(extSelected);
+    document.getElementById('formExt').value = keys.join(',');
+    document.getElementById('extCount').textContent = '已选 ' + keys.length + ' 项';
+}
+
+// 用逗号串回填选中状态；预设里没有的历史后缀动态补芯片，避免被静默丢弃
+function setExtValue(str) {
+    extSelected = {};
+    var box = document.getElementById('extChips');
+    Array.prototype.slice.call(box.querySelectorAll('.ext-chip[data-extra="1"]')).forEach(function(el) {
+        el.parentNode.removeChild(el);
+    });
+    String(str || '').toLowerCase().split(',').forEach(function(e) {
+        e = e.trim();
+        if (!e) return;
+        extSelected[e] = true;
+        if (!box.querySelector('.ext-chip[data-ext="' + e + '"]')) {
+            var chip = makeExtChip(e);
+            chip.setAttribute('data-extra', '1');
+            chip.setAttribute('title', '历史配置中的后缀（不在预设列表内）');
+            box.appendChild(chip);
+        }
+    });
+    syncExt();
+}
+
+function extSelectAll(on) {
+    extSelected = {};
+    if (on) {
+        Array.prototype.forEach.call(document.getElementById('extChips').querySelectorAll('.ext-chip'), function(el) {
+            extSelected[el.getAttribute('data-ext')] = true;
+        });
+    }
+    syncExt();
+}
 var credentialOptions = [];
 var credentialLoaded = false;
 
@@ -173,6 +274,7 @@ function loadCredentials(cb) {
     xhr.send();
 }
 loadCredentials();
+renderExtChips();
 
 function doSearch() {
     var search = document.getElementById('searchInput').value;
@@ -222,7 +324,7 @@ function openCreate() {
     document.getElementById('formType').value = 'local';
     applyOssTag('');
     document.getElementById('formUrl').value = '';
-    document.getElementById('formExt').value = 'jpg,png,gif,bmp,jpeg';
+    setExtValue('jpg,jpeg,png,gif,bmp,webp,svg,ico');
     document.getElementById('formSize').value = '16384';
     document.getElementById('formStatus').value = '1';
     fillProjects('');
@@ -239,7 +341,7 @@ function openEdit(btn) {
     document.getElementById('formType').value = d.type || 'local';
     applyOssTag(d.ossTag || '');
     document.getElementById('formUrl').value = d.url || '';
-    document.getElementById('formExt').value = d.ext || '';
+    setExtValue(d.ext || '');
     document.getElementById('formSize').value = d.size || '16384';
     document.getElementById('formStatus').value = d.status || '1';
     fillProjects(d.projectId);
@@ -263,13 +365,15 @@ function submitForm() {
     }
     if (type === 'oss' && !ossTag) { alert('远程存储必须选择 OSS 凭据'); return; }
     if (type === 'oss' && !url) { alert('远程存储必须填写访问域名'); return; }
+    var ext = document.getElementById('formExt').value.trim();
+    if (!ext) { alert('请至少选择一种允许上传的后缀'); return; }
     var params = 'project_id=' + projectId
         + '&name=' + encodeURIComponent(name)
         + '&path=' + encodeURIComponent(path)
         + '&type=' + encodeURIComponent(type)
         + '&oss_tag=' + encodeURIComponent(type === 'oss' ? ossTag : '')
         + '&url=' + encodeURIComponent(url)
-        + '&ext=' + encodeURIComponent(document.getElementById('formExt').value.trim())
+        + '&ext=' + encodeURIComponent(ext)
         + '&size=' + document.getElementById('formSize').value
         + '&status=' + document.getElementById('formStatus').value;
     if (id) params += '&id=' + id;
