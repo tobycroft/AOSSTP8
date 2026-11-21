@@ -9,6 +9,7 @@ use app\v3\storage\model\V3StorageModel;
 use BaseController\CommonController;
 use Input;
 use Ret;
+use think\facade\Db;
 
 /**
  * v3 文件上传：临时凭证签发接口（v3 凭证信封鉴权）。
@@ -21,11 +22,13 @@ use Ret;
  * 签发的一次性 token 落 ao_attachment_token，并记录 storage_id，
  * 供 v3/file/index 直传时定位到对应 Bucket。
  *
- * 四个接口：
+ * 六个接口（含 V1/V2 的 md5 反查能力）：
  *   POST /v3/file/token/create          换取临时 token
  *   POST /v3/file/token/upload_url      换取临时 token + 完整上传地址
  *   POST /v3/file/token/upload_url_hash 换取临时 token + hash 模式上传地址
  *   POST /v3/file/token/hash_query      按 md5 查询已上传文件完整信息
+ *   POST /v3/file/token/md5             按 md5 反查文件完整地址（同 V1 search::md5）
+ *   POST /v3/file/token/md5s            按 md5 批量反查文件完整地址（同 V1 search::md5s）
  */
 class token extends CommonController
 {
@@ -93,25 +96,90 @@ class token extends CommonController
     /** 按 hash（md5）查询已上传文件完整信息 */
     public function hash_query()
     {
-        $hash = Input::Post('hash');
+        // 兼容 V2 的 hash 参数与 V1 的 md5 参数
+        $hash = Input::Combi('hash', false);
+        if ($hash === '') {
+            $hash = Input::Combi('md5', false);
+        }
         if (empty($hash)) {
             Ret::Fail(400, null, '需要hash字段');
         }
 
-        $file = \think\facade\Db::name('ao_attachment')
-            ->where('md5', $hash)
-            ->where('token', V3StorageModel::api_group_key((int)$this->bucket['id']))
-            ->find();
+        $file = $this->findUploaded($hash);
         if (!$file) {
             Ret::Fail(404, null, '未找到文件');
         }
 
+        Ret::Success(0, $this->decorateFile($file));
+    }
+
+    /** 按 md5 反查文件完整地址（对齐 V1 search::md5） */
+    public function md5()
+    {
+        $md5 = Input::Combi('md5', false);
+        if (empty($md5)) {
+            Ret::Fail(400, null, '需要md5字段');
+        }
+
+        $file = $this->findUploaded($md5);
+        if (!$file) {
+            Ret::Fail(404, null, '未找到文件,请先上传');
+        }
+
+        Ret::Success(0, $this->decorateFile($file));
+    }
+
+    /** 按 md5 批量反查文件完整地址（对齐 V1 search::md5s） */
+    public function md5s()
+    {
+        $md5s = Input::Combi('md5s', false);
+        if (empty($md5s)) {
+            Ret::Fail(400, null, '需要md5s字段');
+        }
+        $md5s = json_decode($md5s, true);
+        if (!is_array($md5s) || empty($md5s)) {
+            Ret::Fail(400, null, 'md5s字段需为JSON数组');
+        }
+
+        $rows = Db::name('ao_attachment')
+            ->whereIn('md5', $md5s)
+            ->where('token', $this->groupKey())
+            ->select()
+            ->toArray();
+        if (empty($rows)) {
+            Ret::Fail(404, null, '未找到文件,请先上传');
+        }
+
+        $list = [];
+        foreach ($rows as $row) {
+            $list[] = $this->decorateFile($row);
+        }
+        Ret::Success(0, $list);
+    }
+
+    /** 当前 Bucket 在 ao_attachment 中的分组键 */
+    private function groupKey(): string
+    {
+        return V3StorageModel::api_group_key((int)$this->bucket['id']);
+    }
+
+    /** 按 md5 取本 Bucket 下已上传的附件行 */
+    private function findUploaded(string $md5): array
+    {
+        return Db::name('ao_attachment')
+            ->where('md5', $md5)
+            ->where('token', $this->groupKey())
+            ->findOrEmpty();
+    }
+
+    /** 补全附件行的访问地址：src / url / surl */
+    private function decorateFile(array $file): array
+    {
         $url = rtrim((string)$this->bucket['url'], '/');
         $file['src'] = $file['path'];
         $file['url'] = $url !== '' ? $url . '/' . $file['path'] : $file['path'];
         $file['surl'] = $file['path'];
-
-        Ret::Success(0, $file);
+        return $file;
     }
 
     /**

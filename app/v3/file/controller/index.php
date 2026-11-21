@@ -31,9 +31,10 @@ use Throwable;
  * initialize 按一次性 token 里的 storage_id 定位 Bucket，由 Bucket 决定
  * 落盘目录（Path）、允许后缀、大小上限以及本地/远程：upload/{Path}/YYYYMMDD/md5.ext。
  *
- * 可用入口：
- *   POST /v3/file/index/upfull      完整上传，返回文件地址
+ * 可用入口（与 V1/V2 上传能力对齐）：
+ *   POST /v3/file/index/upfull      完整上传，返回完整文件地址
  *   POST /v3/file/index/up          完整上传（相对路径）
+ *   POST /v3/file/index/up_ue       编辑器上传，返回 src
  *   POST /v3/file/index/uphash      hash 模式，仅返回 md5
  *   POST /v3/file/index/up_complete 返回完整文件信息
  *
@@ -116,6 +117,20 @@ class index extends CommonController
                 } catch (Exception $e) {
                     Ret::Fail(400, $e->getTraceAsString(), $e->getMessage());
                 }
+            } else {
+                Ret::Fail(400, null, '请上传binary文件');
+            }
+        } catch (Throwable $e) {
+            Ret::Fail(400, $e->getTraceAsString(), $e->getMessage());
+        }
+    }
+
+    public function up_ue(Request $request)
+    {
+        try {
+            $file = $request->file('file');
+            if ($file) {
+                $this->upload_file($request, 1, 'ue');
             } else {
                 Ret::Fail(400, null, '请上传binary文件');
             }
