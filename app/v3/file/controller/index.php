@@ -43,7 +43,8 @@ use Throwable;
  */
 class index extends CommonController
 {
-    protected string $upload_tag = '';
+    /** V3 附件的归属标记：与 V1/V2 共用 ao_attachment 时用于隔离同名 token */
+    protected string $upload_tag = 'v3';
     protected mixed $token;
     protected mixed $proc;
     protected ?string $upload_ip = null;

@@ -4,6 +4,7 @@ namespace app\admin\controller;
 
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
+use app\v3\storage\model\V3StorageModel;
 use BaseController\CommonController;
 use Ret;
 use think\facade\Db;
@@ -11,8 +12,9 @@ use think\facade\Db;
 /**
  * 存储管理 V3 → 附件列表
  *
- * 只展示 V3 上传产生的附件（ao_attachment.token = v3bucket:{storage_id}），
- * 支持按「项目」筛选（一个项目一个 Bucket），并可叠加 Bucket、后缀、关键字过滤。
+ * 只展示 V3 上传产生的附件（ao_attachment.tag = v3；token 为项目名称，
+ * 历史数据兼容 v3bucket:{storage_id}），支持按「项目」筛选（一个项目一个 Bucket），
+ * 并可叠加 Bucket、后缀、关键字过滤。
  *
  * 安全说明：图片预览统一走本站的 file 接口，而不是直接把 upload/ 下的文件
  * 交给浏览器解析：
@@ -79,22 +81,46 @@ class V3Attachment extends CommonController
             $projectNames[(int)$project['id']] = (string)$project['name'];
         }
 
-        $query = Db::name('ao_attachment')->where('token', 'like', 'v3bucket:%');
+        // token 现在是项目名称（如 stb / flamecloud）；tag=v3 用于与 V1/V2 隔离。
+        // token 以 v3bucket: 开头的是历史数据，一并兼容展示。
+        $projectNameIds = array_flip($projectNames);
+        $tokenBucketMap = [];
+        foreach ($buckets as $bucket) {
+            $pid = (int)$bucket['project_id'];
+            $pname = $projectNames[$pid] ?? '';
+            if ($pname !== '') {
+                $tokenBucketMap[$pname] = $bucket;
+            }
+            $tokenBucketMap['v3bucket:' . (int)$bucket['id']] = $bucket;
+        }
+
+        $query = Db::name('ao_attachment')->where(function ($q) {
+            $q->where('tag', 'v3')->whereOr('token', 'like', 'v3bucket:%');
+        });
 
         // 维度过滤：Bucket 优先；只选项目时取该项目绑定的 Bucket
         if ($bucketId > 0) {
-            $query->where('token', 'v3bucket:' . $bucketId);
+            $tokens = ['v3bucket:' . $bucketId];
+            $name = $projectNames[(int)($bucketMap[$bucketId]['project_id'] ?? 0)] ?? '';
+            if ($name !== '') {
+                $tokens[] = $name;
+            }
+            $query->whereIn('token', $tokens);
         } elseif ($projectId > 0) {
             $tokens = [];
             foreach ($buckets as $bucket) {
                 if ((int)$bucket['project_id'] === $projectId) {
                     $tokens[] = 'v3bucket:' . (int)$bucket['id'];
+                    $name = $projectNames[$projectId] ?? '';
+                    if ($name !== '') {
+                        $tokens[] = $name;
+                    }
                 }
             }
             if (empty($tokens)) {
                 $query->where('id', '<', 0);
             } else {
-                $query->whereIn('token', $tokens);
+                $query->whereIn('token', array_values(array_unique($tokens)));
             }
         }
 
@@ -114,12 +140,14 @@ class V3Attachment extends CommonController
 
         $items = [];
         foreach ($list['data'] as $row) {
-            $items[] = $this->formatItem($row, $bucketMap, $projectNames);
+            $items[] = $this->formatItem($row, $tokenBucketMap, $projectNameIds, $projectNames);
         }
 
         // 可选的扩展名过滤项：仅取 V3 附件已有后缀
         $extOptions = Db::name('ao_attachment')
-            ->where('token', 'like', 'v3bucket:%')
+            ->where(function ($q) {
+                $q->where('tag', 'v3')->whereOr('token', 'like', 'v3bucket:%');
+            })
             ->distinct(true)
             ->column('ext');
 
@@ -180,24 +208,35 @@ class V3Attachment extends CommonController
     /**
      * 组装列表行：解析所属 Bucket/项目，并给出安全的预览/下载地址
      */
-    private function formatItem(array $row, array $bucketMap, array $projectNames): array
+    private function formatItem(array $row, array $tokenBucketMap, array $projectNameIds, array $projectNames): array
     {
         $id = (int)$row['id'];
         $ext = strtolower((string)($row['ext'] ?? ''));
         $path = str_replace('\\', '/', (string)($row['path'] ?? ''));
+        $token = (string)($row['token'] ?? '');
 
-        $bucketId = 0;
-        if (preg_match('/^v3bucket:(\d+)$/', (string)($row['token'] ?? ''), $m) === 1) {
+        // token 为项目名称；历史数据可能仍是 v3bucket:{storage_id}
+        $bucket = $tokenBucketMap[$token] ?? null;
+        $bucketId = (int)($bucket['id'] ?? 0);
+        if ($bucketId === 0 && preg_match('/^v3bucket:(\d+)$/', $token, $m) === 1) {
             $bucketId = (int)$m[1];
         }
-        $bucket = $bucketMap[$bucketId] ?? null;
         $projectId = (int)($bucket['project_id'] ?? 0);
-        $bucketName = $bucket ? (string)$bucket['name'] : ('已删除 Bucket #' . $bucketId);
+        if ($projectId === 0 && isset($projectNameIds[$token])) {
+            $projectId = (int)$projectNameIds[$token];
+        }
+        if ($bucket) {
+            $bucketName = (string)$bucket['name'];
+        } elseif ($bucketId > 0) {
+            $bucketName = '已删除 Bucket #' . $bucketId;
+        } else {
+            $bucketName = '已删除 Bucket';
+        }
 
         // 对外图片地址：Bucket 配了 url 就用它；本地 Bucket 未配置时回退到图片站地址。
         // 拼接后形如 https://image.tuuz.cc:433/stb/20261121/xxx.jpg
         $imageBase = rtrim((string)($bucket['url'] ?? ''), '/');
-        if ($imageBase === '' && $bucket && (string)$bucket['type'] === 'local') {
+        if ($imageBase === '' && (!$bucket || (string)$bucket['type'] === 'local')) {
             $imageBase = self::IMAGE_BASE_URL;
         }
         $publicUrl = ($imageBase !== '' && $this->isSafeRelativePath($path)) ? $imageBase . '/' . $path : '';
@@ -266,11 +305,15 @@ class V3Attachment extends CommonController
         if (empty($row)) {
             $this->abortFile(404, '附件不存在');
         }
-        if (preg_match('/^v3bucket:(\d+)$/', (string)($row['token'] ?? ''), $m) !== 1) {
+        // 只允许读取 V3 附件：tag=v3；历史数据 token 以 v3bucket: 开头
+        $token = (string)($row['token'] ?? '');
+        $isV3 = (string)($row['tag'] ?? '') === 'v3' || str_starts_with($token, 'v3bucket:');
+        if (!$isV3) {
             $this->abortFile(404, '仅支持查看 V3 附件');
         }
 
-        $bucket = Db::name('ao_v3_storage')->where('id', (int)$m[1])->find();
+        // token 为项目名称（兼容 v3bucket:{id}），据此定位 Bucket 类型与访问域名
+        $bucket = V3StorageModel::api_find_by_token($token);
         $path = str_replace('\\', '/', (string)($row['path'] ?? ''));
 
         if (($bucket['type'] ?? 'local') === 'oss') {

@@ -3,6 +3,7 @@
 namespace app\v3\storage\model;
 
 use app\v1\file\action\OssSelectionAction;
+use think\facade\Db;
 use think\Model;
 
 /*
@@ -67,12 +68,45 @@ class V3StorageModel extends Model
     /**
      * 附件表的分组键：ao_attachment.token 存的就是它
      *
-     * ao_attachment.token 是 V1/V2 沿用的列（V1 存 ao_oss.token），V3 用它按 Bucket
-     * 归组，便于同 Bucket 内按 md5 去重；加前缀避免与 ao_oss.token 撞值。
+     * V3 直接使用「项目名称」作为 token（如 stb、flamecloud），便于后台和 DB
+     * 直观区分文件归属；历史数据里的 v3bucket:{storage_id} 作为兼容兜底。
+     * V3 上传同时把 ao_attachment.tag 记为 v3，避免与 V1/V2 的同名 token 混在一起。
      */
     public static function api_group_key(int $id): string
     {
-        return $id > 0 ? 'v3bucket:' . $id : '';
+        if ($id <= 0) {
+            return '';
+        }
+        $name = Db::name('ao_v3_storage')
+            ->alias('s')
+            ->join('ao_v3_project p', 's.project_id = p.id')
+            ->where('s.id', $id)
+            ->value('p.name');
+        return ($name !== null && $name !== '') ? (string)$name : ('v3bucket:' . $id);
+    }
+
+    /**
+     * 按附件 token 反查 Bucket
+     *
+     * 兼容两种 token：
+     *   - 项目名称（V3 现行），如 stb、flamecloud
+     *   - v3bucket:{storage_id}（V3 历史数据）
+     */
+    public static function api_find_by_token(string $token): array
+    {
+        $token = trim($token);
+        if ($token === '') {
+            return [];
+        }
+        if (preg_match('/^v3bucket:(\d+)$/', $token, $m) === 1) {
+            return Db::name('ao_v3_storage')->where('id', (int)$m[1])->findOrEmpty();
+        }
+        return Db::name('ao_v3_storage')
+            ->alias('s')
+            ->join('ao_v3_project p', 's.project_id = p.id')
+            ->where('p.name', $token)
+            ->field('s.*')
+            ->findOrEmpty();
     }
 
     /**

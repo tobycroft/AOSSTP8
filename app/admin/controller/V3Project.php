@@ -9,6 +9,7 @@ use Aoss\Envelope;
 use BaseController\CommonController;
 use Input;
 use Ret;
+use think\facade\Db;
 
 /**
  * 项目管理 v3：ao_v3_project 后台维护（只维护鉴权信息）
@@ -100,9 +101,13 @@ class V3Project extends CommonController
 
     private function create()
     {
-        $name = Input::Put('name');
-        if (empty($name)) {
+        $name = trim((string)Input::Put('name'));
+        if ($name === '') {
             Ret::Fail(400, null, '项目名称不能为空');
+        }
+        // 项目名称即 V3 附件的 token，必须唯一，避免不同项目的文件混在同一个分组
+        if (Db::name('ao_v3_project')->where('name', $name)->count() > 0) {
+            Ret::Fail(400, null, '项目名称已存在');
         }
 
         // 凭证由服务端签发，不接受人工输入：secret 的熵直接决定信封机密性上限
@@ -160,14 +165,34 @@ class V3Project extends CommonController
             Ret::Fail(404, null, '项目不存在');
         }
 
+        $oldName = (string)$item['name'];
         $data = [];
-        if (request()->has('name', 'post')) $data['name'] = Input::Post('name');
+        if (request()->has('name', 'post')) {
+            $name = trim((string)Input::Post('name'));
+            if ($name === '') {
+                Ret::Fail(400, null, '项目名称不能为空');
+            }
+            if ($name !== $oldName
+                && Db::name('ao_v3_project')->where('name', $name)->where('id', '<>', $id)->count() > 0) {
+                Ret::Fail(400, null, '项目名称已存在');
+            }
+            $data['name'] = $name;
+        }
         if (request()->has('rate_limit', 'post')) {
             $data['rate_limit'] = Input::PostInt('rate_limit', 0);
         }
         if (request()->has('status', 'post')) $data['status'] = Input::PostInt('status');
 
         $item->save($data);
+
+        // 项目改名后同步 V3 附件 token（token 即项目名称），否则历史附件会变成“无主”
+        if (isset($data['name']) && $data['name'] !== $oldName) {
+            Db::name('ao_attachment')
+                ->where('token', $oldName)
+                ->where('tag', 'v3')
+                ->update(['token' => $data['name']]);
+        }
+
         Ret::Success(0, ['kid' => Envelope::kid((string)$item['secret'])], '更新成功');
     }
 

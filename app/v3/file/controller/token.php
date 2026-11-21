@@ -144,6 +144,7 @@ class token extends CommonController
         $rows = Db::name('ao_attachment')
             ->whereIn('md5', $md5s)
             ->where('token', $this->groupKey())
+            ->where('tag', 'v3')
             ->select()
             ->toArray();
         if (empty($rows)) {
@@ -157,7 +158,7 @@ class token extends CommonController
         Ret::Success(0, $list);
     }
 
-    /** 当前 Bucket 在 ao_attachment 中的分组键 */
+    /** 当前 Bucket 在 ao_attachment 中的分组键（现为项目名称，如 stb） */
     private function groupKey(): string
     {
         return V3StorageModel::api_group_key((int)$this->bucket['id']);
@@ -169,6 +170,7 @@ class token extends CommonController
         return Db::name('ao_attachment')
             ->where('md5', $md5)
             ->where('token', $this->groupKey())
+            ->where('tag', 'v3')
             ->findOrEmpty();
     }
 
