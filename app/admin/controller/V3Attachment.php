@@ -24,6 +24,9 @@ use think\facade\Db;
  */
 class V3Attachment extends CommonController
 {
+    /** 本站本地文件对外访问的图片站地址（Bucket 未配置 url 时兜底） */
+    private const IMAGE_BASE_URL = 'https://image.tuuz.cc:433';
+
     /** 允许 inline 预览的光栅图片：扩展名 => [Content-Type, getimagesize 类型] */
     private const RASTER_TYPES = [
         'jpg' => ['image/jpeg', IMAGETYPE_JPEG],
@@ -173,17 +176,19 @@ class V3Attachment extends CommonController
         $projectId = (int)($bucket['project_id'] ?? 0);
         $bucketName = $bucket ? (string)$bucket['name'] : ('已删除 Bucket #' . $bucketId);
 
-        $remoteUrl = '';
-        if ($bucket && (string)$bucket['type'] === 'oss' && (string)$bucket['url'] !== '' && $this->isSafeRelativePath($path)) {
-            $remoteUrl = rtrim((string)$bucket['url'], '/') . '/' . $path;
+        // 对外图片地址：Bucket 配了 url 就用它；本地 Bucket 未配置时回退到图片站地址。
+        // 拼接后形如 https://image.tuuz.cc:433/stb/20261121/xxx.jpg
+        $imageBase = rtrim((string)($bucket['url'] ?? ''), '/');
+        if ($imageBase === '' && $bucket && (string)$bucket['type'] === 'local') {
+            $imageBase = self::IMAGE_BASE_URL;
         }
+        $publicUrl = ($imageBase !== '' && $this->isSafeRelativePath($path)) ? $imageBase . '/' . $path : '';
+        $proxyUrl = '/admin/v3_attachment/file?id=' . $id;
 
         $isRaster = isset(self::RASTER_TYPES[$ext]);
-        $thumbUrl = '';
-        if ($isRaster) {
-            // 本地文件走受控代理；远程文件直接使用 OSS 地址（光栅图作为 <img> 不会执行脚本）
-            $thumbUrl = $remoteUrl !== '' ? $remoteUrl : '/admin/v3_attachment/file?id=' . $id;
-        }
+        // 光栅图优先使用拼接后的图片站地址；没有可用地址时回退到后台受控代理
+        $thumbUrl = $isRaster ? ($publicUrl !== '' ? $publicUrl : $proxyUrl) : '';
+        $fallbackUrl = $isRaster && $publicUrl !== '' ? $proxyUrl : '';
 
         return [
             'id' => $id,
@@ -202,8 +207,13 @@ class V3Attachment extends CommonController
             'create_time' => (string)($row['create_time'] ?? '-'),
             'is_raster' => $isRaster,
             'thumb_url' => $thumbUrl,
-            'open_url' => $remoteUrl !== '' ? $remoteUrl : '/admin/v3_attachment/file?id=' . $id,
-            'download_url' => $remoteUrl !== '' ? $remoteUrl : '/admin/v3_attachment/file?id=' . $id . '&download=1',
+            'fallback_url' => $fallbackUrl,
+            // 查看：光栅图跳图片站原图；其余走后台受控接口（远程 Bucket 会 302 到 OSS）
+            'open_url' => $isRaster && $publicUrl !== '' ? $publicUrl : $proxyUrl,
+            // 下载：本地强制 attachment，远程直接使用 OSS 地址
+            'download_url' => ($bucket && (string)$bucket['type'] === 'oss' && $publicUrl !== '')
+                ? $publicUrl
+                : $proxyUrl . '&download=1',
         ];
     }
 

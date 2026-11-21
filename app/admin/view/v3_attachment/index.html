@@ -24,13 +24,13 @@
                 {/if}
                 {/foreach}
             </select>
-            <input type="text" name="keyword" placeholder="文件名 / MD5 / 路径" value="{$keyword|htmlspecialchars}" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-surface);color:var(--text);width:200px;outline:none;">
+            <input type="text" name="keyword" placeholder="文件名 / MD5 / 路径" value="{$keyword}" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-surface);color:var(--text);width:200px;outline:none;">
             <button class="btn btn-primary" type="submit">筛选</button>
         </form>
     </div>
 </div>
 <div class="card">
-    <p>这里只展示 <b>V3 上传</b>的附件（按 Bucket 归组），可按项目 / Bucket / 后缀 / 关键字过滤。预览图片时只对 jpg / png / gif / bmp / webp / ico 做站内代理展示，并校验真实文件类型；<b>SVG、HTML、PDF 等一律不内联渲染，只能下载</b>，避免图片中暗藏脚本在后台执行。</p>
+    <p>这里只展示 <b>V3 上传</b>的附件（按 Bucket 归组），可按项目 / Bucket / 后缀 / 关键字过滤。图片地址优先拼接 Bucket 的访问域名（本地 Bucket 未配置时用图片站 <code>https://image.tuuz.cc:433</code>），加载失败自动回退站内受控代理。仅对 jpg / png / gif / bmp / webp / ico 内联展示，并校验真实文件类型；<b>SVG、HTML、PDF 等一律不内联渲染，只能下载</b>，避免图片中暗藏脚本在后台执行。</p>
 </div>
 <table>
     <thead>
@@ -52,18 +52,19 @@
         <tr>
             <td>
                 {if $item.thumb_url != ''}
-                <img class="attach-thumb" src="{$item.thumb_url|htmlspecialchars}" alt="" loading="lazy" referrerpolicy="no-referrer"
-                     data-id="{$item.id}" data-name="{$item.name|htmlspecialchars}" data-ext="{$item.ext}"
-                     data-size="{$item.size}" data-open="{$item.open_url|htmlspecialchars}" data-download="{$item.download_url|htmlspecialchars}"
+                <img class="attach-thumb" src="{$item.thumb_url}" alt="" loading="lazy" referrerpolicy="no-referrer"
+                     data-id="{$item.id}" data-name="{$item.name}" data-ext="{$item.ext}"
+                     data-size="{$item.size}" data-open="{$item.open_url}" data-download="{$item.download_url}"
+                     data-fallback="{$item.fallback_url}" onerror="attachFallback(this)"
                      data-previewable="1" onclick="openPreview(this)">
                 {else/}
-                <span class="attach-badge" data-id="{$item.id}" data-name="{$item.name|htmlspecialchars}" data-ext="{$item.ext}"
-                      data-size="{$item.size}" data-open="{$item.open_url|htmlspecialchars}" data-download="{$item.download_url|htmlspecialchars}"
+                <span class="attach-badge" data-id="{$item.id}" data-name="{$item.name}" data-ext="{$item.ext}"
+                      data-size="{$item.size}" data-open="{$item.open_url}" data-download="{$item.download_url}"
                       data-previewable="0" onclick="openPreview(this)">{$item.ext|default='file'}</span>
                 {/if}
             </td>
             <td>{$item.id}</td>
-            <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.name|htmlspecialchars}">{$item.name|htmlspecialchars}</td>
+            <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.name}">{$item.name}</td>
             <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.project_name} / {$item.bucket_name}">
                 {$item.project_name} / {$item.bucket_name}
             </td>
@@ -74,7 +75,7 @@
             <td>{$item.create_time}</td>
             <td style="white-space:nowrap;">
                 <button class="btn btn-sm btn-edit" onclick="openPreview(this.closest('tr').querySelector('[data-id]'))">查看</button>
-                <a class="btn btn-sm" style="background:var(--bg-subtle);color:var(--text);border:1px solid var(--border-strong);text-decoration:none;" href="{$item.download_url|htmlspecialchars}" target="_blank" rel="noopener noreferrer">下载</a>
+                <a class="btn btn-sm" style="background:var(--bg-subtle);color:var(--text);border:1px solid var(--border-strong);text-decoration:none;" href="{$item.download_url}" target="_blank" rel="noopener noreferrer">下载</a>
             </td>
         </tr>
         {/foreach}
@@ -122,6 +123,13 @@ function applyProjectFilter() {
         if (match && opt.value === current) keep = true;
     });
     if (!keep) bucketSelect.value = '0';
+}
+
+// 图片站缩略图加载失败时，回退到后台受控代理
+function attachFallback(img) {
+    var fb = img.getAttribute('data-fallback');
+    img.onerror = null;
+    if (fb) img.src = fb;
 }
 
 function openPreview(el) {
