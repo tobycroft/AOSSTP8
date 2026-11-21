@@ -87,7 +87,10 @@ class Layout
         // 存储管理 V3：v3 的 Bucket，独立于 ao_oss 的「存储项目」，单列一级菜单并紧跟项目管理 v3
         'v3_storage' => [
             'title' => '存储管理 V3',
-            'link' => '/admin/v3_storage',
+            'items' => [
+                'v3_storage' => ['label' => 'Bucket 配置', 'url' => '/admin/v3_storage'],
+                'v3_attachment' => ['label' => '附件列表', 'url' => '/admin/v3_attachment'],
+            ],
         ],
         // AI 管理：目录顺序紧跟「项目管理 v3」
         'ai' => [

@@ -1,0 +1,163 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>附件列表 V3</h2>
+        <form method="get" action="/admin/v3_attachment" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <select name="project_id" id="projectSelect" onchange="applyProjectFilter()" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-surface);color:var(--text);outline:none;">
+                <option value="0">全部项目</option>
+                {foreach $projectOptions as $p}
+                <option value="{$p.id}" {if $projectId==$p.id}selected{/if}>{$p.name} (#{$p.id})</option>
+                {/foreach}
+            </select>
+            <select name="bucket_id" id="bucketSelect" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-surface);color:var(--text);outline:none;">
+                <option value="0">全部 Bucket</option>
+                {foreach $bucketOptions as $b}
+                <option value="{$b.id}" data-project="{$b.project_id}" {if $bucketId==$b.id}selected{/if}>{$b.label}</option>
+                {/foreach}
+            </select>
+            <select name="ext" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-surface);color:var(--text);outline:none;">
+                <option value="">全部类型</option>
+                {foreach $extOptions as $e}
+                {if $e !== ''}
+                <option value="{$e}" {if $ext==$e}selected{/if}>{$e}</option>
+                {/if}
+                {/foreach}
+            </select>
+            <input type="text" name="keyword" placeholder="文件名 / MD5 / 路径" value="{$keyword|htmlspecialchars}" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-surface);color:var(--text);width:200px;outline:none;">
+            <button class="btn btn-primary" type="submit">筛选</button>
+        </form>
+    </div>
+</div>
+<div class="card">
+    <p>这里只展示 <b>V3 上传</b>的附件（按 Bucket 归组），可按项目 / Bucket / 后缀 / 关键字过滤。预览图片时只对 jpg / png / gif / bmp / webp / ico 做站内代理展示，并校验真实文件类型；<b>SVG、HTML、PDF 等一律不内联渲染，只能下载</b>，避免图片中暗藏脚本在后台执行。</p>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th style="width:64px;">预览</th>
+            <th>ID</th>
+            <th>文件名</th>
+            <th>项目 / Bucket</th>
+            <th>类型</th>
+            <th>大小</th>
+            <th>MD5</th>
+            <th>上传 IP</th>
+            <th>上传时间</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>
+                {if $item.thumb_url != ''}
+                <img class="attach-thumb" src="{$item.thumb_url|htmlspecialchars}" alt="" loading="lazy" referrerpolicy="no-referrer"
+                     data-id="{$item.id}" data-name="{$item.name|htmlspecialchars}" data-ext="{$item.ext}"
+                     data-size="{$item.size}" data-open="{$item.open_url|htmlspecialchars}" data-download="{$item.download_url|htmlspecialchars}"
+                     data-previewable="1" onclick="openPreview(this)">
+                {else/}
+                <span class="attach-badge" data-id="{$item.id}" data-name="{$item.name|htmlspecialchars}" data-ext="{$item.ext}"
+                      data-size="{$item.size}" data-open="{$item.open_url|htmlspecialchars}" data-download="{$item.download_url|htmlspecialchars}"
+                      data-previewable="0" onclick="openPreview(this)">{$item.ext|default='file'}</span>
+                {/if}
+            </td>
+            <td>{$item.id}</td>
+            <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.name|htmlspecialchars}">{$item.name|htmlspecialchars}</td>
+            <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.project_name} / {$item.bucket_name}">
+                {$item.project_name} / {$item.bucket_name}
+            </td>
+            <td><span class="attach-badge" style="width:auto;padding:2px 8px;">{$item.ext|default='-'}</span></td>
+            <td>{$item.size}</td>
+            <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.md5}">{$item.md5}</td>
+            <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.ip}">{$item.ip|default='-'}</td>
+            <td>{$item.create_time}</td>
+            <td style="white-space:nowrap;">
+                <button class="btn btn-sm btn-edit" onclick="openPreview(this.closest('tr').querySelector('[data-id]'))">查看</button>
+                <a class="btn btn-sm" style="background:var(--bg-subtle);color:var(--text);border:1px solid var(--border-strong);text-decoration:none;" href="{$item.download_url|htmlspecialchars}" target="_blank" rel="noopener noreferrer">下载</a>
+            </td>
+        </tr>
+        {/foreach}
+        {if empty($list)}
+        <tr>
+            <td colspan="10" style="text-align:center;color:var(--text-muted);padding:32px;">暂无附件</td>
+        </tr>
+        {/if}
+    </tbody>
+</table>
+{$pagination|raw}
+<div class="modal" id="previewModal">
+    <div class="modal-box" style="width:auto;max-width:90vw;max-height:92vh;overflow-y:auto;">
+        <h3 id="previewTitle">附件预览</h3>
+        <div id="previewBody" style="text-align:center;min-width:280px;">
+            <img id="previewImg" src="" alt="" referrerpolicy="no-referrer" style="display:none;max-width:80vw;max-height:64vh;border-radius:6px;background:var(--bg-inset);">
+            <div id="previewTip" style="display:none;color:var(--text-secondary);font-size:14px;line-height:1.8;padding:24px 8px;"></div>
+        </div>
+        <div style="margin-top:12px;font-size:12px;color:var(--text-muted);word-break:break-all;" id="previewMeta"></div>
+        <div class="modal-actions">
+            <a class="btn btn-cancel" id="previewDownload" href="#" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">下载</a>
+            <button class="btn btn-primary" onclick="closePreview()">关闭</button>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{literal}
+<style>
+.attach-thumb { width:48px; height:48px; object-fit:cover; border-radius:4px; border:1px solid var(--border); background:var(--bg-inset); cursor:zoom-in; display:block; }
+.attach-badge { display:inline-flex; align-items:center; justify-content:center; min-width:48px; height:48px; padding:0 6px; border-radius:4px; border:1px solid var(--border); background:var(--bg-subtle); color:var(--text-muted); font-size:11px; cursor:pointer; text-transform:uppercase; }
+</style>
+<script>
+// 项目筛选联动：只保留该项目下的 Bucket 选项
+function applyProjectFilter() {
+    var projectId = document.getElementById('projectSelect').value;
+    var bucketSelect = document.getElementById('bucketSelect');
+    var current = bucketSelect.value;
+    var keep = false;
+    Array.prototype.forEach.call(bucketSelect.options, function(opt) {
+        if (!opt.value || opt.value === '0') { opt.hidden = false; return; }
+        var match = !projectId || projectId === '0' || opt.getAttribute('data-project') === projectId;
+        opt.hidden = !match;
+        opt.disabled = !match;
+        if (match && opt.value === current) keep = true;
+    });
+    if (!keep) bucketSelect.value = '0';
+}
+
+function openPreview(el) {
+    if (!el) return;
+    var d = el.dataset;
+    var modal = document.getElementById('previewModal');
+    var img = document.getElementById('previewImg');
+    var tip = document.getElementById('previewTip');
+    var title = document.getElementById('previewTitle');
+    var meta = document.getElementById('previewMeta');
+    var dl = document.getElementById('previewDownload');
+
+    title.textContent = d.name || ('附件 #' + (d.id || ''));
+    meta.textContent = 'ID: ' + (d.id || '-') + '　类型: ' + (d.ext || '-') + '　大小: ' + (d.size || '-');
+    dl.href = d.download || '#';
+
+    if (d.previewable === '1') {
+        img.src = el.tagName === 'IMG' ? el.src : (d.open || '');
+        img.style.display = 'inline-block';
+        tip.style.display = 'none';
+    } else {
+        img.removeAttribute('src');
+        img.style.display = 'none';
+        tip.style.display = 'block';
+        tip.textContent = '该类型不提供在线预览（避免 SVG / HTML 等文件在后台执行脚本），请下载后查看。';
+    }
+    modal.classList.add('show');
+}
+
+function closePreview() {
+    var img = document.getElementById('previewImg');
+    img.removeAttribute('src');
+    document.getElementById('previewModal').classList.remove('show');
+}
+
+document.addEventListener('DOMContentLoaded', applyProjectFilter);
+</script>
+{/literal}
+{/block}

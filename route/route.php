@@ -117,6 +117,10 @@
     \think\facade\Route::any('admin/v3_storage/credential_options', '\app\admin\controller\V3Storage@credential_options');
     \think\facade\Route::any('admin/v3_storage', '\app\admin\controller\V3Storage@index');
 
+    // v3 附件列表（存储管理 V3 → 附件列表；按项目/Bucket 过滤，图片受控预览）
+    \think\facade\Route::any('admin/v3_attachment/file', '\app\admin\controller\V3Attachment@file');
+    \think\facade\Route::any('admin/v3_attachment', '\app\admin\controller\V3Attachment@index');
+
     // 邮件管理（供 v3 邮件接口使用：服务器配置 → 项目授权 → 内容模板 → 发送日志）
     \think\facade\Route::any('admin/mail_server/test', '\app\admin\controller\MailServer@test');
     \think\facade\Route::any('admin/mail_server', '\app\admin\controller\MailServer@index');
