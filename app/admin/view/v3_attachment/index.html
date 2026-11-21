@@ -4,6 +4,7 @@
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <h2>附件列表 V3</h2>
         <form method="get" action="/admin/v3_attachment" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <input type="hidden" name="view" value="{$view}">
             <select name="project_id" id="projectSelect" onchange="applyProjectFilter()" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-surface);color:var(--text);outline:none;">
                 <option value="0">全部项目</option>
                 {foreach $projectOptions as $p}
@@ -27,11 +28,16 @@
             <input type="text" name="keyword" placeholder="文件名 / MD5 / 路径" value="{$keyword}" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-surface);color:var(--text);width:200px;outline:none;">
             <button class="btn btn-primary" type="submit">筛选</button>
         </form>
+        <div class="view-toggle">
+            <a class="view-btn {if $view=='list'}active{/if}" href="{$listUrl}">列表</a>
+            <a class="view-btn {if $view=='grid'}active{/if}" href="{$gridUrl}">横排</a>
+        </div>
     </div>
 </div>
 <div class="card">
     <p>这里只展示 <b>V3 上传</b>的附件（按 Bucket 归组），可按项目 / Bucket / 后缀 / 关键字过滤。图片地址优先拼接 Bucket 的访问域名（本地 Bucket 未配置时用图片站 <code>https://image.tuuz.cc:433</code>），加载失败自动回退站内受控代理。仅对 jpg / png / gif / bmp / webp / ico 内联展示，并校验真实文件类型；<b>SVG、HTML、PDF 等一律不内联渲染，只能下载</b>，避免图片中暗藏脚本在后台执行。</p>
 </div>
+{if $view == 'list'}
 <table>
     <thead>
         <tr>
@@ -86,6 +92,37 @@
         {/if}
     </tbody>
 </table>
+{else/}
+<div class="attach-grid">
+    {foreach $list as $item}
+    <div class="attach-card"
+         data-id="{$item.id}" data-name="{$item.name}" data-ext="{$item.ext}" data-size="{$item.size}"
+         data-open="{$item.open_url}" data-download="{$item.download_url}"
+         data-previewable="{if $item.thumb_url != ''}1{else/}0{/if}" onclick="openPreview(this)">
+        {if $item.thumb_url != ''}
+        <img class="grid-thumb" src="{$item.thumb_url}" alt="" loading="lazy" referrerpolicy="no-referrer"
+             data-fallback="{$item.fallback_url}" onerror="attachFallback(this)">
+        {else/}
+        <div class="grid-thumb grid-thumb-badge">{$item.ext|default='file'}</div>
+        {/if}
+        <div class="grid-info">
+            <div class="grid-name" title="{$item.name}">{$item.name}</div>
+            <div class="grid-meta">
+                <span title="{$item.project_name} / {$item.bucket_name}">{$item.project_name} / {$item.bucket_name}</span>
+                <span>{$item.size}</span>
+            </div>
+            <div class="grid-meta">
+                <span>{$item.create_time}</span>
+                <a href="{$item.download_url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">下载</a>
+            </div>
+        </div>
+    </div>
+    {/foreach}
+    {if empty($list)}
+    <div class="grid-empty">暂无附件</div>
+    {/if}
+</div>
+{/if}
 {$pagination|raw}
 <div class="modal" id="previewModal">
     <div class="modal-box" style="width:auto;max-width:90vw;max-height:92vh;overflow-y:auto;">
@@ -107,6 +144,27 @@
 <style>
 .attach-thumb { width:48px; height:48px; object-fit:cover; border-radius:4px; border:1px solid var(--border); background:var(--bg-inset); cursor:zoom-in; display:block; }
 .attach-badge { display:inline-flex; align-items:center; justify-content:center; min-width:48px; height:48px; padding:0 6px; border-radius:4px; border:1px solid var(--border); background:var(--bg-subtle); color:var(--text-muted); font-size:11px; cursor:pointer; text-transform:uppercase; }
+
+/* 列表 / 横排切换 */
+.view-toggle { display:inline-flex; border:1px solid var(--border-strong); border-radius:4px; overflow:hidden; }
+.view-btn { padding:8px 16px; font-size:13px; color:var(--text-secondary); text-decoration:none; background:var(--bg-surface); }
+.view-btn + .view-btn { border-left:1px solid var(--border-strong); }
+.view-btn:hover { color:var(--primary); background:var(--bg-hover); }
+.view-btn.active { background:var(--primary); color:#fff; }
+
+/* 横排卡片：一屏展示更多附件 */
+.attach-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:14px; }
+.attach-card { background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; box-shadow:var(--shadow); cursor:zoom-in; transition:border-color .15s, transform .15s; }
+.attach-card:hover { border-color:var(--primary); transform:translateY(-2px); }
+.grid-thumb { width:100%; aspect-ratio:1/1; object-fit:cover; display:block; background:var(--bg-inset); }
+.grid-thumb-badge { display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:500; color:var(--text-muted); text-transform:uppercase; }
+.grid-info { padding:10px 12px 12px; }
+.grid-name { font-size:13px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:6px; }
+.grid-meta { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-muted); margin-top:4px; }
+.grid-meta span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.grid-meta a { color:var(--primary); text-decoration:none; flex:none; }
+.grid-meta a:hover { text-decoration:underline; }
+.grid-empty { grid-column:1/-1; text-align:center; color:var(--text-muted); padding:40px 0; background:var(--bg-surface); border-radius:8px; }
 </style>
 <script>
 // 项目筛选联动：只保留该项目下的 Bucket 选项

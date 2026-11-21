@@ -55,7 +55,12 @@ class V3Attachment extends CommonController
     private function page()
     {
         $page = input('get.page', 1, 'intval');
-        $limit = 24;
+        // 两种排版：list 列表（每页 24）；grid 横排卡片（每页 60，单页展示更多）
+        $view = (string)input('get.view', 'list');
+        if (!in_array($view, ['list', 'grid'], true)) {
+            $view = 'list';
+        }
+        $limit = $view === 'grid' ? 60 : 24;
         $projectId = input('get.project_id', 0, 'intval');
         $bucketId = input('get.bucket_id', 0, 'intval');
         $keyword = trim((string)input('get.keyword', ''));
@@ -137,6 +142,16 @@ class V3Attachment extends CommonController
         if ($bucketId > 0) $extraParams['bucket_id'] = $bucketId;
         if ($keyword !== '') $extraParams['keyword'] = $keyword;
         if ($ext !== '') $extraParams['ext'] = $ext;
+        // 排版方式随分页/筛选一起携带，翻页后不会丢
+        $extraParams['view'] = $view;
+
+        // 列表 / 横排切换地址：保留当前筛选条件，回到第 1 页
+        $switchParams = $extraParams;
+        $switchParams['page'] = 1;
+        $switchParams['view'] = 'list';
+        $listUrl = '/admin/v3_attachment?' . http_build_query($switchParams);
+        $switchParams['view'] = 'grid';
+        $gridUrl = '/admin/v3_attachment?' . http_build_query($switchParams);
 
         $pagination = Layout::pagination(
             (int)$list['current_page'],
@@ -155,6 +170,9 @@ class V3Attachment extends CommonController
             'bucketId' => $bucketId,
             'keyword' => $keyword,
             'ext' => $ext,
+            'view' => $view,
+            'listUrl' => $listUrl,
+            'gridUrl' => $gridUrl,
             'pagination' => $pagination,
         ], '附件列表 V3', 'v3_storage', 'v3_attachment');
     }
