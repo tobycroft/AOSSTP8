@@ -10,7 +10,11 @@ use Ret;
 use think\facade\Db;
 
 /**
- * 附件回收站：统一查看 V1/V2/V3 软删附件，支持恢复与彻底删除
+ * 附件回收站 V3：只看 V3 软删附件，支持恢复与彻底删除
+ *
+ * V3 附件判定与 AttachmentFileService 保持一致：tag='v3' 或 token 以 v3bucket: 开头。
+ * 列表 SQL、恢复/彻底删除均强制 scope='v3'，避免误操作 V1/V2 附件。
+ * 彻底删除（purge）会真正删除 upload/recycle/ 下的物理文件并清除 DB 行，不可恢复。
  */
 class RecycleBin extends CommonController
 {
@@ -44,7 +48,11 @@ class RecycleBin extends CommonController
         $limit = input('get.limit', 24, 'intval');
         $keyword = trim((string)input('get.keyword', ''));
 
-        $query = Db::name('ao_attachment')->where('is_deleted', 1);
+        // 只看 V3：tag='v3' 或 token 以 v3bucket: 开头（v3 默认 Bucket 场景）
+        $query = Db::name('ao_attachment')->where('is_deleted', 1)
+            ->where(function ($q) {
+                $q->where('tag', 'v3')->whereOr('token', 'like', 'v3bucket:%');
+            });
         if ($keyword !== '') {
             $like = '%' . $keyword . '%';
             $query->where(function ($q) use ($like) {
@@ -58,7 +66,6 @@ class RecycleBin extends CommonController
 
         $items = [];
         foreach ($list['data'] as $row) {
-            $isV3 = (string)($row['tag'] ?? '') === 'v3' || str_starts_with((string)($row['token'] ?? ''), 'v3bucket:');
             $items[] = [
                 'id' => (int)$row['id'],
                 'name' => (string)($row['name'] ?? ''),
@@ -69,7 +76,6 @@ class RecycleBin extends CommonController
                 'ext' => strtolower((string)($row['ext'] ?? '')),
                 'md5' => (string)($row['md5'] ?? ''),
                 'token' => (string)($row['token'] ?? ''),
-                'source' => $isV3 ? 'V3' : 'V1/V2',
             ];
         }
 
@@ -93,7 +99,7 @@ class RecycleBin extends CommonController
             'keyword' => $keyword,
             'limit' => $limit,
             'pagination' => $pagination,
-        ], '附件回收站', 'storage', 'recycle_bin');
+        ], '附件回收站 V3', 'v3_storage', 'recycle_bin');
     }
 
     private function purge()
@@ -102,19 +108,19 @@ class RecycleBin extends CommonController
         if ($id <= 0) {
             Ret::Fail(400, null, '缺少参数[id]');
         }
-        $this->respond(AttachmentFileService::purge([$id]), '彻底删除成功');
+        $this->respond(AttachmentFileService::purge([$id], 'v3'), '彻底删除成功');
     }
 
     private function batchPurge()
     {
         $ids = $this->readIds();
-        $this->respond(AttachmentFileService::purge($ids), '批量彻底删除成功');
+        $this->respond(AttachmentFileService::purge($ids, 'v3'), '批量彻底删除成功');
     }
 
     private function batchRestore()
     {
         $ids = $this->readIds();
-        $this->respond(AttachmentFileService::restore($ids), '批量恢复成功');
+        $this->respond(AttachmentFileService::restore($ids, 'v3'), '批量恢复成功');
     }
 
     private function readIds(): array

@@ -47,7 +47,6 @@ class Layout
             'items' => [
                 'oss' => ['label' => '存储项目', 'url' => '/admin/oss'],
                 'oss_aliyun' => ['label' => '阿里云OSS', 'url' => '/admin/oss_aliyun'],
-                'recycle_bin' => ['label' => '附件回收站', 'url' => '/admin/recycle_bin'],
             ],
         ],
         // 实际文件管理：独立于 V3 与 ao_attachment，按磁盘现状手动同步
@@ -98,6 +97,7 @@ class Layout
                 'v3_storage_project' => ['label' => '存储项目', 'url' => '/admin/v3_storage_project'],
                 'v3_attachment' => ['label' => '附件列表', 'url' => '/admin/v3_attachment'],
                 'v3_upload_shard' => ['label' => '目录压力', 'url' => '/admin/v3_upload_shard'],
+                'recycle_bin' => ['label' => '附件回收站', 'url' => '/admin/recycle_bin'],
             ],
         ],
         // AI 管理：目录顺序紧跟「项目管理 v3」

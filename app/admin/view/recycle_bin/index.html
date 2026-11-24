@@ -2,7 +2,7 @@
 {block name="content"}
 <div class="toolbar">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <h2>附件回收站</h2>
+        <h2>附件回收站 V3</h2>
         <form method="get" action="/admin/recycle_bin" style="display:flex;align-items:center;gap:8px;">
             <input type="text" name="keyword" placeholder="文件名 / MD5 / 路径" value="{$keyword}" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-surface);color:var(--text);width:220px;outline:none;">
             <button class="btn btn-primary" type="submit">搜索</button>
@@ -12,7 +12,7 @@
     </div>
 </div>
 <div class="card">
-    <p>这里的文件实体已移动到 <code>upload/recycle/YYYYMMDD/</code>，数据库记录保留为已删除。<b>恢复</b>会把文件搬回原路径（OSS 附件会重新上传回远程）；<b>彻底删除</b>会真正删除回收站里的文件，不可恢复。</p>
+    <p>这里<b>只显示 V3 上传</b>的软删附件（V1/V2 不在此列）。文件实体已移动到 <code>upload/recycle/YYYYMMDD/</code>，数据库记录保留为已删除。<b>恢复</b>会把文件搬回原路径（OSS 附件会重新上传回远程）；<b>彻底删除</b>会真正删除 <code>upload/recycle/</code> 里的物理文件并清除数据库记录，不可恢复。</p>
 </div>
 <div class="table-wrap">
 <table>
@@ -23,7 +23,6 @@
             <th>文件名</th>
             <th>原路径</th>
             <th>回收站路径</th>
-            <th>来源</th>
             <th>类型</th>
             <th>大小</th>
             <th>MD5</th>
@@ -39,7 +38,6 @@
             <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.name}">{$item.name}</td>
             <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.path}"><span class="mono">{$item.path}</span></td>
             <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.recycle_path}"><span class="mono">{$item.recycle_path}</span></td>
-            <td>{$item.source}</td>
             <td>{$item.ext|default='-'}</td>
             <td>{$item.size}</td>
             <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.md5}">{$item.md5}</td>
@@ -51,7 +49,7 @@
         </tr>
         {/foreach}
         {if empty($list)}
-        <tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:32px;">回收站为空</td></tr>
+        <tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:32px;">回收站为空（仅 V3 附件）</td></tr>
         {/if}
     </tbody>
 </table>
