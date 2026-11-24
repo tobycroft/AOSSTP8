@@ -71,6 +71,8 @@
     \think\facade\Route::any('admin/cert_pve', '\app\admin\controller\CertPve@index');
     \think\facade\Route::any('admin/cert_log', '\app\admin\controller\CertLog@index');
     \think\facade\Route::any('admin/attachment', '\app\admin\controller\Attachment@index');
+    // 回收站附件受控读取（预览/下载）：必须放在 admin/recycle_bin 通配路由之前
+    \think\facade\Route::get('admin/recycle_bin/file', '\app\admin\controller\RecycleBin@file');
     \think\facade\Route::any('admin/recycle_bin', '\app\admin\controller\RecycleBin@index');
     \think\facade\Route::any('admin/attachment_token', '\app\admin\controller\AttachmentToken@index');
     \think\facade\Route::any('admin/oss', '\app\admin\controller\Oss@index');

@@ -4,21 +4,28 @@
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <h2>附件回收站 V3</h2>
         <form method="get" action="/admin/recycle_bin" style="display:flex;align-items:center;gap:8px;">
+            <input type="hidden" name="view" value="{$view}">
             <input type="text" name="keyword" placeholder="文件名 / MD5 / 路径" value="{$keyword}" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-surface);color:var(--text);width:220px;outline:none;">
             <button class="btn btn-primary" type="submit">搜索</button>
         </form>
+        <div class="view-toggle">
+            <a class="view-btn {if $view=='list'}active{/if}" href="{$listUrl}">列表</a>
+            <a class="view-btn {if $view=='grid'}active{/if}" href="{$gridUrl}">平铺</a>
+        </div>
         <button class="btn btn-primary" id="restoreBtn" style="display:none;" onclick="batchOp('restore')">批量恢复</button>
         <button class="btn btn-danger" id="purgeBtn" style="display:none;" onclick="batchOp('purge')">彻底删除</button>
     </div>
 </div>
 <div class="card">
-    <p>这里<b>只显示 V3 上传</b>的软删附件（V1/V2 不在此列）。文件实体已移动到 <code>upload/recycle/YYYYMMDD/</code>，数据库记录保留为已删除。<b>恢复</b>会把文件搬回原路径（OSS 附件会重新上传回远程）；<b>彻底删除</b>会真正删除 <code>upload/recycle/</code> 里的物理文件并清除数据库记录，不可恢复。</p>
+    <p>这里<b>只显示 V3 上传</b>的软删附件（V1/V2 不在此列）。文件实体已移动到 <code>upload/recycle/YYYYMMDD/</code>，数据库记录保留为已删除。图片可点缩略图预览；<b>恢复</b>会把文件搬回原路径（OSS 附件会重新上传回远程）；<b>彻底删除</b>会真正删除 <code>upload/recycle/</code> 里的物理文件并清除数据库记录，不可恢复。</p>
 </div>
+{if $view == 'list'}
 <div class="table-wrap">
 <table>
     <thead>
         <tr>
             <th style="width:36px;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
+            <th style="width:64px;">预览</th>
             <th>ID</th>
             <th>文件名</th>
             <th>原路径</th>
@@ -34,11 +41,27 @@
         {foreach $list as $item}
         <tr>
             <td><input type="checkbox" class="row-checkbox" value="{$item.id}" onchange="updateBatchBtn()"></td>
+            <td>
+                {if $item.thumb_url != ''}
+                <img class="attach-thumb" src="{$item.thumb_url}" alt="" loading="lazy" referrerpolicy="no-referrer"
+                     data-id="{$item.id}" data-name="{$item.name}" data-ext="{$item.ext}"
+                     data-size="{$item.size}" data-open="{$item.open_url}" data-download="{$item.download_url}"
+                     data-path="{$item.path}" data-recycle="{$item.recycle_path}" data-md5="{$item.md5}"
+                     data-time="{$item.deleted_at}" data-token="{$item.token}"
+                     data-previewable="1" onclick="openPreview(this)">
+                {else/}
+                <span class="attach-badge" data-id="{$item.id}" data-name="{$item.name}" data-ext="{$item.ext}"
+                      data-size="{$item.size}" data-open="{$item.open_url}" data-download="{$item.download_url}"
+                      data-path="{$item.path}" data-recycle="{$item.recycle_path}" data-md5="{$item.md5}"
+                      data-time="{$item.deleted_at}" data-token="{$item.token}"
+                      data-previewable="0" onclick="openPreview(this)">{$item.ext|default='file'}</span>
+                {/if}
+            </td>
             <td>{$item.id}</td>
             <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.name}">{$item.name}</td>
             <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.path}"><span class="mono">{$item.path}</span></td>
             <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.recycle_path}"><span class="mono">{$item.recycle_path}</span></td>
-            <td>{$item.ext|default='-'}</td>
+            <td><span class="attach-badge" style="width:auto;padding:2px 8px;cursor:default;">{$item.ext|default='-'}</span></td>
             <td>{$item.size}</td>
             <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.md5}">{$item.md5}</td>
             <td>{$item.deleted_at}</td>
@@ -49,18 +72,102 @@
         </tr>
         {/foreach}
         {if empty($list)}
-        <tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:32px;">回收站为空（仅 V3 附件）</td></tr>
+        <tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:32px;">回收站为空（仅 V3 附件）</td></tr>
         {/if}
     </tbody>
 </table>
 </div>
+{else/}
+<div class="attach-grid">
+    {foreach $list as $item}
+    <div class="attach-card"
+         data-id="{$item.id}" data-name="{$item.name}" data-ext="{$item.ext}" data-size="{$item.size}"
+         data-open="{$item.open_url}" data-download="{$item.download_url}"
+         data-path="{$item.path}" data-recycle="{$item.recycle_path}" data-md5="{$item.md5}"
+         data-time="{$item.deleted_at}" data-token="{$item.token}"
+         data-previewable="{if $item.thumb_url != ''}1{else/}0{/if}" onclick="openPreview(this)">
+        {if $item.thumb_url != ''}
+        <img class="grid-thumb" src="{$item.thumb_url}" alt="" loading="lazy" referrerpolicy="no-referrer">
+        {else/}
+        <div class="grid-thumb grid-thumb-badge">{$item.ext|default='file'}</div>
+        {/if}
+        <div class="grid-info">
+            <div class="grid-name" title="{$item.name}">{$item.name}</div>
+            <div class="grid-path mono" title="{$item.recycle_path}">{$item.recycle_path}</div>
+            <div class="grid-meta">
+                <span>{$item.size}</span>
+                <span>{$item.deleted_at}</span>
+            </div>
+            <div class="grid-meta">
+                <span class="grid-actions">
+                    <a href="javascript:;" onclick="event.stopPropagation();openPreview(this.closest('.attach-card'))">详情</a>
+                    <a href="javascript:;" onclick="event.stopPropagation();doRestore({$item.id})">恢复</a>
+                    <a href="javascript:;" style="color:var(--danger,#e5484d);" onclick="event.stopPropagation();doPurge({$item.id})">彻底删除</a>
+                </span>
+            </div>
+        </div>
+    </div>
+    {/foreach}
+    {if empty($list)}
+    <div class="grid-empty">回收站为空（仅 V3 附件）</div>
+    {/if}
+</div>
+{/if}
 {$pagination|raw}
+<div class="modal" id="previewModal">
+    <div class="modal-box" style="width:auto;max-width:90vw;max-height:92vh;overflow-y:auto;">
+        <h3 id="previewTitle">附件预览</h3>
+        <div id="previewBody" style="text-align:center;min-width:280px;">
+            <img id="previewImg" src="" alt="" referrerpolicy="no-referrer" style="display:none;max-width:80vw;max-height:64vh;border-radius:6px;background:var(--bg-inset);">
+            <div id="previewTip" style="display:none;color:var(--text-secondary);font-size:14px;line-height:1.8;padding:24px 8px;"></div>
+        </div>
+        <div class="detail-list" id="previewMeta"></div>
+        <div class="modal-actions">
+            <a class="btn btn-cancel" id="previewDownload" href="#" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">下载</a>
+            <button class="btn btn-primary" onclick="closePreview()">关闭</button>
+        </div>
+    </div>
+</div>
 {/block}
 {block name="script"}
 {literal}
 <style>
 .table-wrap { overflow-x:auto; }
 .mono { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; color:var(--primary); text-decoration:none; }
+.attach-thumb { width:48px; height:48px; object-fit:cover; border-radius:4px; border:1px solid var(--border); background:var(--bg-inset); cursor:zoom-in; display:block; }
+.attach-badge { display:inline-flex; align-items:center; justify-content:center; min-width:48px; height:48px; padding:0 6px; border-radius:4px; border:1px solid var(--border); background:var(--bg-subtle); color:var(--text-muted); font-size:11px; cursor:pointer; text-transform:uppercase; }
+
+/* 列表 / 平铺切换 */
+.view-toggle { display:inline-flex; border:1px solid var(--border-strong); border-radius:4px; overflow:hidden; }
+.view-btn { padding:8px 16px; font-size:13px; color:var(--text-secondary); text-decoration:none; background:var(--bg-surface); }
+.view-btn + .view-btn { border-left:1px solid var(--border-strong); }
+.view-btn:hover { color:var(--primary); background:var(--bg-hover); }
+.view-btn.active { background:var(--primary); color:#fff; }
+
+/* 平铺卡片 */
+.attach-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:14px; }
+.attach-card { background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; box-shadow:var(--shadow); cursor:zoom-in; transition:border-color .15s, transform .15s; }
+.attach-card:hover { border-color:var(--primary); transform:translateY(-2px); }
+.grid-thumb { width:100%; aspect-ratio:1/1; object-fit:cover; display:block; background:var(--bg-inset); }
+.grid-thumb-badge { display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:500; color:var(--text-muted); text-transform:uppercase; }
+.grid-info { padding:10px 12px 12px; }
+.grid-name { font-size:13px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:6px; }
+.grid-meta { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-muted); margin-top:4px; }
+.grid-meta span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.grid-meta a { color:var(--primary); text-decoration:none; flex:none; cursor:pointer; }
+.grid-meta a:hover { text-decoration:underline; }
+.grid-empty { grid-column:1/-1; text-align:center; color:var(--text-muted); padding:40px 0; background:var(--bg-surface); border-radius:8px; }
+.grid-path { font-size:12px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:2px; }
+.grid-actions a + a { margin-left:10px; }
+
+/* 预览详情 */
+.detail-list { margin-top:14px; border-top:1px solid var(--divider); padding-top:10px; min-width:460px; }
+.detail-row { display:flex; gap:12px; padding:6px 0; font-size:13px; line-height:1.6; border-bottom:1px dashed var(--divider); }
+.detail-row:last-child { border-bottom:none; }
+.detail-row .k { flex:0 0 88px; color:var(--text-muted); text-align:right; }
+.detail-row .v { flex:1; color:var(--text); word-break:break-all; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; }
+.copy-btn { margin-left:8px; padding:0 6px; font-size:11px; line-height:18px; border:1px solid var(--border-strong); border-radius:3px; background:var(--bg-surface); color:var(--text-secondary); cursor:pointer; font-family:inherit; }
+.copy-btn:hover { border-color:var(--primary); color:var(--primary); }
 </style>
 <script>
 function toggleAll(source) {
@@ -77,7 +184,7 @@ function selectedIds() {
     document.querySelectorAll('.row-checkbox:checked').forEach(function(cb) { ids.push(cb.value); });
     return ids;
 }
-function request(url, body, done) {
+function request(url, body) {
     var xhr = new XMLHttpRequest();
     xhr.open(url.indexOf('DELETE') === 0 ? 'DELETE' : 'POST', url.replace(/^DELETE /, ''), true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -95,7 +202,7 @@ function doRestore(id) {
     request('POST /admin/recycle_bin', 'batch_restore=1&ids=' + id);
 }
 function doPurge(id) {
-    if (!confirm('确定彻底删除吗？回收站里的文件会被真正删除，无法恢复！')) return;
+    if (!confirm('确定彻底删除吗？回收站里的文件会被真正删除，并从 recycle 目录清空，无法恢复！')) return;
     request('DELETE /admin/recycle_bin', 'id=' + id);
 }
 function batchOp(op) {
@@ -108,6 +215,85 @@ function batchOp(op) {
         if (!confirm('确定恢复选中的 ' + ids.length + ' 个附件吗？')) return;
         request('POST /admin/recycle_bin', 'batch_restore=1&ids=' + ids.join(','));
     }
+}
+
+// 复制文本：优先 Clipboard API，失败回退 execCommand
+function copyValue(text, btn) {
+    if (!text || text === '-') return;
+    var done = function() {
+        var old = btn.textContent;
+        btn.textContent = '已复制';
+        setTimeout(function() { btn.textContent = old; }, 1200);
+    };
+    var fallback = function() {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+    } else { fallback(); }
+}
+function renderDetail(meta, rows) {
+    meta.innerHTML = '';
+    rows.forEach(function(r) {
+        var row = document.createElement('div'); row.className = 'detail-row';
+        var k = document.createElement('div'); k.className = 'k'; k.textContent = r[0];
+        var v = document.createElement('div'); v.className = 'v';
+        var value = r[1] || '-';
+        v.textContent = value;
+        if ((r[2] === 'copy' || r[2] === 'url') && value !== '-') {
+            var btn = document.createElement('button');
+            btn.type = 'button'; btn.className = 'copy-btn'; btn.textContent = '复制';
+            btn.onclick = function() { copyValue(value, btn); };
+            v.appendChild(btn);
+        }
+        row.appendChild(k); row.appendChild(v); meta.appendChild(row);
+    });
+}
+function openPreview(el) {
+    if (!el) return;
+    var d = el.dataset;
+    var modal = document.getElementById('previewModal');
+    var img = document.getElementById('previewImg');
+    var tip = document.getElementById('previewTip');
+    var title = document.getElementById('previewTitle');
+    var meta = document.getElementById('previewMeta');
+    var dl = document.getElementById('previewDownload');
+
+    title.textContent = d.name || ('附件 #' + (d.id || ''));
+    dl.href = d.download || '#';
+
+    renderDetail(meta, [
+        ['ID', d.id],
+        ['文件名', d.name],
+        ['原路径', d.path, 'copy'],
+        ['回收站路径', d.recycle, 'copy'],
+        ['类型', d.ext],
+        ['大小', d.size],
+        ['MD5', d.md5, 'copy'],
+        ['删除时间', d.time],
+        ['Token', d.token, 'copy']
+    ]);
+
+    if (d.previewable === '1') {
+        img.src = el.tagName === 'IMG' ? el.src : (d.open || '');
+        img.style.display = 'inline-block';
+        tip.style.display = 'none';
+    } else {
+        img.removeAttribute('src');
+        img.style.display = 'none';
+        tip.style.display = 'block';
+        tip.textContent = '该类型不提供在线预览（避免 SVG / HTML 等文件在后台执行脚本），请下载后查看。';
+    }
+    modal.classList.add('show');
+}
+function closePreview() {
+    var img = document.getElementById('previewImg');
+    img.removeAttribute('src');
+    document.getElementById('previewModal').classList.remove('show');
 }
 </script>
 {/literal}
