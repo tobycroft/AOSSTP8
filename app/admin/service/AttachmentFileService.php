@@ -49,6 +49,9 @@ class AttachmentFileService
         }
 
         foreach ($rows as $id => $row) {
+            // 按引用传给 helper 的错误缓冲必须先初始化为 string；
+            // 未初始化的局部变量会变成 null，触发严格类型 TypeError。
+            $error = '';
             if ((int)($row['is_deleted'] ?? 0) === 1) {
                 $result['errors'][] = "附件 #{$id} 已在回收站中";
                 continue;
@@ -140,6 +143,8 @@ class AttachmentFileService
         }
 
         foreach ($rows as $id => $row) {
+            // 同 delete()：ensureParentDir / moveFile 以 string &$error 接收，必须初始化。
+            $error = '';
             if ((int)($row['is_deleted'] ?? 0) !== 1) {
                 $result['errors'][] = "附件 #{$id} 不在回收站中";
                 continue;
