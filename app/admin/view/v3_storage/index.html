@@ -53,6 +53,17 @@
             </td>
             <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
             <td style="white-space:nowrap;">
+                <button class="btn btn-sm btn-copy"
+                    data-id="{$item.id}"
+                    data-name="{$item.name|htmlspecialchars}"
+                    data-path="{$item.path|htmlspecialchars}"
+                    data-type="{$item.type}"
+                    data-oss-tag="{$item.oss_tag|htmlspecialchars}"
+                    data-url="{$item.url|htmlspecialchars}"
+                    data-ext="{$item.ext|htmlspecialchars}"
+                    data-size="{$item.size}"
+                    data-status="{$item.status}"
+                    onclick="openCopy(this)">复制</button>
                 <button class="btn btn-sm btn-edit"
                     data-id="{$item.id}"
                     data-name="{$item.name|htmlspecialchars}"
@@ -74,6 +85,7 @@
 <div class="modal" id="v3StorageModal">
     <div class="modal-box" style="max-height:90vh;overflow-y:auto;">
         <h3 id="modalTitle">新增 Bucket</h3>
+        <div id="copyFromHint" style="display:none;font-size:12px;color:var(--primary);background:var(--bg-subtle);border:1px solid var(--border);border-radius:4px;padding:8px 10px;margin:8px 0;"></div>
         <input type="hidden" id="editId" value="">
         <div class="form-group">
             <label>Bucket 名称</label>
@@ -152,6 +164,8 @@
 .ext-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
 .ext-chip.on:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
 .ext-chip[data-extra="1"]::after { content: " *"; opacity: .75; }
+.btn-copy { background: #722ed1; color: #fff; margin-right: 4px; }
+.btn-copy:hover { background: #9254de; }
 </style>
 <script>
 var EXT_GROUPS = [
@@ -294,6 +308,7 @@ function applyOssTag(tag) {
 
 function openCreate() {
     document.getElementById('modalTitle').textContent = '新增 Bucket';
+    document.getElementById('copyFromHint').style.display = 'none';
     document.getElementById('editId').value = '';
     document.getElementById('formName').value = '';
     document.getElementById('formPath').value = '';
@@ -310,6 +325,7 @@ function openCreate() {
 function openEdit(btn) {
     var d = btn.dataset;
     document.getElementById('modalTitle').textContent = '编辑 Bucket';
+    document.getElementById('copyFromHint').style.display = 'none';
     document.getElementById('editId').value = d.id;
     document.getElementById('formName').value = d.name || '';
     document.getElementById('formPath').value = d.path || '';
@@ -321,6 +337,35 @@ function openEdit(btn) {
     document.getElementById('formStatus').value = d.status || '1';
     toggleType();
     document.getElementById('v3StorageModal').classList.add('show');
+}
+
+// 复制：用原 Bucket 的配置预填「新增」表单，editId 留空走创建；名称加后缀避免同名，
+// Path 原样保留（如与源相同会落到同一落盘目录，用户可自行修改）。授权关系不随副本复制。
+function openCopy(btn) {
+    var d = btn.dataset;
+    document.getElementById('modalTitle').textContent = '复制 Bucket';
+    var hint = document.getElementById('copyFromHint');
+    hint.textContent = '正在复制 Bucket「' + (d.name || '') + '」（#' + d.id + '）的配置；将创建一个新 Bucket，可修改名称、Path 等后再确定。项目授权关系不会复制，请到「存储项目」页为新 Bucket 授权。';
+    hint.style.display = '';
+    document.getElementById('editId').value = '';
+    var baseName = d.name || '';
+    try {
+        if (baseName.length > 88) baseName = baseName.substring(0, 88);
+        baseName = baseName + '_副本';
+    } catch (e) {}
+    document.getElementById('formName').value = baseName;
+    document.getElementById('formPath').value = d.path || '';
+    document.getElementById('formType').value = d.type || 'local';
+    applyOssTag(d.ossTag || '');
+    document.getElementById('formUrl').value = d.url || '';
+    setExtValue(d.ext || '');
+    document.getElementById('formSize').value = d.size || '16384';
+    document.getElementById('formStatus').value = d.status || '1';
+    toggleType();
+    document.getElementById('v3StorageModal').classList.add('show');
+    var nameEl = document.getElementById('formName');
+    nameEl.focus();
+    if (nameEl.setSelectionRange) nameEl.setSelectionRange(0, nameEl.value.length);
 }
 
 function submitForm() {
