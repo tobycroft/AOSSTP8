@@ -10,11 +10,11 @@ use Ret;
 use think\facade\Db;
 
 /**
- * 存储管理 V3 → 上传分片目录
+ * 存储管理 V3 → 目录压力
  *
  * 只读查看 ao_v3_upload_shard：每个 Bucket + 日期的当日上传序号，以及据此计算出的
- * 当前分片目录（upload/{bucket}/{YYYYMMDD}/{1000|2000|...}/）。
- * 计数是「分配序号」而非物理文件数（秒传不取号、删除不回退），仅用于观测分片分布。
+ * 当前落盘子目录（upload/{bucket}/{YYYYMMDD}/{1000|2000|...}/）。
+ * 计数是「分配序号」而非物理文件数（秒传不取号、删除不回退），仅用于观测目录压力分布。
  */
 class V3UploadShard extends CommonController
 {
@@ -105,6 +105,6 @@ class V3UploadShard extends CommonController
             'bucketId' => $bucketId,
             'day' => $day,
             'pagination' => $pagination,
-        ], '上传分片目录 V3', 'v3_storage', 'v3_upload_shard');
+        ], '目录压力 V3', 'v3_storage', 'v3_upload_shard');
     }
 }

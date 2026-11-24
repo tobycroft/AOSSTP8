@@ -2,7 +2,7 @@
 {block name="content"}
 <div class="toolbar">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <h2>上传分片目录 V3</h2>
+        <h2>目录压力 V3</h2>
         <form method="get" action="/admin/v3_upload_shard" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <select name="bucket_id" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-surface);color:var(--text);outline:none;">
                 <option value="0">全部 Bucket</option>
@@ -16,8 +16,8 @@
     </div>
 </div>
 <div class="card">
-    <p>每个 <b>Bucket + 日期</b>一行。V3 上传按当日序号把文件分摊到 <code>upload/{bucket}/{YYYYMMDD}/{分片}/md5.ext</code>，每 1000 个文件换一个分片目录（1000 / 2000 / ...），避免单目录文件堆积造成 Linux IO 压力。</p>
-    <p style="margin-top:6px;color:var(--text-muted);font-size:12px;">「已分配序号」是原子自增的<b>分配计数</b>，不是目录里的物理文件数：秒传不取号、删除不回退，允许多几个（tolerance 高），仅用于观测分片分布。当前分片目录由该序号推算。此表由上传过程自动写入，后台只读。</p>
+    <p>每个 <b>Bucket + 日期</b>一行，用于观测各目录的<b>压力</b>分布。V3 上传按当日序号把文件分摊到 <code>upload/{bucket}/{YYYYMMDD}/{1000|2000|...}/md5.ext</code>，每 1000 个文件换一个子目录（1000 / 2000 / ...），避免单目录文件堆积造成 Linux IO 压力。</p>
+    <p style="margin-top:6px;color:var(--text-muted);font-size:12px;">「已分配序号」是原子自增的<b>分配计数</b>，不是目录里的物理文件数：秒传不取号、删除不回退，允许多几个（tolerance 高），仅用于观测目录压力分布。当前子目录由该序号推算。此表由上传过程自动写入，后台只读。</p>
 </div>
 <div class="table-wrap">
 <table>
@@ -27,7 +27,7 @@
             <th>项目 / Bucket</th>
             <th>日期</th>
             <th>已分配序号</th>
-            <th>当前分片</th>
+            <th>当前子目录</th>
             <th>落盘目录（相对 upload/）</th>
             <th>创建时间</th>
             <th>更新时间</th>
