@@ -17,7 +17,7 @@ use think\facade\Db;
  * v3 文件上传：临时凭证签发接口（v3 凭证信封鉴权）。
  *
  * 存储来自「项目 ↔ Bucket」授权关系（ao_v3_storage_project）：
- *   - 请求不传 bucket：使用后台设定的默认 Bucket（老 SDK 行为不变）
+ *   - 请求不传 bucket：使用后台设定的默认 Bucket；未设置默认时直接拒绝
  *   - 请求传 bucket：必须是该项目已授权的 Bucket（按 name 精确匹配，兼容纯数字 id）
  *   - Path 决定落盘目录 upload/{Path}/YYYYMMDD/md5.ext（留空回退 Bucket 名称）
  *   - ext / size 决定允许的后缀与单文件大小上限
@@ -64,7 +64,11 @@ class token extends CommonController
             if ($bucketParam !== '') {
                 Ret::Fail(403, null, '无权使用该 Bucket，或该 Bucket 未绑定当前项目');
             }
-            Ret::Fail(403, null, '项目未配置存储，请在后台「存储项目」为该项目关联 Bucket 并设置默认 Bucket');
+            // 区分「一个 Bucket 都没关联」与「关联了但没设默认」，后者要引导调用方显式传 bucket
+            if (!empty(V3StorageProjectModel::api_buckets($projectId))) {
+                Ret::Fail(403, null, '该项目未设置默认 Bucket，请在请求中指定 bucket，或在后台「存储项目」设置默认 Bucket');
+            }
+            Ret::Fail(403, null, '项目未配置存储，请在后台「存储项目」为该项目关联 Bucket');
         }
         $this->bucket = $bucket;
     }

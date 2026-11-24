@@ -14,9 +14,10 @@ use think\facade\Db;
 /**
  * 存储管理 V3 → 存储项目
  *
- * 维护「V3 项目（secret）↔ 一个或多个 Bucket」的授权关系，并指定默认 Bucket：
+ * 维护「V3 项目（secret）↔ 一个或多个 Bucket」的授权关系，默认 Bucket 可选：
  *   - 只有先在「Bucket 配置」里创建的 Bucket，才能在这里勾选关联；
- *   - 请求未传 bucket 时用默认 Bucket；传了 bucket 时必须是这里勾选过的。
+ *   - 请求未传 bucket 时用默认 Bucket；未设置默认时必须显式传 bucket，否则签发失败；
+ *   - 传了 bucket 时必须是这里勾选过的 Bucket。
  *
  * 关联表 ao_v3_storage_project 是归属关系的唯一来源；ao_v3_storage.project_id
  * 仅保留为历史兼容列，不参与任何判断。
@@ -82,10 +83,8 @@ class V3StorageProject extends CommonController
             $pid = (int)$project['id'];
             $ids = $byProject[$pid]['ids'] ?? [];
             $ids = array_values(array_unique(array_map('intval', $ids)));
+            // 默认 Bucket 可选：未设置就显示 0，不再用第一个 Bucket 兜底
             $defaultId = (int)($byProject[$pid]['default'] ?? 0);
-            if ($defaultId <= 0 && !empty($ids)) {
-                $defaultId = $ids[0];
-            }
 
             $labels = [];
             foreach ($ids as $bid) {
@@ -107,7 +106,11 @@ class V3StorageProject extends CommonController
                 'bucket_labels' => implode('、', $labels),
                 'bucket_count' => count($ids),
                 'default_bucket_id' => $defaultId,
-                'default_label' => $defaultBucket ? (string)$defaultBucket['name'] : ($defaultId > 0 ? ('已删除 Bucket #' . $defaultId) : '-'),
+                'default_label' => $defaultBucket
+                    ? (string)$defaultBucket['name']
+                    : ($defaultId > 0
+                        ? ('已删除 Bucket #' . $defaultId)
+                        : (empty($ids) ? '-' : '未设置（必须指定 bucket）')),
             ];
         }
 

@@ -10,7 +10,7 @@
     </div>
 </div>
 <div class="card">
-    <p>每个 V3 项目（对应一个 secret）可关联 <b>一个或多个 Bucket</b>，并指定一个<b>默认 Bucket</b>。接口请求不传 <code>bucket</code> 时使用默认 Bucket（老 SDK 行为不变）；传了 <code>bucket</code> 时必须是这里勾选过的 Bucket，否则拒绝。Bucket 需先在「Bucket 配置」中创建。</p>
+    <p>每个 V3 项目（对应一个 secret）可关联 <b>一个或多个 Bucket</b>，<b>默认 Bucket 可选</b>。设置了默认时，请求不传 <code>bucket</code> 就走默认；<b>未设置默认时，前端/SDK 必须显式指定 <code>bucket</code>，否则上传接口直接失败</b>。传了 <code>bucket</code> 时必须是这里勾选过的 Bucket，否则拒绝。Bucket 需先在「Bucket 配置」中创建。</p>
 </div>
 <table>
     <thead>
@@ -57,8 +57,12 @@
     <div class="modal-box">
         <h3>配置存储项目：<span id="modalProjectName"></span></h3>
         <input type="hidden" id="editProjectId" value="">
-        <p style="font-size:13px;color:#8c8c8c;margin:8px 0 12px;">勾选允许该 secret 使用的 Bucket；单选「默认」表示请求未指定 bucket 时的落点。取消勾选会自动取消其默认标记。</p>
+        <p style="font-size:13px;color:#8c8c8c;margin:8px 0 12px;">勾选允许该 secret 使用的 Bucket；单选「默认」表示请求未指定 bucket 时的落点。<b>也可以选择「不设置默认」</b>，此时每次上传都必须在请求里指定 bucket。取消勾选会自动取消其默认标记。</p>
         <div id="bucketCheckList" style="max-height:340px;overflow-y:auto;border:1px solid #f0f0f0;border-radius:4px;padding:8px 12px;">
+            <label style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;">
+                <input type="radio" name="default_bucket" class="bucket-default" value="0" checked>
+                <span style="flex:1;color:#8c8c8c;">不设置默认（请求必须指定 bucket）</span>
+            </label>
             {foreach $bucketOptions as $b}
             <label style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;">
                 <input type="checkbox" class="bucket-check" value="{$b.id}" onchange="syncDefaultOptions()">
@@ -100,6 +104,11 @@ function syncDefaultOptions() {
         if (!radio) continue;
         radio.disabled = !checks[i].checked;
         if (!checks[i].checked) radio.checked = false;
+    }
+    // 取消默认 Bucket 的勾选后，自动回到「不设置默认」，避免残留已禁用选项
+    if (!document.querySelector('input[name="default_bucket"]:checked')) {
+        var none = document.querySelector('input[name="default_bucket"][value="0"]');
+        if (none) none.checked = true;
     }
 }
 

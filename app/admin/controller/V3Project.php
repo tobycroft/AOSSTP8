@@ -17,7 +17,7 @@ use think\facade\Db;
  * v3 项目为应用无关的通用凭证（secret + 信封鉴权），
  * 一个项目可使用 v3 下所有应用。应用配置各自独立维护：
  *   - AI key 使用权（agnes 授权）、对外模型名 →「AI 管理 → AI 授权」；
- *   - 文件上传的存储（Bucket）→「存储管理 V3」；项目与 Bucket 的多对关联及默认 Bucket →「存储项目」。
+ *   - 文件上传的存储（Bucket）→「存储管理 V3」；项目与 Bucket 的多对关联及可选默认 Bucket →「存储项目」。
  */
 class V3Project extends CommonController
 {

@@ -28,9 +28,11 @@ CREATE TABLE `ao_v3_storage_project`（V3 存储项目：项目与 Bucket 的一
         归属关系一律以本表为准。
 
 接口行为：
-  - 请求未传 bucket  → api_resolve('') 取默认 Bucket（老 SDK 行为不变）；
+  - 请求未传 bucket  → 只取 is_default=1 的 Bucket；后台未设置默认时返回空，签发接口拒绝；
   - 请求传了 bucket  → 必须是该项目已授权的 Bucket（按 name 精确匹配，也兼容纯数字 id），
                        否则返回空，由控制器拒绝，避免越权上传。
+  - 默认 Bucket 是可选配置：允许一个项目只关联多个 Bucket 而不设默认，
+    此时调用方必须显式指定 bucket。
  */
 class V3StorageProjectModel extends Model
 {
@@ -78,13 +80,13 @@ class V3StorageProjectModel extends Model
 
         $bucket = trim($bucket);
         if ($bucket === '') {
+            // 默认 Bucket 可为空：未设置时不再兜底取第一个，调用方必须显式指定 bucket。
             foreach ($buckets as $item) {
                 if ((int)($item['sp_is_default'] ?? 0) === 1) {
                     return $item;
                 }
             }
-            // 历史数据可能未标记默认：兜底取列表第一条（api_buckets 已按 id 升序）
-            return $buckets[0];
+            return [];
         }
 
         // 优先按 Bucket name 精确匹配（大小写不敏感）；path 留空时 name 即落盘目录
@@ -109,7 +111,8 @@ class V3StorageProjectModel extends Model
      * 按附件的 token + path 反查所属 Bucket（后台附件列表/预览用）
      *
      * token 为项目名时，一个项目可能有多个 Bucket，不能再按项目名唯一映射：
-     * 用 path 的前缀（Bucket 的 path 或 name，取最长匹配）定位；找不到时回退默认 Bucket。
+     * 用 path 的前缀（Bucket 的 path 或 name，取最长匹配）定位；找不到时回退默认 Bucket，
+     * 未设默认则回退第一个关联 Bucket（仅用于后台展示/存储类型判断，不用于签发）。
      * 历史 token v3bucket:{id} 直接按 id 定位。
      */
     public static function api_match_by_path(string $token, string $path): array
@@ -157,7 +160,8 @@ class V3StorageProjectModel extends Model
     /**
      * 保存项目的 Bucket 授权关系（后台「存储项目」页调用）
      *
-     * 全量覆盖：先删旧关联再插入新关联；默认 Bucket 未指定时自动取第一个。
+     * 全量覆盖：先删旧关联再插入新关联；默认 Bucket 是可选的，未指定时全部写 0，
+     * 此时请求必须显式带 bucket，签发接口才会放行。
      * 只允许关联 Bucket 管理中已存在的 Bucket（停用中的也允许先关联，不生效）。
      *
      * @param array $bucketIds 勾选的 Bucket id
@@ -177,9 +181,6 @@ class V3StorageProjectModel extends Model
         }
         if ($defaultBucketId > 0 && !in_array($defaultBucketId, $ids, true)) {
             return false;
-        }
-        if ($defaultBucketId <= 0 && !empty($ids)) {
-            $defaultBucketId = $ids[0];
         }
 
         Db::startTrans();

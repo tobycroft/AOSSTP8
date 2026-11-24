@@ -5,6 +5,7 @@ namespace app\admin\service;
 use app\v1\file\action\OssSelectionAction;
 use app\v1\oss\model\OssModel;
 use app\v3\storage\model\V3StorageModel;
+use app\v3\storage\model\V3StorageProjectModel;
 use OSS\AliyunOSS;
 use think\facade\Db;
 use Throwable;
@@ -299,7 +300,11 @@ class AttachmentFileService
         $out = ['type' => 'local', 'remote' => false, 'proc' => [], 'dpSkipped' => false, 'configMissing' => false];
 
         if ($isV3) {
-            $bucket = V3StorageModel::api_find_by_token($token);
+            // 默认 Bucket 可选后，不能再靠 token 走「默认 Bucket」解析（可能为空）；
+            // 用附件 path 前缀精确定位所属 Bucket，local/oss 判断才不会误判。
+            $bucket = str_starts_with($token, 'v3bucket:')
+                ? V3StorageModel::api_find_by_token($token)
+                : V3StorageProjectModel::api_match_by_path($token, (string)($row['path'] ?? ''));
             if (!empty($bucket)) {
                 $out['type'] = strtolower((string)($bucket['type'] ?? 'local'));
                 $out['remote'] = $out['type'] === 'oss';
