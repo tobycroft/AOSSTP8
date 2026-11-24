@@ -185,8 +185,13 @@ function selectedIds() {
     return ids;
 }
 function request(url, body) {
+    // url 形如 "POST /admin/recycle_bin" 或 "DELETE /admin/recycle_bin"：
+    // 必须把方法前缀从 URL 里一并剥离，否则浏览器会把 "POST " 当相对路径拼进地址。
+    var m = /^(POST|DELETE)\s+/.exec(url);
+    var method = m ? m[1] : 'POST';
+    var target = m ? url.slice(m[0].length) : url;
     var xhr = new XMLHttpRequest();
-    xhr.open(url.indexOf('DELETE') === 0 ? 'DELETE' : 'POST', url.replace(/^DELETE /, ''), true);
+    xhr.open(method, target, true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
     xhr.onreadystatechange = function() {
