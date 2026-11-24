@@ -5,7 +5,7 @@ namespace app\admin\controller;
 use app\admin\service\AttachmentFileService;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
-use app\v3\storage\model\V3StorageModel;
+use app\v3\storage\model\V3StorageProjectModel;
 use BaseController\CommonController;
 use Ret;
 use think\facade\Db;
@@ -14,8 +14,9 @@ use think\facade\Db;
  * 存储管理 V3 → 附件列表
  *
  * 只展示 V3 上传产生的附件（ao_attachment.tag = v3；token 为项目名称，
- * 历史数据兼容 v3bucket:{storage_id}），支持按「项目」筛选（一个项目一个 Bucket），
- * 并可叠加 Bucket、后缀、关键字过滤。
+ * 历史数据兼容 v3bucket:{storage_id}），支持按项目/Bucket 筛选，并可叠加
+ * 后缀、关键字过滤。一个项目可关联多个 Bucket，因此 Bucket 归属按
+ * attachment.path 的前缀匹配关联 Bucket（不再按项目名唯一映射）。
  *
  * 安全说明：图片预览统一走本站的 file 接口，而不是直接把 upload/ 下的文件
  * 交给浏览器解析：
@@ -138,18 +139,21 @@ class V3Attachment extends CommonController
             $projectNames[(int)$project['id']] = (string)$project['name'];
         }
 
-        // token 现在是项目名称（如 stb / flamecloud）；tag=v3 用于与 V1/V2 隔离。
-        // token 以 v3bucket: 开头的是历史数据，一并兼容展示。
-        $projectNameIds = array_flip($projectNames);
-        $tokenBucketMap = [];
-        foreach ($buckets as $bucket) {
-            $pid = (int)$bucket['project_id'];
-            $pname = $projectNames[$pid] ?? '';
-            if ($pname !== '') {
-                $tokenBucketMap[$pname] = $bucket;
-            }
-            $tokenBucketMap['v3bucket:' . (int)$bucket['id']] = $bucket;
+        // Bucket → 项目：新关联表优先，ao_v3_storage.project_id 仅作历史兜底
+        $bucketProjectMap = [];
+        foreach (Db::name('ao_v3_storage_project')->select()->toArray() as $binding) {
+            $bucketProjectMap[(int)$binding['bucket_id']] = (int)$binding['project_id'];
         }
+        foreach ($buckets as $bucket) {
+            $bid = (int)$bucket['id'];
+            if (!isset($bucketProjectMap[$bid])) {
+                $bucketProjectMap[$bid] = (int)($bucket['project_id'] ?? 0);
+            }
+        }
+
+        // token 现在是项目名称（如 stb / flamecloud）；tag=v3 用于与 V1/V2 隔离。
+        // 一个项目可关联多个 Bucket，不能按项目名唯一映射，具体归属由 path 前缀判断。
+        $projectNameIds = array_flip($projectNames);
 
         $query = Db::name('ao_attachment')
             ->where('is_deleted', 0)
@@ -157,23 +161,40 @@ class V3Attachment extends CommonController
                 $q->where('tag', 'v3')->whereOr('token', 'like', 'v3bucket:%');
             });
 
-        // 维度过滤：Bucket 优先；只选项目时取该项目绑定的 Bucket
+        // 维度过滤：Bucket 优先。token 为项目名时无法区分同项目的多个 Bucket，
+        // 按 Bucket 过滤需再叠加 path 前缀（历史 token=v3bucket:{id} 仍按 id 命中）。
         if ($bucketId > 0) {
+            $bucket = $bucketMap[$bucketId] ?? null;
             $tokens = ['v3bucket:' . $bucketId];
-            $name = $projectNames[(int)($bucketMap[$bucketId]['project_id'] ?? 0)] ?? '';
+            $prefixes = [];
+            if ($bucket) {
+                $pid = (int)($bucketProjectMap[$bucketId] ?? 0);
+                $name = $projectNames[$pid] ?? '';
+                if ($name !== '') {
+                    $tokens[] = $name;
+                }
+                foreach ([(string)($bucket['path'] ?? ''), (string)($bucket['name'] ?? '')] as $raw) {
+                    $prefix = trim($raw, '/');
+                    if ($prefix !== '') {
+                        $prefixes[] = $prefix . '/%';
+                    }
+                }
+            }
+            $query->where(function ($q) use ($tokens, $prefixes) {
+                $q->whereIn('token', $tokens);
+                foreach ($prefixes as $prefix) {
+                    $q->whereOr('path', 'like', $prefix);
+                }
+            });
+        } elseif ($projectId > 0) {
+            $tokens = [];
+            $name = $projectNames[$projectId] ?? '';
             if ($name !== '') {
                 $tokens[] = $name;
             }
-            $query->whereIn('token', $tokens);
-        } elseif ($projectId > 0) {
-            $tokens = [];
-            foreach ($buckets as $bucket) {
-                if ((int)$bucket['project_id'] === $projectId) {
-                    $tokens[] = 'v3bucket:' . (int)$bucket['id'];
-                    $name = $projectNames[$projectId] ?? '';
-                    if ($name !== '') {
-                        $tokens[] = $name;
-                    }
+            foreach ($bucketProjectMap as $bid => $pid) {
+                if ((int)$pid === $projectId) {
+                    $tokens[] = 'v3bucket:' . (int)$bid;
                 }
             }
             if (empty($tokens)) {
@@ -199,7 +220,7 @@ class V3Attachment extends CommonController
 
         $items = [];
         foreach ($list['data'] as $row) {
-            $items[] = $this->formatItem($row, $tokenBucketMap, $projectNameIds, $projectNames);
+            $items[] = $this->formatItem($row, $bucketMap, $bucketProjectMap, $projectNameIds, $projectNames);
         }
 
         // 可选的扩展名过滤项：仅取 V3 附件已有后缀
@@ -217,11 +238,13 @@ class V3Attachment extends CommonController
         }
         $bucketOptions = [];
         foreach ($buckets as $bucket) {
-            $pid = (int)$bucket['project_id'];
+            $bid = (int)$bucket['id'];
+            $pid = (int)($bucketProjectMap[$bid] ?? 0);
             $bucketOptions[] = [
-                'id' => (int)$bucket['id'],
+                'id' => $bid,
                 'project_id' => $pid,
-                'label' => ($projectNames[$pid] ?? ('已删除项目(' . $pid . ')')) . ' / ' . (string)$bucket['name'],
+                'label' => (string)$bucket['name']
+                    . ((string)($bucket['path'] ?? '') !== '' ? '（' . $bucket['path'] . '）' : ''),
             ];
         }
 
@@ -268,21 +291,26 @@ class V3Attachment extends CommonController
     /**
      * 组装列表行：解析所属 Bucket/项目，并给出安全的预览/下载地址
      */
-    private function formatItem(array $row, array $tokenBucketMap, array $projectNameIds, array $projectNames): array
+    private function formatItem(array $row, array $bucketMap, array $bucketProjectMap, array $projectNameIds, array $projectNames): array
     {
         $id = (int)$row['id'];
         $ext = strtolower((string)($row['ext'] ?? ''));
         $path = str_replace('\\', '/', (string)($row['path'] ?? ''));
         $token = (string)($row['token'] ?? '');
 
-        // token 为项目名称；历史数据可能仍是 v3bucket:{storage_id}
-        $bucket = $tokenBucketMap[$token] ?? null;
+        // token 为项目名时一个项目可关联多个 Bucket：用 path 前缀精确定位；
+        // 历史 token=v3bucket:{id} 直接按 id 定位，Bucket 已删则从内存表兜底展示。
+        $bucket = V3StorageProjectModel::api_match_by_path($token, $path);
         $bucketId = (int)($bucket['id'] ?? 0);
         if ($bucketId === 0 && preg_match('/^v3bucket:(\d+)$/', $token, $m) === 1) {
             $bucketId = (int)$m[1];
+            $bucket = $bucketMap[$bucketId] ?? null;
         }
-        $projectId = (int)($bucket['project_id'] ?? 0);
-        if ($projectId === 0 && isset($projectNameIds[$token])) {
+        if ($bucketId === 0) {
+            $bucket = null;
+        }
+        $projectId = $bucketId > 0 ? (int)($bucketProjectMap[$bucketId] ?? 0) : 0;
+        if ($projectId <= 0 && isset($projectNameIds[$token])) {
             $projectId = (int)$projectNameIds[$token];
         }
         if ($bucket) {
@@ -372,9 +400,9 @@ class V3Attachment extends CommonController
             $this->abortFile(404, '仅支持查看 V3 附件');
         }
 
-        // token 为项目名称（兼容 v3bucket:{id}），据此定位 Bucket 类型与访问域名
-        $bucket = V3StorageModel::api_find_by_token($token);
         $path = str_replace('\\', '/', (string)($row['path'] ?? ''));
+        // token 为项目名时按 path 前缀定位 Bucket，避免多 Bucket 时用错 OSS 域名
+        $bucket = V3StorageProjectModel::api_match_by_path($token, $path);
 
         if (($bucket['type'] ?? 'local') === 'oss') {
             $base = rtrim((string)($bucket['url'] ?? ''), '/');

@@ -46,6 +46,20 @@ class V3UploadShard extends CommonController
         foreach (Db::name('ao_v3_project')->field('id, name')->select()->toArray() as $p) {
             $projectNames[(int)$p['id']] = (string)$p['name'];
         }
+        // Bucket → 项目：新关联表优先，ao_v3_storage.project_id 仅作历史兜底
+        $bucketProjectMap = [];
+        foreach (Db::name('ao_v3_storage_project')->select()->toArray() as $binding) {
+            $bid = (int)$binding['bucket_id'];
+            if (!isset($bucketProjectMap[$bid])) {
+                $bucketProjectMap[$bid] = (int)$binding['project_id'];
+            }
+        }
+        foreach ($buckets as $bucket) {
+            $bid = (int)$bucket['id'];
+            if (!isset($bucketProjectMap[$bid])) {
+                $bucketProjectMap[$bid] = (int)($bucket['project_id'] ?? 0);
+            }
+        }
 
         $query = Db::name('ao_v3_upload_shard')->order('id', 'desc');
         if ($bucketId > 0) {
@@ -60,7 +74,7 @@ class V3UploadShard extends CommonController
         foreach ($list['data'] as $row) {
             $bid = (int)$row['bucket_id'];
             $bucket = $bucketMap[$bid] ?? null;
-            $pid = (int)($bucket['project_id'] ?? 0);
+            $pid = (int)($bucketProjectMap[$bid] ?? 0);
             $count = (int)($row['file_count'] ?? 0);
             $items[] = [
                 'id' => (int)$row['id'],
@@ -77,13 +91,15 @@ class V3UploadShard extends CommonController
             ];
         }
 
-        // 筛选下拉：列出全部 Bucket（含已删项目的），与附件列表风格一致
+        // 筛选下拉：列出全部 Bucket（含未关联项目的），与附件列表风格一致
         $bucketOptions = [];
         foreach ($buckets as $bucket) {
-            $pid = (int)($bucket['project_id'] ?? 0);
+            $bid = (int)$bucket['id'];
+            $pid = (int)($bucketProjectMap[$bid] ?? 0);
+            $owner = $pid > 0 ? ($projectNames[$pid] ?? ('已删除项目(' . $pid . ')')) : '未关联项目';
             $bucketOptions[] = [
-                'id' => (int)$bucket['id'],
-                'label' => ($projectNames[$pid] ?? ('已删除项目(' . $pid . ')')) . ' / ' . (string)$bucket['name'],
+                'id' => $bid,
+                'label' => $owner . ' / ' . (string)$bucket['name'],
             ];
         }
 

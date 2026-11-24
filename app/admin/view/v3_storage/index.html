@@ -11,13 +11,12 @@
     </div>
 </div>
 <div class="card">
-    <p>这里的每一项就是一个 <b>Bucket</b>：<b>一个 V3 项目对应一个 Bucket</b>，由 Bucket 自己决定「文件存到哪（Path）」「允许哪些后缀」「单文件多大」「存本站还是传远程」。项目只负责鉴权，凭证在「项目管理 v3」维护。</p>
+    <p>这里的每一项就是一个 <b>Bucket</b>，只维护「文件存到哪（Path）」「允许哪些后缀」「单文件多大」「存本站还是传远程」。一个项目（secret）可以使用多个 Bucket，授权关系与默认 Bucket 在「存储项目」中配置。</p>
 </div>
 <table>
     <thead>
         <tr>
             <th>ID</th>
-            <th>所属项目</th>
             <th>Bucket</th>
             <th>类型</th>
             <th>Path</th>
@@ -32,7 +31,6 @@
         {foreach $list as $item}
         <tr>
             <td>{$item.id}</td>
-            <td>{$item.project_name}</td>
             <td>{$item.name}</td>
             <td>
                 {if $item.type == 'local'}
@@ -57,7 +55,6 @@
             <td style="white-space:nowrap;">
                 <button class="btn btn-sm btn-edit"
                     data-id="{$item.id}"
-                    data-project-id="{$item.project_id}"
                     data-name="{$item.name|htmlspecialchars}"
                     data-path="{$item.path|htmlspecialchars}"
                     data-type="{$item.type}"
@@ -78,15 +75,6 @@
     <div class="modal-box" style="max-height:90vh;overflow-y:auto;">
         <h3 id="modalTitle">新增 Bucket</h3>
         <input type="hidden" id="editId" value="">
-        <div class="form-group">
-            <label>所属 V3 项目</label>
-            <select id="formProjectId">
-                {foreach $projects as $p}
-                <option value="{$p.id}" data-bound="{$p.bound}">{$p.name} (#{$p.id})</option>
-                {/foreach}
-            </select>
-            <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">一个项目一个 Bucket；已绑定 Bucket 的项目不会出现在下拉里。项目在「项目管理 v3」创建。</div>
-        </div>
         <div class="form-group">
             <label>Bucket 名称</label>
             <input type="text" id="formName" placeholder="例如 v3-files" maxlength="100">
@@ -289,18 +277,6 @@ function toggleType() {
     document.getElementById('ossFields').style.display = (type === 'oss') ? '' : 'none';
 }
 
-// 按「一项目一 Bucket」过滤项目下拉：新增时隐藏已绑定项目，编辑时保留当前项
-function fillProjects(selectedId) {
-    var sel = document.getElementById('formProjectId');
-    Array.prototype.forEach.call(sel.options, function(opt) {
-        var bound = opt.getAttribute('data-bound') === '1';
-        var isSelf = selectedId && String(opt.value) === String(selectedId);
-        opt.hidden = bound && !isSelf;
-        opt.disabled = bound && !isSelf;
-    });
-    if (selectedId) sel.value = String(selectedId);
-}
-
 function applyOssTag(tag) {
     var sel = document.getElementById('formOssTag');
     if (!credentialLoaded) {
@@ -327,7 +303,6 @@ function openCreate() {
     setExtValue('jpg,jpeg,png,gif,bmp,webp,svg,ico');
     document.getElementById('formSize').value = '16384';
     document.getElementById('formStatus').value = '1';
-    fillProjects('');
     toggleType();
     document.getElementById('v3StorageModal').classList.add('show');
 }
@@ -344,20 +319,17 @@ function openEdit(btn) {
     setExtValue(d.ext || '');
     document.getElementById('formSize').value = d.size || '16384';
     document.getElementById('formStatus').value = d.status || '1';
-    fillProjects(d.projectId);
     toggleType();
     document.getElementById('v3StorageModal').classList.add('show');
 }
 
 function submitForm() {
     var id = document.getElementById('editId').value;
-    var projectId = document.getElementById('formProjectId').value;
     var name = document.getElementById('formName').value.trim();
     var path = document.getElementById('formPath').value.trim();
     var type = document.getElementById('formType').value;
     var ossTag = document.getElementById('formOssTag').value;
     var url = document.getElementById('formUrl').value.trim();
-    if (!projectId) { alert('请选择所属项目'); return; }
     if (!name) { alert('Bucket 名称不能为空'); return; }
     if (path && !/^[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*$/.test(path)) {
         alert('Path 不合法：仅允许字母/数字/下划线/连字符，多级用 / 分隔');
@@ -367,8 +339,7 @@ function submitForm() {
     if (type === 'oss' && !url) { alert('远程存储必须填写访问域名'); return; }
     var ext = document.getElementById('formExt').value.trim();
     if (!ext) { alert('请至少选择一种允许上传的后缀'); return; }
-    var params = 'project_id=' + projectId
-        + '&name=' + encodeURIComponent(name)
+    var params = 'name=' + encodeURIComponent(name)
         + '&path=' + encodeURIComponent(path)
         + '&type=' + encodeURIComponent(type)
         + '&oss_tag=' + encodeURIComponent(type === 'oss' ? ossTag : '')
@@ -391,7 +362,7 @@ function submitForm() {
 }
 
 function doDelete(id) {
-    if (!confirm('确定删除该 Bucket 吗？删除后该项目的 v3 上传接口将返回未配置。')) return;
+    if (!confirm('确定删除该 Bucket 吗？已关联该项目将失去该 Bucket 的上传权限。')) return;
     var xhr = new XMLHttpRequest();
     xhr.open('DELETE', '/admin/v3_storage', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');

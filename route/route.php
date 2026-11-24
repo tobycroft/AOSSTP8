@@ -120,9 +120,12 @@
     \think\facade\Route::any('admin/v3_project/resetSecret', '\app\admin\controller\V3Project@resetSecret');
     \think\facade\Route::any('admin/v3_project', '\app\admin\controller\V3Project@index');
 
-    // v3 存储管理（独立 menu；一项目一 Bucket，Bucket 自带 Path/后缀/大小/类型）
+    // v3 存储管理（Bucket 自身配置；项目与 Bucket 的一对多关系在「存储项目」维护）
     \think\facade\Route::any('admin/v3_storage/credential_options', '\app\admin\controller\V3Storage@credential_options');
     \think\facade\Route::any('admin/v3_storage', '\app\admin\controller\V3Storage@index');
+
+    // v3 存储项目（项目(secret) ↔ 多个 Bucket + 默认 Bucket）
+    \think\facade\Route::any('admin/v3_storage_project', '\app\admin\controller\V3StorageProject@index');
 
     // v3 附件列表（存储管理 V3 → 附件列表；按项目/Bucket 过滤，图片受控预览）
     \think\facade\Route::any('admin/v3_attachment/file', '\app\admin\controller\V3Attachment@file');

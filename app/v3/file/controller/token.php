@@ -7,6 +7,7 @@ use app\v2\file\model\FileTokenModel;
 use app\v3\common\V3EnvelopeAuth;
 use app\v3\project\model\V3ProjectModel;
 use app\v3\storage\model\V3StorageModel;
+use app\v3\storage\model\V3StorageProjectModel;
 use BaseController\CommonController;
 use Input;
 use Ret;
@@ -15,13 +16,16 @@ use think\facade\Db;
 /**
  * v3 文件上传：临时凭证签发接口（v3 凭证信封鉴权）。
  *
- * 存储来自本项目绑定的 Bucket（ao_v3_storage.project_id）：
+ * 存储来自「项目 ↔ Bucket」授权关系（ao_v3_storage_project）：
+ *   - 请求不传 bucket：使用后台设定的默认 Bucket（老 SDK 行为不变）
+ *   - 请求传 bucket：必须是该项目已授权的 Bucket（按 name 精确匹配，兼容纯数字 id）
  *   - Path 决定落盘目录 upload/{Path}/YYYYMMDD/md5.ext（留空回退 Bucket 名称）
  *   - ext / size 决定允许的后缀与单文件大小上限
  *   - type=local 存本站，type=oss 传远程（凭据 oss_tag → ao_oss_aliyun）
  *
  * 签发的一次性 token 落 ao_attachment_token，并记录 storage_id，
- * 供 v3/file/index 直传时定位到对应 Bucket。
+ * 供 v3/file/index 直传时定位到对应 Bucket。MD5 秒传仍沿用全局去重：
+ * 相同文件只保留一份，返回先命中的 path（用户确认可接受跨项目命中）。
  *
  * 六个接口（含 V1/V2 的 md5 反查能力）：
  *   POST /v3/file/token/create          换取临时 token
@@ -37,7 +41,7 @@ class token extends CommonController
 {
     use V3EnvelopeAuth;
 
-    /** 本项目绑定的 Bucket（信封鉴权通过后按项目 id 解析） */
+    /** 本次请求解析到的 Bucket（信封鉴权通过后按 bucket 参数或默认配置解析） */
     protected array $bucket = [];
 
     public function initialize()
@@ -51,11 +55,15 @@ class token extends CommonController
             'v3_file_rl:'
         );
 
-        // 按项目 id 解析 Bucket；未配置或已停用时直接拒绝
+        // 按项目 id 解析本次 Bucket：指定则校验授权，未指定则用默认 Bucket
         $projectId = (int)($this->proc['id'] ?? 0);
-        $bucket = V3StorageModel::api_find_project($projectId);
+        $bucketParam = (string)Input::Combi('bucket', false);
+        $bucket = V3StorageProjectModel::api_resolve($projectId, $bucketParam);
         if (empty($bucket)) {
-            Ret::Fail(403, null, '项目未配置存储，请在后台「存储管理 V3」为该项目创建 Bucket');
+            if ($bucketParam !== '') {
+                Ret::Fail(403, null, '无权使用该 Bucket，或该 Bucket 未绑定当前项目');
+            }
+            Ret::Fail(403, null, '项目未配置存储，请在后台「存储项目」为该项目关联 Bucket 并设置默认 Bucket');
         }
         $this->bucket = $bucket;
     }

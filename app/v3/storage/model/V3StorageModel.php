@@ -9,7 +9,7 @@ use think\Model;
 /*
 CREATE TABLE `ao_v3_storage`（V3 存储 Bucket）:
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `project_id` int unsigned NOT NULL COMMENT '所属 V3 项目 id（一项目一 Bucket）',
+  `project_id` int unsigned NOT NULL DEFAULT 0 COMMENT '历史兼容字段，已弃用；归属关系见 ao_v3_storage_project',
   `name` varchar(100) NOT NULL DEFAULT '' COMMENT 'Bucket 名称，path 为空时作为落盘目录',
   `path` varchar(100) NOT NULL DEFAULT '' COMMENT '落盘目录，相对 upload/；留空回退 name',
   `ext` varchar(255) NOT NULL DEFAULT 'jpg,png,gif,bmp,jpeg' COMMENT '允许上传的后缀，逗号分隔',
@@ -20,22 +20,25 @@ CREATE TABLE `ao_v3_storage`（V3 存储 Bucket）:
   `url` varchar(255) NOT NULL DEFAULT '' COMMENT '访问域名/URL 前缀，远程必填',
   `status` tinyint(1) NOT NULL DEFAULT 1,
   `date` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_v3s_project` (`project_id`)
+  PRIMARY KEY (`id`)
+  注：旧版唯一键 uk_v3s_project(project_id) 需 DROP，否则同一项目无法关联多个 Bucket。
 
-V3 存储模型是「Bucket」：一个项目对应一个 Bucket，Bucket 自己描述落盘 Path、
-允许的后缀、大小上限、以及存本地还是传远程。不含 ao_oss 的 token/code/main_type
-等历史概念；远程凭据按 oss_tag 复用 ao_oss_aliyun（仅凭据仓库，不是项目绑定关系）。
+V3 存储模型是「Bucket」：Bucket 自己描述落盘 Path、允许的后缀、大小上限、
+以及存本地还是传远程。项目与 Bucket 的一对多关系在 ao_v3_storage_project 中维护，
+一个项目（secret）可授权多个 Bucket，其中一个是默认 Bucket。
+不含 ao_oss 的 token/code/main_type 等历史概念；远程凭据按 oss_tag 复用
+ao_oss_aliyun（仅凭据仓库，不是项目绑定关系）。
  */
 class V3StorageModel extends Model
 {
     protected $table = 'ao_v3_storage';
 
     /**
-     * 按所属项目查找启用中的 Bucket（签发接口用）
+     * 旧版「一项目一 Bucket」查询，已弃用
      *
-     * 用查询构造器直接取数组：避开 Model::toArray() 在 PHP 8.6 下对字符串属性
-     * 调用 is_subclass_of(..., false) 触发的弃用告警。
+     * 新逻辑请用 V3StorageProjectModel::api_resolve()：支持按请求指定的 bucket
+     * 选授权 Bucket，未指定时回退默认 Bucket。本方法仅为兼容保留，
+     * 不再参与 V3 签发/直传链路。
      *
      * @param int $projectId ao_v3_project.id
      * @return array Bucket 行，或 []
@@ -86,10 +89,12 @@ class V3StorageModel extends Model
     }
 
     /**
-     * 按附件 token 反查 Bucket
+     * 按附件 token 反查 Bucket（兼容旧调用）
      *
      * 兼容两种 token：
-     *   - 项目名称（V3 现行），如 stb、flamecloud
+     *   - 项目名称（V3 现行），如 stb、flamecloud；现一个项目可能有多个 Bucket，
+     *     此处返回默认 Bucket。能拿到 attachment.path 时应优先用
+     *     V3StorageProjectModel::api_match_by_path() 精确定位。
      *   - v3bucket:{storage_id}（V3 历史数据）
      */
     public static function api_find_by_token(string $token): array
@@ -99,14 +104,13 @@ class V3StorageModel extends Model
             return [];
         }
         if (preg_match('/^v3bucket:(\d+)$/', $token, $m) === 1) {
-            return Db::name('ao_v3_storage')->where('id', (int)$m[1])->findOrEmpty();
+            return self::api_find_id((int)$m[1]);
         }
-        return Db::name('ao_v3_storage')
-            ->alias('s')
-            ->join('ao_v3_project p', 's.project_id = p.id')
-            ->where('p.name', $token)
-            ->field('s.*')
-            ->findOrEmpty();
+        $projectId = (int)Db::name('ao_v3_project')->where('name', $token)->value('id');
+        if ($projectId <= 0) {
+            return [];
+        }
+        return V3StorageProjectModel::api_resolve($projectId, '');
     }
 
     /**

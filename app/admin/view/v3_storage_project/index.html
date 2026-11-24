@@ -1,0 +1,146 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>存储项目 V3</h2>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索项目名称 / 64 位 secret" value="{$search}" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 280px; outline: none;" onkeydown="if(event.key==='Enter')doSearch()">
+            <button class="btn btn-primary" onclick="doSearch()" style="margin-left: 8px;">搜索</button>
+        </div>
+    </div>
+</div>
+<div class="card">
+    <p>每个 V3 项目（对应一个 secret）可关联 <b>一个或多个 Bucket</b>，并指定一个<b>默认 Bucket</b>。接口请求不传 <code>bucket</code> 时使用默认 Bucket（老 SDK 行为不变）；传了 <code>bucket</code> 时必须是这里勾选过的 Bucket，否则拒绝。Bucket 需先在「Bucket 配置」中创建。</p>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>V3 项目</th>
+            <th>凭证</th>
+            <th>已关联 Bucket</th>
+            <th>默认 Bucket</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td>{$item.id}</td>
+            <td>{$item.name}</td>
+            <td style="font-family:monospace;font-size:12px;" title="kid: {$item.kid}">{$item.kid} / {$item.secret_mask}</td>
+            <td style="max-width:320px;">
+                {if $item.bucket_count > 0}
+                <span title="{$item.bucket_labels|htmlspecialchars}">{$item.bucket_count} 个：{$item.bucket_labels|htmlspecialchars}</span>
+                {else/}
+                <span style="color:#fa541c;">未关联，v3 上传将返回未配置</span>
+                {/if}
+            </td>
+            <td>{$item.default_label}</td>
+            <td><span class="status-badge {if $item.status==1}active{else/}inactive{/if}">{if $item.status==1}启用{else/}禁用{/if}</span></td>
+            <td style="white-space:nowrap;">
+                <button class="btn btn-sm btn-edit"
+                    data-id="{$item.id}"
+                    data-name="{$item.name|htmlspecialchars}"
+                    data-bucket-ids="{$item.bucket_ids|htmlspecialchars}"
+                    data-default="{$item.default_bucket_id}"
+                    onclick="openEdit(this)">配置 Bucket</button>
+            </td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination|raw}
+
+<div class="modal" id="storageProjectModal">
+    <div class="modal-box">
+        <h3>配置存储项目：<span id="modalProjectName"></span></h3>
+        <input type="hidden" id="editProjectId" value="">
+        <p style="font-size:13px;color:#8c8c8c;margin:8px 0 12px;">勾选允许该 secret 使用的 Bucket；单选「默认」表示请求未指定 bucket 时的落点。取消勾选会自动取消其默认标记。</p>
+        <div id="bucketCheckList" style="max-height:340px;overflow-y:auto;border:1px solid #f0f0f0;border-radius:4px;padding:8px 12px;">
+            {foreach $bucketOptions as $b}
+            <label style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;">
+                <input type="checkbox" class="bucket-check" value="{$b.id}" onchange="syncDefaultOptions()">
+                <input type="radio" name="default_bucket" class="bucket-default" value="{$b.id}">
+                <span style="flex:1;">#{$b.id} <b>{$b.name|htmlspecialchars}</b>
+                    <span style="color:#8c8c8c;font-size:12px;">
+                        {if $b.path == ''}Path=Bucket 名{else/}Path={$b.path|htmlspecialchars}{/if}
+                        / {if $b.type == 'local'}本地{else/}远程 OSS{/if}
+                        {if $b.status != 1}（已停用，关联后不生效）{/if}
+                    </span>
+                </span>
+            </label>
+            {/foreach}
+            {if !$bucketOptions}
+            <div style="padding:16px;color:#fa541c;">暂无 Bucket，请先在「Bucket 配置」中创建。</div>
+            {/if}
+        </div>
+        <div style="margin-top:20px;text-align:right;">
+            <button class="btn" onclick="closeModal()">取消</button>
+            <button class="btn btn-primary" onclick="submitForm()">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function doSearch() {
+    var kw = document.getElementById('searchInput').value.trim();
+    location.href = '/admin/v3_storage_project' + (kw ? '?search=' + encodeURIComponent(kw) : '');
+}
+
+function closeModal() {
+    document.getElementById('storageProjectModal').classList.remove('show');
+}
+
+function syncDefaultOptions() {
+    var checks = document.querySelectorAll('.bucket-check');
+    for (var i = 0; i < checks.length; i++) {
+        var radio = document.querySelector('input[name="default_bucket"][value="' + checks[i].value + '"]');
+        if (!radio) continue;
+        radio.disabled = !checks[i].checked;
+        if (!checks[i].checked) radio.checked = false;
+    }
+}
+
+function openEdit(btn) {
+    var d = btn.dataset;
+    document.getElementById('editProjectId').value = d.id;
+    document.getElementById('modalProjectName').textContent = d.name || ('#' + d.id);
+    var ids = (d.bucketIds || '').split(',').filter(function(x) { return x !== ''; }).map(Number);
+    var checks = document.querySelectorAll('.bucket-check');
+    for (var i = 0; i < checks.length; i++) {
+        checks[i].checked = ids.indexOf(Number(checks[i].value)) >= 0;
+    }
+    syncDefaultOptions();
+    var defaultRadio = document.querySelector('input[name="default_bucket"][value="' + Number(d.default || 0) + '"]');
+    if (defaultRadio && !defaultRadio.disabled) defaultRadio.checked = true;
+    document.getElementById('storageProjectModal').classList.add('show');
+}
+
+function submitForm() {
+    var projectId = document.getElementById('editProjectId').value;
+    var ids = [];
+    var checks = document.querySelectorAll('.bucket-check');
+    for (var i = 0; i < checks.length; i++) {
+        if (checks[i].checked) ids.push(Number(checks[i].value));
+    }
+    var defaultRadio = document.querySelector('input[name="default_bucket"]:checked');
+    var defaultId = defaultRadio ? Number(defaultRadio.value) : 0;
+    var params = 'project_id=' + encodeURIComponent(projectId)
+        + '&bucket_ids=' + encodeURIComponent(ids.join(','))
+        + '&default_bucket_id=' + defaultId;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/v3_storage_project', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            var res; try { res = JSON.parse(xhr.responseText); } catch (e) { alert('响应解析失败'); return; }
+            if (res.code == 0) location.reload(); else alert(res.echo);
+        }
+    };
+    xhr.send(params);
+}
+</script>
+{/block}

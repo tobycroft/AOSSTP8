@@ -3,7 +3,6 @@
 namespace app\admin\controller;
 
 use app\admin\model\AdminOssAliyunModel;
-use app\admin\model\AdminV3ProjectModel;
 use app\admin\model\AdminV3StorageModel;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
@@ -15,11 +14,13 @@ use Ret;
 /**
  * 存储管理 V3：ao_v3_storage 后台维护（独立一级菜单）
  *
- * 这里的每一项就是一个 Bucket：一个 V3 项目对应一个 Bucket，Bucket 自身描述
+ * 这里的每一项就是一个 Bucket，只维护 Bucket 自身配置：
  *   - 落盘 Path（相对 upload/，留空回退 Bucket 名称）
  *   - 允许上传的后缀、单文件大小上限
  *   - 存本地（local）还是传远程（oss）
  *   - 远程时用哪套 OSS 凭据（oss_tag → ao_oss_aliyun，仅凭据仓库）
+ * 项目（secret）与一个或多个 Bucket 的授权关系在「存储项目」菜单维护，
+ * Bucket 不再绑定项目（ao_v3_storage.project_id 仅保留为历史兼容列）。
  * 不再包含 ao_oss 的 token / code / main_type 等历史概念。
  */
 class V3Storage extends CommonController
@@ -58,10 +59,6 @@ class V3Storage extends CommonController
         }
         $list = $query->paginate($limit, false, ['page' => $page])->toArray();
 
-        $projectNames = [];
-        foreach (AdminV3ProjectModel::field('id, name')->select() as $p) {
-            $projectNames[(int)$p['id']] = (string)$p['name'];
-        }
         // 凭据 tag → 实际 bucket，便于列表判断远程落点
         $credBuckets = [];
         foreach (AdminOssAliyunModel::field('tag, bucket')->select() as $c) {
@@ -70,12 +67,9 @@ class V3Storage extends CommonController
 
         $items = [];
         foreach ($list['data'] as $item) {
-            $pid = (int)($item['project_id'] ?? 0);
             $tag = (string)($item['oss_tag'] ?? '');
             $items[] = [
                 'id' => $item['id'],
-                'project_id' => $pid,
-                'project_name' => $projectNames[$pid] ?? ('已删除(' . $pid . ')'),
                 'name' => (string)$item['name'],
                 'path' => (string)($item['path'] ?? ''),
                 'ext' => (string)$item['ext'],
@@ -89,23 +83,10 @@ class V3Storage extends CommonController
             ];
         }
 
-        // 项目下拉：只列出尚未绑定 Bucket 的 V3 项目（一项目一 Bucket）
-        $bound = AdminV3StorageModel::where('project_id', '>', 0)->column('project_id');
-        $boundIds = array_map('intval', $bound);
-        $projects = [];
-        foreach (AdminV3ProjectModel::order('id', 'desc')->select() as $p) {
-            $projects[] = [
-                'id' => (int)$p['id'],
-                'name' => (string)$p['name'],
-                'bound' => in_array((int)$p['id'], $boundIds, true),
-            ];
-        }
-
         $pagination = Layout::pagination((int)$list['current_page'], max(1, (int)ceil($list['total'] / $limit)), '/admin/v3_storage', ['search' => $search], $limit);
 
         return $this->renderPage('v3_storage/index', [
             'list' => $items,
-            'projects' => $projects,
             'search' => $search,
             'pagination' => $pagination,
         ], '存储管理 V3', 'v3_storage', 'v3_storage');
@@ -131,26 +112,6 @@ class V3Storage extends CommonController
             ];
         }
         Ret::Success(0, $options);
-    }
-
-    /**
-     * 校验项目存在、且未被其它 Bucket 占用
-     */
-    private function assertProject(int $projectId, int $excludeId = 0): void
-    {
-        if ($projectId <= 0) {
-            Ret::Fail(400, null, '请选择所属项目');
-        }
-        if (AdminV3ProjectModel::findOrEmpty($projectId)->isEmpty()) {
-            Ret::Fail(400, null, '所属项目不存在');
-        }
-        $query = AdminV3StorageModel::where('project_id', $projectId);
-        if ($excludeId > 0) {
-            $query->where('id', '<>', $excludeId);
-        }
-        if ($query->field('id')->find()) {
-            Ret::Fail(400, null, '该项目已有 Bucket（一项目一 Bucket），请先修改或删除已有项');
-        }
     }
 
     /**
@@ -244,9 +205,6 @@ class V3Storage extends CommonController
         if (mb_strlen($name) > 100) {
             Ret::Fail(400, null, 'Bucket 名称不能超过 100 个字符');
         }
-        $projectId = Input::PutInt('project_id', 0);
-        $this->assertProject($projectId);
-
         $type = $this->readType('put');
         $ossTag = $this->readOssTag($type, 'put');
         $url = rtrim(trim((string)Input::Put('url', false)), '/');
@@ -255,7 +213,8 @@ class V3Storage extends CommonController
         }
 
         AdminV3StorageModel::create([
-            'project_id' => $projectId,
+            // project_id 为历史兼容列，归属关系一律由「存储项目」页维护
+            'project_id' => 0,
             'name' => $name,
             'path' => $this->readPath('put'),
             'ext' => $this->readExt('put'),
@@ -281,11 +240,6 @@ class V3Storage extends CommonController
         }
 
         $data = [];
-        if (request()->has('project_id', 'post')) {
-            $projectId = Input::PostInt('project_id', 0);
-            $this->assertProject($projectId, $id);
-            $data['project_id'] = $projectId;
-        }
         if (request()->has('name', 'post')) {
             $name = trim((string)Input::Post('name', false));
             if ($name === '') {
