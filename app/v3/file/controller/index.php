@@ -4,6 +4,7 @@ namespace app\v3\file\controller;
 
 use app\v1\file\model\AttachmentModel;
 use app\v3\storage\model\V3StorageModel;
+use app\v3\storage\model\V3StorageProjectModel;
 use app\v3\storage\model\V3UploadShardModel;
 use BaseController\CommonController;
 use Exception;
@@ -43,6 +44,10 @@ use Throwable;
  *   POST /v3/file/index/up_complete 返回完整文件信息
  *
  * 一次性 token 由 v3/file/token 的 create/upload_url/upload_url_hash 签发。
+ *
+ * MD5 秒传（数据清洗）：上传前按 md5 全局查 V3 未软删附件，命中直接返回既有
+ * path/url 且不落盘；落盘后、OSS 上传前后各复查一次（双重保险），命中则删除
+ * 本次临时文件并返回既有地址。SDK 侧另有 md5_check 前置查询。
  */
 class index extends CommonController
 {
@@ -202,14 +207,17 @@ class index extends CommonController
             $this->fail($type, 400, 'file字段没有用文件提交');
         }
         $file_name = $file->getOriginalName();
-        $md5 = $file->md5();
-        $sha1 = $file->sha1();
+        // 统一小写：MD5 查重、落盘文件名、DB 记录三处口径一致
+        $md5 = strtolower((string)$file->md5());
+        $sha1 = strtolower((string)$file->sha1());
         $mime = $file->getOriginalMime();
 
-        $file_exists = AttachmentModel::where(['token' => $token, 'md5' => $md5, 'sha1' => $sha1, 'tag' => $this->upload_tag, 'is_deleted' => 0])->find();
-
+        // 第一层：上传前按 MD5 全局（跨项目）去重，命中直接秒传返回既有地址，不落盘。
+        // 用户确认相同文件只保留一份；sha1 / 后缀 / 当前 Bucket 不再参与命中判断。
+        $file_exists = $this->findDuplicate($md5);
         if ($file_exists) {
-            $sav = $this->getStr($full, $proc['url'], $file_exists, $type);
+            $this->getStr($full, $this->existingUrl($file_exists, $proc), $file_exists, $type);
+            return;
         }
         if ($file->getOriginalMime() == 'text/x-php' || $file->getOriginalMime() == 'text/html') {
             $this->fail($type, 403, '禁止上传非法文件');
@@ -228,7 +236,7 @@ class index extends CommonController
         $seq = V3UploadShardModel::allocate($this->storageId, $day);
         $segment = V3UploadShardModel::segmentOf($seq);
         $sav_path = $proc['name'] . DIRECTORY_SEPARATOR . $day . DIRECTORY_SEPARATOR . $segment;
-        $info = $file->move('./upload' . DIRECTORY_SEPARATOR . $sav_path, $file->md5() . '.' . $file->getOriginalExtension());
+        $info = $file->move('./upload' . DIRECTORY_SEPARATOR . $sav_path, $md5 . '.' . $file->getOriginalExtension());
         if (!$info) {
             $this->fail($type, 300, '文件错误');
         }
@@ -281,6 +289,15 @@ class index extends CommonController
                 break;
         }
 
+        // 第二层：落盘后复查。并发请求可能在本次 move 之前已把同一 md5 写入库，
+        // 命中则丢弃本次临时文件，直接返回先入库的那份地址。
+        $duplicate = $this->findDuplicate($md5);
+        if ($duplicate) {
+            @unlink($info->getPathname());
+            $this->getStr($full, $this->existingUrl($duplicate, $proc), $duplicate, $type);
+            return;
+        }
+
         $ip = $this->upload_ip ?? request()->ip();
 
         $file_info = [
@@ -305,20 +322,54 @@ class index extends CommonController
         $urlPrefix = rtrim((string)($proc['url'] ?? ''), '/');
         $sav = ($full && $urlPrefix !== '') ? $urlPrefix . '/' . $fileName : $fileName;
 
+        $ossUploaded = false;
         if ($proc['type'] === 'oss') {
             try {
                 $oss = new AliyunOSS($proc);
                 $ret = $oss->uploadFile($proc['bucket'], $fileName, $info->getPathname());
             } catch (OssException $e) {
+                @unlink($info->getPathname());
                 $this->fail($type, 200, $e->getMessage());
             }
             if (empty($ret->getData()["info"]["url"])) {
+                @unlink($info->getPathname());
                 $this->fail($type, 200, "OSS不正常");
             }
-            unlink($info->getPathname());
+            $ossUploaded = true;
+            @unlink($info->getPathname());
+
+            // 第三层：OSS 上传较慢，期间可能已有同 md5 文件入库；删掉刚传的远端对象。
+            $duplicate = $this->findDuplicate($md5);
+            if ($duplicate) {
+                try {
+                    $oss->deleteFile($proc['bucket'], $fileName);
+                } catch (Throwable $ignore) {
+                    // 清理失败不影响秒传结果
+                }
+                $this->getStr($full, $this->existingUrl($duplicate, $proc), $duplicate, $type);
+                return;
+            }
         }
 
-        AttachmentModel::create($file_info);
+        try {
+            AttachmentModel::create($file_info);
+        } catch (Throwable $e) {
+            // 并发插入兜底：唯一键冲突时查回先入库那份，按秒传成功返回。
+            $duplicate = $this->findDuplicate($md5);
+            if ($duplicate) {
+                if ($ossUploaded) {
+                    try {
+                        (new AliyunOSS($proc))->deleteFile($proc['bucket'], $fileName);
+                    } catch (Throwable $ignore) {
+                        // 清理失败不影响秒传结果
+                    }
+                }
+                @unlink($info->getPathname());
+                $this->getStr($full, $this->existingUrl($duplicate, $proc), $duplicate, $type);
+                return;
+            }
+            throw $e;
+        }
         if ($info) {
             switch ($type) {
                 case "ue":
@@ -349,6 +400,40 @@ class index extends CommonController
         }
     }
 
+    /**
+     * 秒传查重：全局（跨项目）取一条未软删的 V3 附件
+     *
+     * 与 token::findUploadedGlobal 使用同一口径；这里返回 Model 以复用 getStr。
+     */
+    private function findDuplicate(string $md5): ?AttachmentModel
+    {
+        $md5 = strtolower(trim($md5));
+        if ($md5 === '') {
+            return null;
+        }
+        return AttachmentModel::where('md5', $md5)
+            ->where('tag', $this->upload_tag)
+            ->where('is_deleted', 0)
+            ->order('id', 'asc')
+            ->find();
+    }
+
+    /**
+     * 秒传返回的 URL 前缀：按既有附件的 path 反查真实 Bucket，避免跨项目命中时用错域名
+     */
+    private function existingUrl(AttachmentModel $file, array $proc): string
+    {
+        $bucket = V3StorageProjectModel::api_match_by_path(
+            (string)($file['token'] ?? ''),
+            (string)($file['path'] ?? '')
+        );
+        $url = !empty($bucket) ? rtrim((string)($bucket['url'] ?? ''), '/') : '';
+        return $url !== '' ? $url : rtrim((string)($proc['url'] ?? ''), '/');
+    }
+
+    /**
+     * 统一成功响应：新上传与秒传命中都走这里，保证各上传入口返回结构一致
+     */
     public function getStr(mixed $full, $url, AttachmentModel $file_exists, mixed $type): string
     {
         $urlPrefix = rtrim((string)$url, '/');

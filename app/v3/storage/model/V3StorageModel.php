@@ -71,8 +71,9 @@ class V3StorageModel extends Model
     /**
      * 附件表的分组键：ao_attachment.token 存的就是它
      *
-     * V3 直接使用「项目名称」作为 token（如 stb、flamecloud），便于后台和 DB
-     * 直观区分文件归属；历史数据里的 v3bucket:{storage_id} 作为兼容兜底。
+     * V3 直接使用「项目名称」作为 token（如 stb、flamecloud），归属从
+     * ao_v3_storage_project 关联表读取；历史数据里的 v3bucket:{storage_id}
+     * 作为兼容兜底（关联缺失时）。
      * V3 上传同时把 ao_attachment.tag 记为 v3，避免与 V1/V2 的同名 token 混在一起。
      */
     public static function api_group_key(int $id): string
@@ -80,11 +81,17 @@ class V3StorageModel extends Model
         if ($id <= 0) {
             return '';
         }
-        $name = Db::name('ao_v3_storage')
-            ->alias('s')
-            ->join('ao_v3_project p', 's.project_id = p.id')
-            ->where('s.id', $id)
-            ->value('p.name');
+        // 归属关系已迁到关联表（新建 Bucket 的 project_id 固定为 0），
+        // 不能再从 ao_v3_storage.project_id 关联项目名，否则分组键退化。
+        $projectId = (int)Db::name('ao_v3_storage_project')
+            ->where('bucket_id', $id)
+            ->where('status', 1)
+            ->order('is_default', 'desc')
+            ->order('id', 'asc')
+            ->value('project_id');
+        $name = $projectId > 0
+            ? Db::name('ao_v3_project')->where('id', $projectId)->value('name')
+            : null;
         return ($name !== null && $name !== '') ? (string)$name : ('v3bucket:' . $id);
     }
 

@@ -31,6 +31,7 @@ use think\facade\Db;
  *   POST /v3/file/token/create          换取临时 token
  *   POST /v3/file/token/upload_url      换取临时 token + 完整上传地址
  *   POST /v3/file/token/upload_url_hash 换取临时 token + hash 模式上传地址
+ *   POST /v3/file/token/md5_check       秒传前置：按 md5 查系统内是否已有文件（跨项目）
  *   POST /v3/file/token/hash_query      按 md5 查询已上传文件完整信息
  *   POST /v3/file/token/md5             按 md5 反查文件完整地址（同 V1 search::md5）
  *   POST /v3/file/token/md5s            按 md5 批量反查文件完整地址（同 V1 search::md5s）
@@ -101,6 +102,49 @@ class token extends CommonController
             'expired_at' => $data['expired_at'],
             'url' => $baseUrl,
             'upload_url' => $baseUrl . '?token=' . $data['token'],
+        ]);
+    }
+
+    /**
+     * 秒传前置查询：md5 是否已在本系统存在（跨项目，仅 V3 未软删文件）
+     *
+     * 未命中返回 exists=false（而不是 404），方便 SDK 直接分支：
+     * 命中直接拿 path/url 当秒传成功，未命中再申请 token 走标准上传。
+     */
+    public function md5_check()
+    {
+        $md5 = Input::Combi('md5', false);
+        if ($md5 === '') {
+            $md5 = Input::Combi('hash', false);
+        }
+        $md5 = strtolower(trim((string)$md5));
+        if ($md5 === '') {
+            Ret::Fail(400, null, '需要md5字段');
+        }
+        if (preg_match('/^[0-9a-f]{32}$/', $md5) !== 1) {
+            Ret::Fail(400, null, 'md5格式不正确');
+        }
+
+        $file = $this->findUploadedGlobal($md5);
+        if (empty($file)) {
+            Ret::Success(0, [
+                'exists' => false,
+                'path' => '',
+                'url' => '',
+                'surl' => '',
+                'md5' => $md5,
+                'file' => null,
+            ]);
+        }
+
+        $decorated = $this->decorateFile($file);
+        Ret::Success(0, [
+            'exists' => true,
+            'path' => $decorated['path'],
+            'url' => $decorated['url'],
+            'surl' => $decorated['surl'],
+            'md5' => $decorated['md5'],
+            'file' => $decorated,
         ]);
     }
 
@@ -224,6 +268,28 @@ class token extends CommonController
         return V3StorageModel::api_group_key((int)$this->bucket['id']);
     }
 
+    /**
+     * 秒传用：全局（跨项目）按 md5 取一条未软删的 V3 附件
+     *
+     * 用户确认相同文件只保留一份，跨项目命中也可直接返回既有 path。
+     * 只认 V3 活跃行：回收站文件（is_deleted=1）不算命中，避免返回失效地址。
+     *
+     * @return array 附件行，未命中为 []
+     */
+    public static function findUploadedGlobal(string $md5): array
+    {
+        $md5 = strtolower(trim($md5));
+        if ($md5 === '') {
+            return [];
+        }
+        return Db::name('ao_attachment')
+            ->where('md5', $md5)
+            ->where('tag', 'v3')
+            ->where('is_deleted', 0)
+            ->order('id', 'asc')
+            ->findOrEmpty();
+    }
+
     /** 按 md5 取本 Bucket 下已上传的附件行 */
     private function findUploaded(string $md5): array
     {
@@ -238,7 +304,19 @@ class token extends CommonController
     /** 补全附件行的访问地址：src / url / surl */
     private function decorateFile(array $file): array
     {
-        $url = rtrim((string)$this->bucket['url'], '/');
+        // 跨项目命中时不能用当前 Bucket 的域名拼旧 path；按 path 前缀反查真实 Bucket。
+        // 找不到时（历史数据/关联已删）才回退当前 Bucket。
+        $url = '';
+        $bucket = V3StorageProjectModel::api_match_by_path(
+            (string)($file['token'] ?? ''),
+            (string)($file['path'] ?? '')
+        );
+        if (!empty($bucket)) {
+            $url = rtrim((string)($bucket['url'] ?? ''), '/');
+        }
+        if ($url === '') {
+            $url = rtrim((string)$this->bucket['url'], '/');
+        }
         $file['src'] = $file['path'];
         $file['url'] = $url !== '' ? $url . '/' . $file['path'] : $file['path'];
         $file['surl'] = $file['path'];
