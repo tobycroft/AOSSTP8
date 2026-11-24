@@ -96,6 +96,7 @@ class Layout
             'items' => [
                 'v3_storage' => ['label' => 'Bucket 配置', 'url' => '/admin/v3_storage'],
                 'v3_attachment' => ['label' => '附件列表', 'url' => '/admin/v3_attachment'],
+                'v3_upload_shard' => ['label' => '分片目录', 'url' => '/admin/v3_upload_shard'],
             ],
         ],
         // AI 管理：目录顺序紧跟「项目管理 v3」

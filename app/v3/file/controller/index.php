@@ -4,6 +4,7 @@ namespace app\v3\file\controller;
 
 use app\v1\file\model\AttachmentModel;
 use app\v3\storage\model\V3StorageModel;
+use app\v3\storage\model\V3UploadShardModel;
 use BaseController\CommonController;
 use Exception;
 use getID3;
@@ -29,7 +30,9 @@ use Throwable;
  *   （v3/file/token），直传阶段沿用 ao_attachment_token 的一次性 token。
  *
  * initialize 按一次性 token 里的 storage_id 定位 Bucket，由 Bucket 决定
- * 落盘目录（Path）、允许后缀、大小上限以及本地/远程：upload/{Path}/YYYYMMDD/md5.ext。
+ * 落盘目录（Path）、允许后缀、大小上限以及本地/远程：
+ * upload/{Path}/YYYYMMDD/{分片}/md5.ext，其中分片每 1000 个文件递增（1000/2000/...），
+ * 避免同一日期目录下文件堆积造成 Linux IO 压力。
  *
  * 可用入口（与 V1/V2 上传能力对齐）：
  *   POST /v3/file/index/upfull      完整上传，返回完整文件地址
@@ -48,6 +51,8 @@ class index extends CommonController
     protected mixed $token;
     protected mixed $proc;
     protected ?string $upload_ip = null;
+    /** 当前一次上传命中的 Bucket id，用于当日分片计数（ao_v3_upload_shard） */
+    protected int $storageId = 0;
 
     public function initialize()
     {
@@ -73,6 +78,7 @@ class index extends CommonController
         if (empty($bucket)) {
             Ret::Fail(401, null, '存储配置不可用');
         }
+        $this->storageId = $storageId;
         $this->token = V3StorageModel::api_group_key($storageId);
         $this->proc = V3StorageModel::api_proc($bucket);
 
@@ -184,6 +190,7 @@ class index extends CommonController
      *
      * proc 由 Bucket 组装而来（name 已按 Path 覆盖，oss 时已合并 ao_oss_aliyun 凭据），
      * 因此这里只需区分 local / oss 两种落点，没有 all / dp 之类的历史分支。
+     * 落盘前先按 Bucket+日期原子取号决定分片目录，分母 1000，目录名 1000/2000/...。
      */
     public function upload_file(Request $request, $full = 0, $type = null)
     {
@@ -214,7 +221,13 @@ class index extends CommonController
             $this->fail($type, 403, '后缀不符合规范');
         }
 
-        $sav_path = $proc['name'] . DIRECTORY_SEPARATOR . date("Ymd");
+        // 当日分片：upload/{bucket}/{YYYYMMDD}/{1000|2000|...}/md5.ext
+        // 每个 Bucket+日期原子取号，按每 FILES_PER_SEGMENT 个文件落一个子目录，
+        // 避免单日期目录堆积过多文件造成 Linux IO 压力。取号无事务、不锁表。
+        $day = date("Ymd");
+        $seq = V3UploadShardModel::allocate($this->storageId, $day);
+        $segment = V3UploadShardModel::segmentOf($seq);
+        $sav_path = $proc['name'] . DIRECTORY_SEPARATOR . $day . DIRECTORY_SEPARATOR . $segment;
         $info = $file->move('./upload' . DIRECTORY_SEPARATOR . $sav_path, $file->md5() . '.' . $file->getOriginalExtension());
         if (!$info) {
             $this->fail($type, 300, '文件错误');

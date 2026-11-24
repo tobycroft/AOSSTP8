@@ -128,6 +128,9 @@
     \think\facade\Route::any('admin/v3_attachment/file', '\app\admin\controller\V3Attachment@file');
     \think\facade\Route::any('admin/v3_attachment', '\app\admin\controller\V3Attachment@index');
 
+    // v3 上传分片目录（存储管理 V3 → 分片目录；只读查看每 Bucket+日期的上传计数与落盘分片）
+    \think\facade\Route::any('admin/v3_upload_shard', '\app\admin\controller\V3UploadShard@index');
+
     // 邮件管理（供 v3 邮件接口使用：服务器配置 → 项目授权 → 内容模板 → 发送日志）
     \think\facade\Route::any('admin/mail_server/test', '\app\admin\controller\MailServer@test');
     \think\facade\Route::any('admin/mail_server', '\app\admin\controller\MailServer@index');
