@@ -3,6 +3,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\AdminAttachmentModel;
+use app\admin\service\AttachmentFileService;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
 use BaseController\CommonController;
@@ -41,7 +42,7 @@ class Attachment extends CommonController
         $md5 = input('get.md5', '', 'trim');
 
         $model = new AdminAttachmentModel();
-        $query = $model->where('id', '>', 0);
+        $query = $model->where('id', '>', 0)->where('is_deleted', 0);
         if (!empty($md5)) {
             $query->where('md5', 'like', "%{$md5}%");
         }
@@ -128,8 +129,17 @@ class Attachment extends CommonController
             Ret::Fail(404, null, '附件不存在');
         }
 
-        $item->delete();
-        Ret::Success(0, [], '删除成功');
+        // 记录 + 本地文件 / OSS 对象一起删；失败时保留记录以便重试
+        $result = AttachmentFileService::delete([$id]);
+        if (!empty($result['errors'])) {
+            Ret::Fail(500, $result, '删除失败：' . implode('；', $result['errors']));
+        }
+
+        $echo = '删除成功';
+        if (!empty($result['warnings'])) {
+            $echo .= '（注意：' . implode('；', $result['warnings']) . '）';
+        }
+        Ret::Success(0, $result, $echo);
     }
 
     private function batchDelete()
@@ -144,9 +154,19 @@ class Attachment extends CommonController
             Ret::Fail(400, null, '无效的ID');
         }
 
-        $model = new AdminAttachmentModel();
-        $model->whereIn('id', $idArr)->delete();
-        Ret::Success(0, [], '批量删除成功，共删除' . count($idArr) . '条');
+        $result = AttachmentFileService::delete($idArr);
+        if (!empty($result['errors']) && $result['deleted'] === 0) {
+            Ret::Fail(500, $result, '批量删除失败：' . implode('；', $result['errors']));
+        }
+
+        $echo = '批量删除成功，共删除' . $result['deleted'] . '条';
+        if (!empty($result['errors'])) {
+            $echo .= '；失败：' . implode('；', $result['errors']);
+        }
+        if (!empty($result['warnings'])) {
+            $echo .= '；注意：' . implode('；', $result['warnings']);
+        }
+        Ret::Success(0, $result, $echo);
     }
 
     private function formatSize($bytes): string

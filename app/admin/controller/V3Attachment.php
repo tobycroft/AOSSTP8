@@ -2,6 +2,7 @@
 
 namespace app\admin\controller;
 
+use app\admin\service\AttachmentFileService;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
 use app\v3\storage\model\V3StorageModel;
@@ -48,10 +49,66 @@ class V3Attachment extends CommonController
 
     public function index()
     {
-        if (!request()->isGet()) {
+        $method = request()->method();
+        if ($method === 'DELETE') {
+            return $this->delete();
+        }
+        if ($method === 'POST' && request()->post('batch_delete')) {
+            return $this->batchDelete();
+        }
+        if ($method !== 'GET') {
             Ret::Fail(405, null, '不支持的请求方法');
         }
         return $this->page();
+    }
+
+    /** 删除单条 V3 附件：DB 记录 + 本地文件 / OSS 对象 */
+    private function delete()
+    {
+        $id = intval(request()->delete('id'));
+        if ($id <= 0) {
+            Ret::Fail(400, null, '缺少参数[id]');
+        }
+
+        $row = Db::name('ao_attachment')->where('id', $id)->findOrEmpty();
+        if (empty($row)) {
+            Ret::Fail(404, null, '附件不存在');
+        }
+
+        $result = AttachmentFileService::delete([$id], 'v3');
+        if (!empty($result['errors'])) {
+            Ret::Fail(500, $result, '删除失败：' . implode('；', $result['errors']));
+        }
+
+        $echo = '删除成功';
+        if (!empty($result['warnings'])) {
+            $echo .= '（注意：' . implode('；', $result['warnings']) . '）';
+        }
+        Ret::Success(0, $result, $echo);
+    }
+
+    /** 批量删除 V3 附件 */
+    private function batchDelete()
+    {
+        $ids = trim((string)input('post.ids', ''));
+        $idArr = array_filter(array_map('intval', explode(',', $ids)));
+        if (empty($idArr)) {
+            Ret::Fail(400, null, '未选择任何附件');
+        }
+
+        $result = AttachmentFileService::delete($idArr, 'v3');
+        if (!empty($result['errors']) && $result['deleted'] === 0) {
+            Ret::Fail(500, $result, '批量删除失败：' . implode('；', $result['errors']));
+        }
+
+        $echo = '批量删除成功，共删除' . $result['deleted'] . '条';
+        if (!empty($result['errors'])) {
+            $echo .= '；失败：' . implode('；', $result['errors']);
+        }
+        if (!empty($result['warnings'])) {
+            $echo .= '；注意：' . implode('；', $result['warnings']);
+        }
+        Ret::Success(0, $result, $echo);
     }
 
     private function page()
@@ -94,9 +151,11 @@ class V3Attachment extends CommonController
             $tokenBucketMap['v3bucket:' . (int)$bucket['id']] = $bucket;
         }
 
-        $query = Db::name('ao_attachment')->where(function ($q) {
-            $q->where('tag', 'v3')->whereOr('token', 'like', 'v3bucket:%');
-        });
+        $query = Db::name('ao_attachment')
+            ->where('is_deleted', 0)
+            ->where(function ($q) {
+                $q->where('tag', 'v3')->whereOr('token', 'like', 'v3bucket:%');
+            });
 
         // 维度过滤：Bucket 优先；只选项目时取该项目绑定的 Bucket
         if ($bucketId > 0) {
@@ -145,6 +204,7 @@ class V3Attachment extends CommonController
 
         // 可选的扩展名过滤项：仅取 V3 附件已有后缀
         $extOptions = Db::name('ao_attachment')
+            ->where('is_deleted', 0)
             ->where(function ($q) {
                 $q->where('tag', 'v3')->whereOr('token', 'like', 'v3bucket:%');
             })

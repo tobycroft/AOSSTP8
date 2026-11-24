@@ -199,7 +199,7 @@ class index extends CommonController
         $sha1 = $file->sha1();
         $mime = $file->getOriginalMime();
 
-        $file_exists = AttachmentModel::where(['token' => $token, 'md5' => $md5, 'sha1' => $sha1, 'tag' => $this->upload_tag])->find();
+        $file_exists = AttachmentModel::where(['token' => $token, 'md5' => $md5, 'sha1' => $sha1, 'tag' => $this->upload_tag, 'is_deleted' => 0])->find();
 
         if ($file_exists) {
             $sav = $this->getStr($full, $proc['url'], $file_exists, $type);

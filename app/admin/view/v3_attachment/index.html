@@ -32,16 +32,20 @@
             <a class="view-btn {if $view=='list'}active{/if}" href="{$listUrl}">列表</a>
             <a class="view-btn {if $view=='grid'}active{/if}" href="{$gridUrl}">横排</a>
         </div>
+        {if $view == 'list'}
+        <button class="btn btn-danger" onclick="v3BatchDelete()" style="display:none;" id="v3BatchDelBtn">批量删除</button>
+        {/if}
     </div>
 </div>
 <div class="card">
-    <p>这里只展示 <b>V3 上传</b>的附件（按 Bucket 归组），可按项目 / Bucket / 后缀 / 关键字过滤。图片地址优先拼接 Bucket 的访问域名（本地 Bucket 未配置时用图片站 <code>https://image.tuuz.cc:433</code>），加载失败自动回退站内受控代理。仅对 jpg / png / gif / bmp / webp / ico 内联展示，并校验真实文件类型；<b>SVG、HTML、PDF 等一律不内联渲染，只能下载</b>，避免图片中暗藏脚本在后台执行。</p>
+    <p>这里只展示 <b>V3 上传</b>的附件（按 Bucket 归组），可按项目 / Bucket / 后缀 / 关键字过滤。图片地址优先拼接 Bucket 的访问域名（本地 Bucket 未配置时用图片站 <code>https://image.tuuz.cc:433</code>），加载失败自动回退站内受控代理。仅对 jpg / png / gif / bmp / webp / ico 内联展示，并校验真实文件类型；<b>SVG、HTML、PDF 等一律不内联渲染，只能下载</b>，避免图片中暗藏脚本在后台执行。删除附件会将其移入回收站（本地与 OSS 均保留可恢复副本），可从「附件回收站」恢复。</p>
 </div>
 {if $view == 'list'}
 <div class="table-wrap">
 <table>
     <thead>
         <tr>
+            <th style="width:36px;"><input type="checkbox" id="v3CheckAll" onchange="v3ToggleAll(this)"></th>
             <th style="width:64px;">预览</th>
             <th>ID</th>
             <th>文件名</th>
@@ -59,6 +63,7 @@
     <tbody>
         {foreach $list as $item}
         <tr>
+            <td><input type="checkbox" class="v3-row-checkbox" value="{$item.id}" onchange="v3UpdateBatchBtn()"></td>
             <td>
                 {if $item.thumb_url != ''}
                 <img class="attach-thumb" src="{$item.thumb_url}" alt="" loading="lazy" referrerpolicy="no-referrer"
@@ -106,12 +111,13 @@
                 <button class="btn btn-sm btn-edit" onclick="openPreview(this.closest('tr').querySelector('[data-id]'))">查看</button>
                 <button class="btn btn-sm" style="background:var(--bg-subtle);color:var(--text);border:1px solid var(--border-strong);" onclick="openPreview(this.closest('tr').querySelector('[data-id]'))">详情</button>
                 <a class="btn btn-sm" style="background:var(--bg-subtle);color:var(--text);border:1px solid var(--border-strong);text-decoration:none;" href="{$item.download_url}" target="_blank" rel="noopener noreferrer">下载</a>
+                <button class="btn btn-sm btn-del" onclick="v3Delete({$item.id}, this.closest('tr').querySelector('[data-id]').dataset.name)">删除</button>
             </td>
         </tr>
         {/foreach}
         {if empty($list)}
         <tr>
-            <td colspan="12" style="text-align:center;color:var(--text-muted);padding:32px;">暂无附件</td>
+            <td colspan="13" style="text-align:center;color:var(--text-muted);padding:32px;">暂无附件</td>
         </tr>
         {/if}
     </tbody>
@@ -147,6 +153,7 @@
                 <span class="grid-actions">
                     <a href="javascript:;" onclick="event.stopPropagation();openPreview(this.closest('.attach-card'))">详情</a>
                     <a href="{$item.download_url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">下载</a>
+                    <a href="javascript:;" style="color:var(--danger,#e5484d);" onclick="event.stopPropagation();v3Delete({$item.id}, this.closest('.attach-card').dataset.name)">删除</a>
                 </span>
             </div>
         </div>
@@ -353,6 +360,49 @@ function closePreview() {
     var img = document.getElementById('previewImg');
     img.removeAttribute('src');
     document.getElementById('previewModal').classList.remove('show');
+}
+
+// 删除：DB 记录 + 实际文件（本地 / OSS）一起删
+function v3ToggleAll(source) {
+    document.querySelectorAll('.v3-row-checkbox').forEach(function(cb) { cb.checked = source.checked; });
+    v3UpdateBatchBtn();
+}
+function v3UpdateBatchBtn() {
+    var btn = document.getElementById('v3BatchDelBtn');
+    if (!btn) return;
+    var checked = document.querySelectorAll('.v3-row-checkbox:checked');
+    btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
+    if (checked.length > 0) btn.textContent = '批量删除(' + checked.length + ')';
+}
+function v3HandleResult(xhr) {
+    var res;
+    try { res = JSON.parse(xhr.responseText); } catch (e) { alert('服务器返回格式错误'); return; }
+    if (res.code == 0) {
+        location.reload();
+    } else {
+        alert(res.echo || '删除失败');
+    }
+}
+function v3Delete(id, name) {
+    var label = name ? ('「' + name + '」') : ('#' + id);
+    if (!confirm('确定要删除附件 ' + label + ' 吗？附件会移入回收站，可从「附件回收站」恢复。')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', '/admin/v3_attachment', true);
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() { if (xhr.readyState == 4) v3HandleResult(xhr); };
+    xhr.send('id=' + id);
+}
+function v3BatchDelete() {
+    var ids = [];
+    document.querySelectorAll('.v3-row-checkbox:checked').forEach(function(cb) { ids.push(cb.value); });
+    if (ids.length === 0) return;
+    if (!confirm('确定要删除选中的 ' + ids.length + ' 个附件吗？附件会移入回收站，可从「附件回收站」恢复。')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/v3_attachment', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() { if (xhr.readyState == 4) v3HandleResult(xhr); };
+    xhr.send('batch_delete=1&ids=' + ids.join(','));
 }
 
 document.addEventListener('DOMContentLoaded', applyProjectFilter);

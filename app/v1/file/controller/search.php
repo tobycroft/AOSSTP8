@@ -32,7 +32,7 @@ class search extends CommonController
         if (empty($md5)) {
             Ret::Fail(400, null, "需要md5字段");
         }
-        $file_exists = AttachmentModel::where("md5", $md5)->find();
+        $file_exists = AttachmentModel::where("md5", $md5)->where('is_deleted', 0)->find();
         if (empty($file_exists)) {
             Ret::Fail(404, null, "未找到文件,请先上传");
         }
@@ -55,7 +55,7 @@ class search extends CommonController
             Ret::Fail(400, null, "需要md5字段");
         }
         $d5s = json_decode($md5s, 1);
-        $file_exists = AttachmentModel::whereIn("md5", $d5s)->select();
+        $file_exists = AttachmentModel::whereIn("md5", $d5s)->where('is_deleted', 0)->select();
         if (empty($file_exists)) {
             Ret::Fail(404, null, "未找到文件,请先上传");
         }

@@ -96,7 +96,7 @@ function updateBatchBtn() {
     if (checked.length > 0) btn.textContent = '批量删除(' + checked.length + ')';
 }
 function batchDelete() {
-    if (!confirm('确定要删除选中的附件吗？')) return;
+    if (!confirm('确定要删除选中的附件吗？附件会移入回收站，可从「附件回收站」恢复。')) return;
     var ids = [];
     document.querySelectorAll('.row-checkbox:checked').forEach(function(cb) { ids.push(cb.value); });
     if (ids.length === 0) return;
@@ -150,7 +150,7 @@ function submitForm() {
     xhr.send(params);
 }
 function doDelete(id) {
-    if (!confirm('确定要删除该附件吗？')) return;
+    if (!confirm('确定要删除该附件吗？附件会移入回收站，可从「附件回收站」恢复。')) return;
     var xhr = new XMLHttpRequest();
     xhr.open('DELETE', '/admin/attachment', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');

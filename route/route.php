@@ -71,6 +71,7 @@
     \think\facade\Route::any('admin/cert_pve', '\app\admin\controller\CertPve@index');
     \think\facade\Route::any('admin/cert_log', '\app\admin\controller\CertLog@index');
     \think\facade\Route::any('admin/attachment', '\app\admin\controller\Attachment@index');
+    \think\facade\Route::any('admin/recycle_bin', '\app\admin\controller\RecycleBin@index');
     \think\facade\Route::any('admin/attachment_token', '\app\admin\controller\AttachmentToken@index');
     \think\facade\Route::any('admin/oss', '\app\admin\controller\Oss@index');
     \think\facade\Route::any('admin/oss_aliyun', '\app\admin\controller\OssAliyun@index');

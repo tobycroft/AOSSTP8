@@ -1,0 +1,116 @@
+{extend name="layout/base" /}
+{block name="content"}
+<div class="toolbar">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>附件回收站</h2>
+        <form method="get" action="/admin/recycle_bin" style="display:flex;align-items:center;gap:8px;">
+            <input type="text" name="keyword" placeholder="文件名 / MD5 / 路径" value="{$keyword}" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-surface);color:var(--text);width:220px;outline:none;">
+            <button class="btn btn-primary" type="submit">搜索</button>
+        </form>
+        <button class="btn btn-primary" id="restoreBtn" style="display:none;" onclick="batchOp('restore')">批量恢复</button>
+        <button class="btn btn-danger" id="purgeBtn" style="display:none;" onclick="batchOp('purge')">彻底删除</button>
+    </div>
+</div>
+<div class="card">
+    <p>这里的文件实体已移动到 <code>upload/recycle/YYYYMMDD/</code>，数据库记录保留为已删除。<b>恢复</b>会把文件搬回原路径（OSS 附件会重新上传回远程）；<b>彻底删除</b>会真正删除回收站里的文件，不可恢复。</p>
+</div>
+<div class="table-wrap">
+<table>
+    <thead>
+        <tr>
+            <th style="width:36px;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
+            <th>ID</th>
+            <th>文件名</th>
+            <th>原路径</th>
+            <th>回收站路径</th>
+            <th>来源</th>
+            <th>类型</th>
+            <th>大小</th>
+            <th>MD5</th>
+            <th>删除时间</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr>
+            <td><input type="checkbox" class="row-checkbox" value="{$item.id}" onchange="updateBatchBtn()"></td>
+            <td>{$item.id}</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.name}">{$item.name}</td>
+            <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.path}"><span class="mono">{$item.path}</span></td>
+            <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.recycle_path}"><span class="mono">{$item.recycle_path}</span></td>
+            <td>{$item.source}</td>
+            <td>{$item.ext|default='-'}</td>
+            <td>{$item.size}</td>
+            <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.md5}">{$item.md5}</td>
+            <td>{$item.deleted_at}</td>
+            <td style="white-space:nowrap;">
+                <button class="btn btn-sm btn-primary" onclick="doRestore({$item.id})">恢复</button>
+                <button class="btn btn-sm btn-del" onclick="doPurge({$item.id})">彻底删除</button>
+            </td>
+        </tr>
+        {/foreach}
+        {if empty($list)}
+        <tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:32px;">回收站为空</td></tr>
+        {/if}
+    </tbody>
+</table>
+</div>
+{$pagination|raw}
+{/block}
+{block name="script"}
+{literal}
+<style>
+.table-wrap { overflow-x:auto; }
+.mono { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; color:var(--primary); text-decoration:none; }
+</style>
+<script>
+function toggleAll(source) {
+    document.querySelectorAll('.row-checkbox').forEach(function(cb) { cb.checked = source.checked; });
+    updateBatchBtn();
+}
+function updateBatchBtn() {
+    var checked = document.querySelectorAll('.row-checkbox:checked').length;
+    document.getElementById('restoreBtn').style.display = checked > 0 ? 'inline-block' : 'none';
+    document.getElementById('purgeBtn').style.display = checked > 0 ? 'inline-block' : 'none';
+}
+function selectedIds() {
+    var ids = [];
+    document.querySelectorAll('.row-checkbox:checked').forEach(function(cb) { ids.push(cb.value); });
+    return ids;
+}
+function request(url, body, done) {
+    var xhr = new XMLHttpRequest();
+    xhr.open(url.indexOf('DELETE') === 0 ? 'DELETE' : 'POST', url.replace(/^DELETE /, ''), true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
+        var res;
+        try { res = JSON.parse(xhr.responseText); } catch (e) { alert('服务器返回格式错误'); return; }
+        if (res.code == 0) location.reload(); else alert(res.echo || '操作失败');
+    };
+    xhr.send(body);
+}
+function doRestore(id) {
+    if (!confirm('确定恢复该附件吗？文件会从回收站移回原路径。')) return;
+    request('POST /admin/recycle_bin', 'batch_restore=1&ids=' + id);
+}
+function doPurge(id) {
+    if (!confirm('确定彻底删除吗？回收站里的文件会被真正删除，无法恢复！')) return;
+    request('DELETE /admin/recycle_bin', 'id=' + id);
+}
+function batchOp(op) {
+    var ids = selectedIds();
+    if (ids.length === 0) return;
+    if (op === 'purge') {
+        if (!confirm('确定彻底删除选中的 ' + ids.length + ' 个文件吗？此操作不可恢复！')) return;
+        request('POST /admin/recycle_bin', 'batch_purge=1&ids=' + ids.join(','));
+    } else {
+        if (!confirm('确定恢复选中的 ' + ids.length + ' 个附件吗？')) return;
+        request('POST /admin/recycle_bin', 'batch_restore=1&ids=' + ids.join(','));
+    }
+}
+</script>
+{/literal}
+{/block}

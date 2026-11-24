@@ -2,6 +2,7 @@
 
 namespace app\v3\file\controller;
 
+use app\admin\service\AttachmentFileService;
 use app\v2\file\model\FileTokenModel;
 use app\v3\common\V3EnvelopeAuth;
 use app\v3\project\model\V3ProjectModel;
@@ -29,6 +30,8 @@ use think\facade\Db;
  *   POST /v3/file/token/hash_query      按 md5 查询已上传文件完整信息
  *   POST /v3/file/token/md5             按 md5 反查文件完整地址（同 V1 search::md5）
  *   POST /v3/file/token/md5s            按 md5 批量反查文件完整地址（同 V1 search::md5s）
+ *   POST /v3/file/token/delete          软删文件：移入 upload/recycle/YYYYMMDD/
+ *   POST /v3/file/token/restore         从回收站恢复文件
  */
 class token extends CommonController
 {
@@ -145,6 +148,7 @@ class token extends CommonController
             ->whereIn('md5', $md5s)
             ->where('token', $this->groupKey())
             ->where('tag', 'v3')
+            ->where('is_deleted', 0)
             ->select()
             ->toArray();
         if (empty($rows)) {
@@ -156,6 +160,54 @@ class token extends CommonController
             $list[] = $this->decorateFile($row);
         }
         Ret::Success(0, $list);
+    }
+
+    /** 软删：按 hash/md5 把文件移入回收站 */
+    public function delete()
+    {
+        $this->changeDeleted(true);
+    }
+
+    /** 恢复：按 hash/md5 从回收站移回原路径 */
+    public function restore()
+    {
+        $this->changeDeleted(false);
+    }
+
+    /** 删除/恢复共用的按 hash 定位逻辑 */
+    private function changeDeleted(bool $delete): void
+    {
+        $hash = Input::Combi('hash', false);
+        if ($hash === '') {
+            $hash = Input::Combi('md5', false);
+        }
+        if (empty($hash)) {
+            Ret::Fail(400, null, '需要hash字段');
+        }
+
+        $row = Db::name('ao_attachment')
+            ->where('md5', $hash)
+            ->where('token', $this->groupKey())
+            ->where('tag', 'v3')
+            ->where('is_deleted', $delete ? 0 : 1)
+            ->findOrEmpty();
+        if (empty($row)) {
+            Ret::Fail(404, null, $delete ? '未找到文件，或文件已在回收站' : '回收站中未找到该文件');
+        }
+
+        $result = $delete
+            ? AttachmentFileService::delete([(int)$row['id']], 'v3')
+            : AttachmentFileService::restore([(int)$row['id']], 'v3');
+
+        if (!empty($result['errors'])) {
+            Ret::Fail(500, $result, implode('；', $result['errors']));
+        }
+
+        Ret::Success(0, [
+            'md5' => $hash,
+            'deleted' => $result['deleted'],
+            'warnings' => $result['warnings'],
+        ], $delete ? '已移入回收站' : '已恢复');
     }
 
     /** 当前 Bucket 在 ao_attachment 中的分组键（现为项目名称，如 stb） */
@@ -171,6 +223,7 @@ class token extends CommonController
             ->where('md5', $md5)
             ->where('token', $this->groupKey())
             ->where('tag', 'v3')
+            ->where('is_deleted', 0)
             ->findOrEmpty();
     }
 
