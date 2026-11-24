@@ -49,6 +49,11 @@ class Layout
                 'oss_aliyun' => ['label' => '阿里云OSS', 'url' => '/admin/oss_aliyun'],
             ],
         ],
+        // 实际文件管理：独立于 V3 与 ao_attachment，按磁盘现状手动同步
+        'real_file' => [
+            'title' => '实际文件管理',
+            'link' => '/admin/real_file',
+        ],
         'hook' => [
             'title' => 'Hook管理',
             'items' => [

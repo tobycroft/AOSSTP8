@@ -1,0 +1,173 @@
+{extend name="layout/base" /}
+{block name="content"}
+<style>
+.rf-tip { background: var(--bg-inset); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; color: var(--text-secondary); font-size: 13px; line-height: 1.7; margin-bottom: 16px; }
+.rf-summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.rf-summary .box { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; min-width: 130px; box-shadow: var(--shadow); }
+.rf-summary .box .label { color: var(--text-muted); font-size: 12px; }
+.rf-summary .box .value { color: var(--text-strong); font-size: 20px; font-weight: 600; margin-top: 4px; }
+.rf-summary .box .value.warn { color: #ff7875; }
+.rf-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+.rf-badge.file { background: var(--bg-active); color: var(--primary); }
+.rf-badge.dir { background: var(--track); color: var(--text-secondary); }
+.rf-badge.ok { background: var(--badge-success-bg); color: var(--badge-success-text); border: 1px solid var(--badge-success-border); }
+.rf-badge.missing { background: var(--badge-danger-bg); color: var(--badge-danger-text); border: 1px solid var(--badge-danger-border); }
+.rf-path { max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: Menlo, Consolas, monospace; font-size: 13px; }
+.rf-filter { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.rf-filter input, .rf-filter select { padding: 8px 10px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--bg-surface); color: var(--text); outline: none; font-size: 13px; }
+.rf-filter input:focus, .rf-filter select:focus { border-color: var(--primary); }
+.rf-filter input { width: 260px; }
+</style>
+
+<div class="toolbar">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>实际文件管理</h2>
+        <button class="btn btn-primary" id="syncBtn" onclick="doSync()">同步（全量扫描）</button>
+        <span style="color:var(--text-muted);font-size:13px;">单次上限 {$maxScan} 条 · 批量删除上限 {$maxBatch} 条</span>
+    </div>
+</div>
+
+<div class="rf-tip">
+    本页直接反映 <b>public/upload</b> 目录的磁盘现状，使用独立数据表，与附件（ao_attachment）无关。
+    同步为手动触发，只创建/回填记录；磁盘上已消失的文件只标记「失效」，不会自动删库。
+    删除操作会同步删除磁盘文件，删除目录将递归删除其下全部内容，且不可恢复。
+</div>
+
+<div class="rf-summary">
+    <div class="box"><div class="label">文件</div><div class="value">{$stats.files}</div></div>
+    <div class="box"><div class="label">目录</div><div class="value">{$stats.dirs}</div></div>
+    <div class="box"><div class="label">失效记录</div><div class="value {if $stats.missing > 0}warn{/if}">{$stats.missing}</div></div>
+    <div class="box"><div class="label">记录总数</div><div class="value">{$stats.total}</div></div>
+    <div class="box"><div class="label">最近同步</div><div class="value" style="font-size:15px;padding-top:6px;">{$stats.last_sync}</div></div>
+</div>
+
+<div class="rf-filter">
+    <input type="text" id="keyword" placeholder="搜索路径（包含匹配）" value="{$keyword|htmlentities}" onkeydown="if(event.key==='Enter')doSearch()">
+    <select id="typeFilter">
+        <option value="">全部类型</option>
+        <option value="1" {if $type == '1'}selected{/if}>文件</option>
+        <option value="2" {if $type == '2'}selected{/if}>目录</option>
+    </select>
+    <select id="statusFilter">
+        <option value="">全部状态</option>
+        <option value="1" {if $status == '1'}selected{/if}>正常</option>
+        <option value="0" {if $status == '0'}selected{/if}>失效</option>
+    </select>
+    <select id="limitSelect" onchange="doSearch()">
+        {foreach $limitOptions as $opt}
+        <option value="{$opt}" {if $opt==$limit}selected{/if}>每页 {$opt} 条</option>
+        {/foreach}
+    </select>
+    <button class="btn btn-primary" onclick="doSearch()">搜索</button>
+    <button class="btn btn-danger" id="batchDelBtn" style="display:none;" onclick="batchDelete()">批量删除</button>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th style="width:36px;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
+            <th style="width:60px;">ID</th>
+            <th style="width:70px;">类型</th>
+            <th>路径（相对 upload）</th>
+            <th style="width:90px;">大小</th>
+            <th style="width:145px;">修改时间</th>
+            <th style="width:145px;">同步时间</th>
+            <th style="width:70px;">状态</th>
+            <th style="width:70px;">操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {foreach $list as $item}
+        <tr data-id="{$item.id}" data-path="{$item.path|htmlentities}">
+            <td><input type="checkbox" class="row-checkbox" value="{$item.id}" onchange="updateBatchBtn()"></td>
+            <td>{$item.id}</td>
+            <td><span class="rf-badge {if $item.type == 1}file{else}dir{/if}">{if $item.type == 1}文件{else}目录{/if}</span></td>
+            <td><div class="rf-path" title="{$item.path|htmlentities}">{$item.path|htmlentities}</div></td>
+            <td>{$item.size}</td>
+            <td>{$item.mtime}</td>
+            <td>{$item.sync_time}</td>
+            <td><span class="rf-badge {if $item.status == 1}ok{else}missing{/if}">{if $item.status == 1}正常{else}失效{/if}</span></td>
+            <td><button class="btn btn-sm btn-del" onclick="doDelete({$item.id}, this)">删除</button></td>
+        </tr>
+        {/foreach}
+    </tbody>
+</table>
+{$pagination|raw}
+{/block}
+
+{block name="script"}
+{literal}
+<script>
+function request(url, method, params, onOk) {
+    var xhr = new XMLHttpRequest();
+    xhr.open(method, url, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState != 4) return;
+        var res;
+        try { res = JSON.parse(xhr.responseText); }
+        catch (e) { alert('响应解析失败'); return; }
+        if (res.code == 0) { onOk(res); }
+        else { alert(res.echo || '操作失败'); }
+    };
+    xhr.send(params || '');
+}
+function doSearch() {
+    var url = '/admin/real_file?page=1';
+    var keyword = document.getElementById('keyword').value.trim();
+    var type = document.getElementById('typeFilter').value;
+    var status = document.getElementById('statusFilter').value;
+    var limit = document.getElementById('limitSelect').value;
+    if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+    if (type) url += '&type=' + type;
+    if (status) url += '&status=' + status;
+    if (limit) url += '&limit=' + limit;
+    window.location.href = url;
+}
+function doSync() {
+    var btn = document.getElementById('syncBtn');
+    if (btn.disabled) return;
+    if (!confirm('确定开始全量扫描 public/upload 吗？\n\n将按磁盘现状创建/回填记录，并把已消失的文件标记为失效。')) return;
+    btn.disabled = true;
+    btn.textContent = '同步中...';
+    request('/admin/real_file/sync', 'POST', '', function (res) {
+        alert(res.echo);
+        window.location.reload();
+    });
+    // 失败时恢复按钮，避免页面卡在「同步中」
+    setTimeout(function () {
+        if (btn.disabled) { btn.disabled = false; btn.textContent = '同步（全量扫描）'; }
+    }, 120000);
+}
+function toggleAll(source) {
+    document.querySelectorAll('.row-checkbox').forEach(function (cb) { cb.checked = source.checked; });
+    updateBatchBtn();
+}
+function updateBatchBtn() {
+    var checked = document.querySelectorAll('.row-checkbox:checked');
+    var btn = document.getElementById('batchDelBtn');
+    btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
+    if (checked.length > 0) btn.textContent = '批量删除(' + checked.length + ')';
+}
+function doDelete(id, btn) {
+    var path = btn.closest('tr').dataset.path;
+    if (!confirm('确定删除「' + path + '」吗？\n\n将同步删除磁盘上的实际文件/目录；若为目录，其下所有内容都会被递归删除，且不可恢复。')) return;
+    request('/admin/real_file/delete', 'POST', 'ids=' + id, function (res) {
+        alert(res.echo);
+        window.location.reload();
+    });
+}
+function batchDelete() {
+    var ids = [];
+    document.querySelectorAll('.row-checkbox:checked').forEach(function (cb) { ids.push(cb.value); });
+    if (!ids.length) return;
+    if (!confirm('确定删除选中的 ' + ids.length + ' 条记录吗？\n\n将同步删除磁盘文件/目录（目录会递归删除），操作不可恢复。')) return;
+    request('/admin/real_file/delete', 'POST', 'ids=' + ids.join(','), function (res) {
+        alert(res.echo);
+        window.location.reload();
+    });
+}
+</script>
+{/literal}
+{/block}
