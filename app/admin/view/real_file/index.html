@@ -12,36 +12,42 @@
 .rf-badge.dir { background: var(--track); color: var(--text-secondary); }
 .rf-badge.ok { background: var(--badge-success-bg); color: var(--badge-success-text); border: 1px solid var(--badge-success-border); }
 .rf-badge.missing { background: var(--badge-danger-bg); color: var(--badge-danger-text); border: 1px solid var(--badge-danger-border); }
-.rf-path { max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: Menlo, Consolas, monospace; font-size: 13px; }
+.rf-badge.recycled { background: var(--track); color: var(--text-secondary); border: 1px solid var(--border); }
+.rf-path { max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: Menlo, Consolas, monospace; font-size: 13px; }
 .rf-filter { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
 .rf-filter input, .rf-filter select { padding: 8px 10px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--bg-surface); color: var(--text); outline: none; font-size: 13px; }
 .rf-filter input:focus, .rf-filter select:focus { border-color: var(--primary); }
-.rf-filter input { width: 260px; }
+.rf-filter input { width: 240px; }
+.btn-warn { background: #faad14; color: #1f1f1f; }
+.btn-warn:hover { background: #ffc53d; }
 </style>
 
 <div class="toolbar">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <h2>实际文件管理</h2>
-        <button class="btn btn-primary" id="syncBtn" onclick="doSync()">同步（全量扫描）</button>
-        <span style="color:var(--text-muted);font-size:13px;">单次上限 {$maxScan} 条 · 批量删除上限 {$maxBatch} 条</span>
+        <button class="btn btn-primary" id="syncBtn" onclick="doSync()">同步（扫描无主文件）</button>
+        <span style="color:var(--text-muted);font-size:13px;">单次上限 {$maxScan} 条 · 批量上限 {$maxBatch} 条</span>
     </div>
 </div>
 
 <div class="rf-tip">
-    本页直接反映 <b>public/upload</b> 目录的磁盘现状，使用独立数据表，与附件（ao_attachment）无关。
-    同步为手动触发，只创建/回填记录；磁盘上已消失的文件只标记「失效」，不会自动删库。
-    删除操作会同步删除磁盘文件，删除目录将递归删除其下全部内容，且不可恢复。
+    本页只显示<b>无主文件</b>：扫描 <b>public/upload</b> 时会读取 <b>ao_attachment.path</b> 比对，命中的有主文件不入库。
+    「移入回收站」是软删除，文件搬到 <b>upload/recycle/YYYYMMDD/</b>、记录保留；「硬删除」会彻底删除磁盘文件与记录，<b>不可恢复</b>。
 </div>
 
 <div class="rf-summary">
-    <div class="box"><div class="label">文件</div><div class="value">{$stats.files}</div></div>
-    <div class="box"><div class="label">目录</div><div class="value">{$stats.dirs}</div></div>
+    <div class="box"><div class="label">无主文件</div><div class="value">{$stats.files}</div></div>
+    <div class="box"><div class="label">无主目录</div><div class="value">{$stats.dirs}</div></div>
+    <div class="box"><div class="label">回收站</div><div class="value">{$stats.recycled}</div></div>
     <div class="box"><div class="label">失效记录</div><div class="value {if $stats.missing > 0}warn{/if}">{$stats.missing}</div></div>
-    <div class="box"><div class="label">记录总数</div><div class="value">{$stats.total}</div></div>
     <div class="box"><div class="label">最近同步</div><div class="value" style="font-size:15px;padding-top:6px;">{$stats.last_sync}</div></div>
 </div>
 
 <div class="rf-filter">
+    <select id="viewFilter" onchange="doSearch()">
+        <option value="" {if $view == 'normal'}selected{/if}>无主文件</option>
+        <option value="recycle" {if $view == 'recycle'}selected{/if}>回收站</option>
+    </select>
     <input type="text" id="keyword" placeholder="搜索路径（包含匹配）" value="{$keyword|htmlentities}" onkeydown="if(event.key==='Enter')doSearch()">
     <select id="typeFilter">
         <option value="">全部类型</option>
@@ -59,7 +65,10 @@
         {/foreach}
     </select>
     <button class="btn btn-primary" onclick="doSearch()">搜索</button>
-    <button class="btn btn-danger" id="batchDelBtn" style="display:none;" onclick="batchDelete()">批量删除</button>
+    {if $view == 'normal'}
+    <button class="btn btn-warn" id="batchSoftBtn" style="display:none;" onclick="batchSoftDelete()">批量移入回收站</button>
+    {/if}
+    <button class="btn btn-danger" id="batchHardBtn" style="display:none;" onclick="batchHardDelete()">批量硬删除</button>
 </div>
 
 <table>
@@ -68,26 +77,39 @@
             <th style="width:36px;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
             <th style="width:60px;">ID</th>
             <th style="width:70px;">类型</th>
-            <th>路径（相对 upload）</th>
+            <th>原路径（相对 upload）</th>
+            {if $view == 'recycle'}<th>回收站路径</th>{/if}
             <th style="width:90px;">大小</th>
             <th style="width:145px;">修改时间</th>
-            <th style="width:145px;">同步时间</th>
+            {if $view == 'recycle'}<th style="width:145px;">删除时间</th>{/if}
             <th style="width:70px;">状态</th>
-            <th style="width:70px;">操作</th>
+            <th style="width:150px;">操作</th>
         </tr>
     </thead>
     <tbody>
         {foreach $list as $item}
-        <tr data-id="{$item.id}" data-path="{$item.path|htmlentities}">
+        <tr data-id="{$item.id}" data-path="{$item.path|htmlentities}" data-recycle="{$item.recycle_path|htmlentities}">
             <td><input type="checkbox" class="row-checkbox" value="{$item.id}" onchange="updateBatchBtn()"></td>
             <td>{$item.id}</td>
             <td><span class="rf-badge {if $item.type == 1}file{else}dir{/if}">{if $item.type == 1}文件{else}目录{/if}</span></td>
             <td><div class="rf-path" title="{$item.path|htmlentities}">{$item.path|htmlentities}</div></td>
+            {if $view == 'recycle'}<td><div class="rf-path" title="{$item.recycle_path|htmlentities}">{$item.recycle_path|htmlentities}</div></td>{/if}
             <td>{$item.size}</td>
             <td>{$item.mtime}</td>
-            <td>{$item.sync_time}</td>
-            <td><span class="rf-badge {if $item.status == 1}ok{else}missing{/if}">{if $item.status == 1}正常{else}失效{/if}</span></td>
-            <td><button class="btn btn-sm btn-del" onclick="doDelete({$item.id}, this)">删除</button></td>
+            {if $view == 'recycle'}<td>{$item.deleted_at}</td>{/if}
+            <td>
+                {if $view == 'recycle'}
+                <span class="rf-badge recycled">回收站</span>
+                {else}
+                <span class="rf-badge {if $item.status == 1}ok{else}missing{/if}">{if $item.status == 1}正常{else}失效{/if}</span>
+                {/if}
+            </td>
+            <td>
+                {if $view == 'normal'}
+                <button class="btn btn-sm btn-warn" onclick="softDeleteItem({$item.id}, this)">移入回收站</button>
+                {/if}
+                <button class="btn btn-sm btn-del" onclick="hardDeleteItem({$item.id}, this)">硬删除</button>
+            </td>
         </tr>
         {/foreach}
     </tbody>
@@ -98,9 +120,9 @@
 {block name="script"}
 {literal}
 <script>
-function request(url, method, params, onOk) {
+function request(url, params, onOk) {
     var xhr = new XMLHttpRequest();
-    xhr.open(method, url, true);
+    xhr.open('POST', url, true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
     xhr.onreadystatechange = function () {
@@ -115,10 +137,12 @@ function request(url, method, params, onOk) {
 }
 function doSearch() {
     var url = '/admin/real_file?page=1';
+    var view = document.getElementById('viewFilter').value;
     var keyword = document.getElementById('keyword').value.trim();
     var type = document.getElementById('typeFilter').value;
     var status = document.getElementById('statusFilter').value;
     var limit = document.getElementById('limitSelect').value;
+    if (view) url += '&view=' + view;
     if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
     if (type) url += '&type=' + type;
     if (status) url += '&status=' + status;
@@ -128,16 +152,15 @@ function doSearch() {
 function doSync() {
     var btn = document.getElementById('syncBtn');
     if (btn.disabled) return;
-    if (!confirm('确定开始全量扫描 public/upload 吗？\n\n将按磁盘现状创建/回填记录，并把已消失的文件标记为失效。')) return;
+    if (!confirm('确定开始扫描吗？\n\n将读取 ao_attachment.path 比对 upload 目录，只把无主文件写入本表；有主文件会被跳过。')) return;
     btn.disabled = true;
-    btn.textContent = '同步中...';
-    request('/admin/real_file/sync', 'POST', '', function (res) {
+    btn.textContent = '扫描中...';
+    request('/admin/real_file/sync', '', function (res) {
         alert(res.echo);
         window.location.reload();
     });
-    // 失败时恢复按钮，避免页面卡在「同步中」
     setTimeout(function () {
-        if (btn.disabled) { btn.disabled = false; btn.textContent = '同步（全量扫描）'; }
+        if (btn.disabled) { btn.disabled = false; btn.textContent = '同步（扫描无主文件）'; }
     }, 120000);
 }
 function toggleAll(source) {
@@ -146,26 +169,49 @@ function toggleAll(source) {
 }
 function updateBatchBtn() {
     var checked = document.querySelectorAll('.row-checkbox:checked');
-    var btn = document.getElementById('batchDelBtn');
-    btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
-    if (checked.length > 0) btn.textContent = '批量删除(' + checked.length + ')';
+    var soft = document.getElementById('batchSoftBtn');
+    var hard = document.getElementById('batchHardBtn');
+    if (soft) soft.style.display = checked.length > 0 ? 'inline-block' : 'none';
+    if (soft && checked.length > 0) soft.textContent = '批量移入回收站(' + checked.length + ')';
+    if (hard) hard.style.display = checked.length > 0 ? 'inline-block' : 'none';
+    if (hard && checked.length > 0) hard.textContent = '批量硬删除(' + checked.length + ')';
 }
-function doDelete(id, btn) {
-    var path = btn.closest('tr').dataset.path;
-    if (!confirm('确定删除「' + path + '」吗？\n\n将同步删除磁盘上的实际文件/目录；若为目录，其下所有内容都会被递归删除，且不可恢复。')) return;
-    request('/admin/real_file/delete', 'POST', 'ids=' + id, function (res) {
-        alert(res.echo);
-        window.location.reload();
+function pathOf(btn, key) {
+    return btn.closest('tr').dataset[key];
+}
+function softDeleteItem(id, btn) {
+    var path = pathOf(btn, 'path');
+    if (!confirm('确定把「' + path + '」移入回收站吗？\n\n文件会搬到 upload/recycle/当天日期目录，记录保留；目录会连同其下无主文件一起搬移。')) return;
+    request('/admin/real_file/soft_delete', 'ids=' + id, function (res) {
+        alert(res.echo); window.location.reload();
     });
 }
-function batchDelete() {
+function hardDeleteItem(id, btn) {
+    var path = pathOf(btn, 'path');
+    if (!confirm('确定硬删除「' + path + '」吗？\n\n磁盘文件与数据库记录都会被彻底删除，不可恢复！')) return;
+    request('/admin/real_file/hard_delete', 'ids=' + id, function (res) {
+        alert(res.echo); window.location.reload();
+    });
+}
+function selectedIds() {
     var ids = [];
     document.querySelectorAll('.row-checkbox:checked').forEach(function (cb) { ids.push(cb.value); });
+    return ids;
+}
+function batchSoftDelete() {
+    var ids = selectedIds();
     if (!ids.length) return;
-    if (!confirm('确定删除选中的 ' + ids.length + ' 条记录吗？\n\n将同步删除磁盘文件/目录（目录会递归删除），操作不可恢复。')) return;
-    request('/admin/real_file/delete', 'POST', 'ids=' + ids.join(','), function (res) {
-        alert(res.echo);
-        window.location.reload();
+    if (!confirm('确定把选中的 ' + ids.length + ' 条移入回收站吗？\n\n文件会搬到 upload/recycle/当天日期目录。')) return;
+    request('/admin/real_file/soft_delete', 'ids=' + ids.join(','), function (res) {
+        alert(res.echo); window.location.reload();
+    });
+}
+function batchHardDelete() {
+    var ids = selectedIds();
+    if (!ids.length) return;
+    if (!confirm('确定硬删除选中的 ' + ids.length + ' 条吗？\n\n磁盘文件与记录将彻底删除，不可恢复！')) return;
+    request('/admin/real_file/hard_delete', 'ids=' + ids.join(','), function (res) {
+        alert(res.echo); window.location.reload();
     });
 }
 </script>

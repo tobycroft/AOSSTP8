@@ -82,9 +82,10 @@
     \think\facade\Route::any('admin/console', '\app\admin\controller\Console@index');
     \think\facade\Route::any('admin/doc', '\app\admin\controller\Doc@index');
 
-    // 实际文件管理（独立 menu：手动扫描 public/upload 回填独立表，删除同步删物理文件）
+    // 实际文件管理（独立 menu：按 attachment.path 比对扫描无主文件，软删进 recycle / 硬删彻底清除）
     \think\facade\Route::any('admin/real_file/sync', '\app\admin\controller\RealFile@sync');
-    \think\facade\Route::any('admin/real_file/delete', '\app\admin\controller\RealFile@delete');
+    \think\facade\Route::any('admin/real_file/soft_delete', '\app\admin\controller\RealFile@softDelete');
+    \think\facade\Route::any('admin/real_file/hard_delete', '\app\admin\controller\RealFile@hardDelete');
     \think\facade\Route::any('admin/real_file', '\app\admin\controller\RealFile@index');
 
     // 系统诊断（功能检测）
