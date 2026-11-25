@@ -69,6 +69,32 @@ class V3StorageModel extends Model
     }
 
     /**
+     * 按 Bucket 的 path（留空回退 name）查找启用中的配置
+     *
+     * 虚拟地址 /attachment/{bucket_path}/{md5} 用可读 path 代替数字 id，
+     * 避免暴露自增主键；path 是文件落盘前缀，天然唯一且稳定。
+     */
+    public static function api_find_path(string $path): array
+    {
+        $path = trim($path, '/');
+        if ($path === '' || preg_match('/^[A-Za-z0-9._\-]+$/', $path) !== 1) {
+            return [];
+        }
+        $row = \think\facade\Db::name('ao_v3_storage')
+            ->where('status', 1)
+            ->where('path', $path)
+            ->findOrEmpty();
+        if (empty($row)) {
+            $row = \think\facade\Db::name('ao_v3_storage')
+                ->where('status', 1)
+                ->where('path', '')
+                ->where('name', $path)
+                ->findOrEmpty();
+        }
+        return $row;
+    }
+
+    /**
      * 附件表的分组键：ao_attachment.token 存的就是它
      *
      * V3 直接使用「项目名称」作为 token（如 stb、flamecloud），归属从

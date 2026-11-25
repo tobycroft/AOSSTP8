@@ -18,8 +18,8 @@ use think\facade\Request;
  *   2. 文件在 image 站、PHP 在 upload 站：image nginx 用 auth_request 调
  *      /v3/file/delivery/check 校验，通过后由 image nginx 本地 alias 读盘。
  *
- *   GET /attachment/{bucket_id}/{file_md5}  永久虚拟地址
- *   GET /file/{code}                        时限取件码地址
+ *   GET /attachment/{bucket_path}/{file_md5}  永久虚拟地址（path 为 Bucket 可读路径）
+ *   GET /file/{code}                          时限取件码地址（标准 base64）
  *   ?download=1                             强制下载
  *   GET /v3/file/delivery/check?uri={原始URI} 仅鉴权，不输出文件（供 auth_request）
  *
@@ -30,11 +30,11 @@ class delivery extends CommonController
     /** check 模式下所有拒绝统一返回 403，适配 nginx auth_request */
     private bool $checkMode = false;
 
-    /** 永久虚拟地址：Bucket id + 文件 MD5 */
+    /** 永久虚拟地址：Bucket path + 文件 MD5 */
     public function attachment()
     {
         $ctx = $this->authorizeVirtual(
-            (int)Request::param('bucket_id', 0),
+            (string)Request::param('bucket_path', ''),
             strtolower(trim((string)Request::param('file_md5', '')))
         );
         AttachmentDeliveryService::deliver($ctx['row'], $ctx['bucket'], $this->wantDownload());
@@ -69,13 +69,13 @@ class delivery extends CommonController
             $this->abort(400, '缺少 uri 参数');
         }
         $path = (string)(parse_url($rawUri, PHP_URL_PATH) ?: '');
-        parse_str((string)(parse_url($rawUri, PHP_URL_QUERY) ?: ''), $query);
 
-        $segments = explode('/', trim($path, '/'));
-        if (count($segments) === 3 && $segments[0] === 'attachment') {
-            $ctx = $this->authorizeVirtual((int)$segments[1], (string)$segments[2]);
-        } elseif (count($segments) === 2 && $segments[0] === 'file') {
-            $ctx = $this->authorizeCode((string)$segments[1]);
+        // 标准 base64 取件码可能含 / + =，不能按固定段数拆分：
+        // 取 /attachment/ 或 /file/ 之后的整段作为动态部分。
+        if (preg_match('#^/attachment/([^/]+)/([0-9a-fA-F]{32})$#', $path, $m) === 1) {
+            $ctx = $this->authorizeVirtual($m[1], strtolower($m[2]));
+        } elseif (str_starts_with($path, '/file/')) {
+            $ctx = $this->authorizeCode(substr($path, strlen('/file/')));
         } else {
             $this->abort(400, '不支持的附件地址');
         }
@@ -100,17 +100,17 @@ class delivery extends CommonController
         exit;
     }
 
-    /** 永久地址鉴权：Bucket 配置 + 附件记录 */
-    private function authorizeVirtual(int $bucketId, string $md5): array
+    /** 永久地址鉴权：Bucket path + 附件记录 */
+    private function authorizeVirtual(string $bucketPath, string $md5): array
     {
-        if ($bucketId <= 0 || preg_match('/^[0-9a-f]{32}$/', $md5) !== 1) {
+        if ($bucketPath === '' || preg_match('/^[0-9a-f]{32}$/', $md5) !== 1) {
             $this->abort(400, '参数错误');
         }
-        $bucket = V3StorageModel::api_find_id($bucketId);
+        $bucket = V3StorageModel::api_find_path($bucketPath);
         if (empty($bucket)) {
             $this->abort(404, '存储配置不可用');
         }
-        $row = AttachmentDeliveryService::findForBucket($bucketId, $md5);
+        $row = AttachmentDeliveryService::findForBucket($bucketPath, $md5);
         if (empty($row)) {
             $this->abort(404, '附件不存在');
         }

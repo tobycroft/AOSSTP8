@@ -17,10 +17,11 @@ use Throwable;
  * file_get_contents / fopen 循环输出等任何读取文件正文的操作。
  *
  * 两种入口：
- *   虚拟地址：{domain}/attachment/{bucket_id}/{md5}     —— 永久地址，按 Bucket + MD5 定位
+ *   虚拟地址：{domain}/attachment/{bucket_path}/{md5}   —— 永久地址，按 Bucket path + MD5 定位
  *   时限地址：{domain}/file/{code}                      —— 取件码，含到期时间与签名
  *
- * 取件码格式：base64url("{end_time}|{attachment_id}|{md5(end_time|id|secret)}")
+ * 取件码格式：base64("{end_time}|{attachment_id}|{md5(end_time|id|secret)}")
+ * 使用标准 Base64（保留 + / = 填充），与既有取件码格式一致。
  * secret 取附件所属项目的 ao_v3_project.secret，不随取件码下发。
  */
 final class AttachmentDeliveryService
@@ -57,14 +58,26 @@ final class AttachmentDeliveryService
         return $cached = rtrim($configured, '/');
     }
 
-    /** 永久虚拟地址（本地 Bucket 专用） */
-    public static function virtualUrl(int $bucketId, string $md5): string
+    /** Bucket 的对外路径段：path 优先，留空回退 name */
+    public static function bucketSegment(array $bucket): string
     {
-        if ($bucketId <= 0 || preg_match('/^[0-9a-f]{32}$/', $md5) !== 1) {
+        $segment = trim((string)($bucket['path'] ?? ''));
+        if ($segment === '') {
+            $segment = trim((string)($bucket['name'] ?? ''));
+        }
+        return $segment;
+    }
+
+    /** 永久虚拟地址（本地 Bucket 专用）：/attachment/{bucket_path}/{md5} */
+    public static function virtualUrl(string $bucketPath, string $md5): string
+    {
+        $bucketPath = trim($bucketPath, '/');
+        if ($bucketPath === '' || preg_match('/^[A-Za-z0-9._\-]+$/', $bucketPath) !== 1
+            || preg_match('/^[0-9a-f]{32}$/', $md5) !== 1) {
             return '';
         }
         $domain = self::domain();
-        return ($domain !== '' ? $domain : '') . '/attachment/' . $bucketId . '/' . strtolower($md5);
+        return $domain . '/attachment/' . $bucketPath . '/' . strtolower($md5);
     }
 
     /** 取件码签名 */
@@ -73,21 +86,22 @@ final class AttachmentDeliveryService
         return md5($endTime . '|' . $attachmentId . '|' . $secret);
     }
 
-    /** 生成 URL-safe base64 取件码（无 = 填充，兼容标准 base64 输入） */
+    /** 生成标准 base64 取件码（保留 + / = 填充，与既有格式一致） */
     public static function encodeCode(int $endTime, int $attachmentId, string $secret): string
     {
         $payload = $endTime . '|' . $attachmentId . '|' . self::sign($endTime, $attachmentId, $secret);
-        return rtrim(strtr(base64_encode($payload), '+/', '-_'), '=');
+        return base64_encode($payload);
     }
 
     /**
-     * 解析取件码；同时接受 URL-safe 与标准 base64（含 =）。
+     * 解析取件码；优先标准 base64，同时兼容 URL-safe（-_ 与无 = 填充）。
      *
      * @return array{end:int,id:int,sign:string}|null
      */
     public static function decodeCode(string $code): ?array
     {
-        $code = trim($code);
+        // URL 传输中 + 常被解码为空格（query/表单），先还原
+        $code = str_replace(' ', '+', trim($code));
         if ($code === '' || strlen($code) > 256) {
             return null;
         }
@@ -136,7 +150,7 @@ final class AttachmentDeliveryService
             $base = rtrim((string)($bucket['url'] ?? ''), '/');
             return ($withDomain && $base !== '') ? $base . '/' . $path : $path;
         }
-        $virtual = self::virtualUrl((int)($bucket['id'] ?? 0), (string)($row['md5'] ?? ''));
+        $virtual = self::virtualUrl(self::bucketSegment($bucket), (string)($row['md5'] ?? ''));
         if ($virtual === '' || !$withDomain) {
             return $path;
         }
@@ -170,13 +184,14 @@ final class AttachmentDeliveryService
         return $prefix !== '' && str_starts_with($path, $prefix . '/');
     }
 
-    /** 永久地址定位：Bucket id + md5 → 附件行 */
-    public static function findForBucket(int $bucketId, string $md5): array
+    /** 永久地址定位：Bucket path + md5 → 附件行 */
+    public static function findForBucket(string $bucketPath, string $md5): array
     {
-        $bucket = V3StorageModel::api_find_id($bucketId);
+        $bucket = V3StorageModel::api_find_path($bucketPath);
         if (empty($bucket)) {
             return [];
         }
+        $bucketId = (int)$bucket['id'];
         $md5 = strtolower(trim($md5));
         if (preg_match('/^[0-9a-f]{32}$/', $md5) !== 1) {
             return [];
