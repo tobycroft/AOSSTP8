@@ -149,7 +149,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 .header .btn-doc { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.08); color: #fff; font-size: 13px; text-decoration: none; transition: background 0.2s, border-color 0.2s; }
 .header .btn-doc:hover { background: #1677ff; border-color: #1677ff; }
 .header .btn-doc svg { width: 14px; height: 14px; display: block; }
-.sidebar { width: 220px; background: #fff; min-height: calc(100vh - 64px); border-right: 1px solid #e8e8e8; padding: 16px 0; position: fixed; top: 64px; }
+.sidebar { width: 220px; background: #fff; height: calc(100vh - 64px); overflow-y: auto; overscroll-behavior: contain; border-right: 1px solid #e8e8e8; padding: 16px 0; position: fixed; top: 64px; }
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-thumb { background: #d9d9d9; border-radius: 3px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
 .sidebar .menu-item { padding: 12px 24px; cursor: pointer; color: #333; font-size: 14px; display: block; text-decoration: none; }
 .sidebar .menu-item:hover { background: #f0f5ff; color: #1677ff; }
 .sidebar .menu-item.active { background: #e6f4ff; color: #1677ff; border-right: 3px solid #1677ff; }
