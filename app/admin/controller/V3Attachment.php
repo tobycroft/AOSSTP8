@@ -349,6 +349,16 @@ class V3Attachment extends CommonController
             : AttachmentDeliveryService::publicUrl($row, $bucket ?: [], true);
         $proxyUrl = '/admin/v3_attachment/file?id=' . $id;
 
+        // 实际文件地址（直连图片站真实 path，含端口；仅后台查看，不用于前台预览）
+        // 域名取统一配置 attach_domain（已含 :433），空则回退常量；OSS 用原直链。
+        $rawBase = rtrim(AttachmentDeliveryService::domain(), '/');
+        if ($rawBase === '') {
+            $rawBase = self::IMAGE_BASE_URL;
+        }
+        $rawUrl = ($isOss && $directUrl !== '')
+            ? $directUrl
+            : (($rawBase !== '' && $this->isSafeRelativePath($path)) ? $rawBase . '/' . $path : '');
+
         $isRaster = isset(self::RASTER_TYPES[$ext]);
 
         // 图片预览地址：本地光栅图走 10 分钟取件码（image 站鉴权读盘，PHP 不读正文）；
@@ -402,6 +412,8 @@ class V3Attachment extends CommonController
             'fallback_url' => $fallbackUrl,
             // 对外文件地址：本地=永久虚拟地址，OSS=原直链；供展示与复制
             'public_url' => $publicUrl,
+            // 实际文件地址：图片站真实路径直链（含端口），仅后台查看
+            'raw_url' => $rawUrl,
             // 时限取件码地址（本地光栅图 10 分钟；OSS 为直链；非图片为空）
             'preview_url' => $previewUrl,
             'preview_expires_at' => $previewExpiresAt,

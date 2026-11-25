@@ -52,6 +52,7 @@
             <th>文件名</th>
             <th>Path</th>
             <th>文件地址</th>
+            <th>实际地址</th>
             <th>项目 / Bucket</th>
             <th>类型</th>
             <th>大小</th>
@@ -76,7 +77,7 @@
                      data-path="{$item.path}" data-mime="{$item.mime}" data-resolution="{$item.resolution}"
                      data-duration="{$item.duration}" data-md5="{$item.md5}" data-sha1="{$item.sha1}"
                      data-ip="{$item.ip}" data-time="{$item.create_time}" data-token="{$item.token}"
-                     data-public="{$item.public_url}"
+                     data-public="{$item.public_url}" data-raw="{$item.raw_url}"
                      data-previewable="1" onclick="openPreview(this)">
                 {else/}
                 <span class="attach-badge" data-id="{$item.id}" data-name="{$item.name}" data-ext="{$item.ext}"
@@ -86,7 +87,7 @@
                       data-path="{$item.path}" data-mime="{$item.mime}" data-resolution="{$item.resolution}"
                       data-duration="{$item.duration}" data-md5="{$item.md5}" data-sha1="{$item.sha1}"
                       data-ip="{$item.ip}" data-time="{$item.create_time}" data-token="{$item.token}"
-                      data-public="{$item.public_url}"
+                      data-public="{$item.public_url}" data-raw="{$item.raw_url}"
                       data-previewable="0" onclick="openPreview(this)">{$item.ext|default='file'}</span>
                 {/if}
             </td>
@@ -98,6 +99,13 @@
             <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.public_url}">
                 {if $item.public_url !== ''}
                 <a class="mono" href="{$item.public_url}" target="_blank" rel="noopener noreferrer">{$item.public_url}</a>
+                {else/}
+                <span style="color:var(--text-muted);">-</span>
+                {/if}
+            </td>
+            <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.raw_url}">
+                {if $item.raw_url !== ''}
+                <a class="mono" href="{$item.raw_url}" target="_blank" rel="noopener noreferrer">{$item.raw_url}</a>
                 {else/}
                 <span style="color:var(--text-muted);">-</span>
                 {/if}
@@ -120,7 +128,7 @@
         {/foreach}
         {if empty($list)}
         <tr>
-            <td colspan="13" style="text-align:center;color:var(--text-muted);padding:32px;">暂无附件</td>
+            <td colspan="14" style="text-align:center;color:var(--text-muted);padding:32px;">暂无附件</td>
         </tr>
         {/if}
     </tbody>
@@ -137,7 +145,7 @@
          data-path="{$item.path}" data-mime="{$item.mime}" data-resolution="{$item.resolution}"
          data-duration="{$item.duration}" data-md5="{$item.md5}" data-sha1="{$item.sha1}"
          data-ip="{$item.ip}" data-time="{$item.create_time}" data-token="{$item.token}"
-         data-public="{$item.public_url}"
+         data-public="{$item.public_url}" data-raw="{$item.raw_url}"
          data-previewable="{if $item.thumb_url != ''}1{else/}0{/if}" onclick="openPreview(this)">
         {if $item.thumb_url != ''}
         <img class="grid-thumb" src="{$item.thumb_url}" alt="" loading="lazy" referrerpolicy="no-referrer"
@@ -393,6 +401,7 @@ function openPreview(el) {
         ['文件名', d.name],
         ['Path', d.path, 'copy'],
         ['文件地址', d.public, 'url'],
+        ['实际地址', d.raw, 'url'],
         ['下载地址', d.download, 'url'],
         ['MIME', d.mime],
         ['大小', d.size],
