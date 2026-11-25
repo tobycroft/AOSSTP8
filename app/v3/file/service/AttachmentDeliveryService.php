@@ -130,6 +130,13 @@ final class AttachmentDeliveryService
         return !empty($bucket) && strtolower((string)($bucket['type'] ?? 'local')) === 'local';
     }
 
+    /** 取附件的安全相对路径；路径不合法返回空字符串（auth_request 回传路径用） */
+    public static function safeRelativePath(array $row): string
+    {
+        $path = self::normalizePath((string)($row['path'] ?? ''));
+        return self::isSafeRelativePath($path) ? $path : '';
+    }
+
     /** Bucket 的落盘前缀必须与附件 path 一致，避免用别的 Bucket id 猜到同一 md5 */
     public static function pathBelongsToBucket(array $bucket, string $path): bool
     {

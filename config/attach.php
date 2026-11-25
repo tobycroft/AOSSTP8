@@ -27,4 +27,8 @@ return [
 
     // 虚拟地址的浏览器/CDN 缓存时间（秒）
     'cache_ttl'       => max(0, (int)env('ATTACH_CACHE_TTL', 86400)),
+
+    // image 站 auth_request 回调 upload 鉴权接口时携带的共享密钥
+    // 必须配置；未配置时 check 接口一律拒绝，避免鉴权端点被任意调用
+    'auth_key'        => (string)env('ATTACH_AUTH_KEY', ''),
 ];
