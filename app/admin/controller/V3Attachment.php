@@ -20,7 +20,7 @@ use think\facade\Db;
  * attachment.path 的前缀匹配关联 Bucket（不再按项目名唯一映射）。
  *
  * 安全说明：本地 Bucket 的图片预览统一使用 v3 分发服务的「时限取件码」
- * （/file/{code}，默认 10 分钟有效），由 image 站的 nginx 鉴权后读盘输出，
+ * （/file/{code}.{ext}，默认 10 分钟有效），由 image 站的 nginx 鉴权后读盘输出，
  * PHP 不接触文件正文，也不向浏览器暴露真实 storage path：
  *   - 取件码由 AttachmentDeliveryService::issueTimed 签发，服务端 secret 签名；
  *   - 页面加载时签发一次，前端每 8 分钟调 preview_urls 批量换码，避免过期；

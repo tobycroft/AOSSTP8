@@ -40,7 +40,7 @@ use think\facade\Db;
  *   POST /v3/file/token/delete          软删文件：移入 upload/recycle/YYYYMMDD/
  *   POST /v3/file/token/restore         从回收站恢复文件
  *
- * 本地 Bucket 的 url 返回虚拟分发地址 /attachment/{bucket_path}/{md5}，
+ * 本地 Bucket 的 url 返回虚拟分发地址 /attachment/{bucket_path}/{md5}.{ext}，
  * 另附 file_url（时限取件码）；OSS Bucket 仍返回原直链。
  */
 class token extends CommonController

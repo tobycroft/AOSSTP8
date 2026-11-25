@@ -18,10 +18,10 @@ use think\facade\Request;
  *   2. 文件在 image 站、PHP 在 upload 站：image nginx 用 auth_request 调
  *      /v3/file/delivery/check 校验，通过后由 image nginx 本地 alias 读盘。
  *
- *   GET /attachment/{bucket_path}/{file_md5}  永久虚拟地址（path 为 Bucket 可读路径）
- *   GET /file/{code}                          时限取件码地址（标准 base64）
- *   ?download=1                             强制下载
- *   GET /v3/file/delivery/check?uri={原始URI} 仅鉴权，不输出文件（供 auth_request）
+ *   GET /attachment/{bucket_path}/{file_md5}.{ext}  永久虚拟地址（后缀可选，兼容旧无后缀地址）
+ *   GET /file/{code}.{ext}                          时限取件码地址（标准 base64，后缀可选）
+ *   ?download=1                                   强制下载
+ *   GET /v3/file/delivery/check?uri={原始URI}       仅鉴权，不输出文件（供 auth_request）
  *
  * check 接口需要请求头 X-Aoss-Attach-Auth 与 ATTACH_AUTH_KEY 一致。
  */
@@ -35,7 +35,7 @@ class delivery extends CommonController
     {
         $ctx = $this->authorizeVirtual(
             (string)Request::param('bucket_path', ''),
-            strtolower(trim((string)Request::param('file_md5', '')))
+            strtolower(AttachmentDeliveryService::stripUrlSuffix(trim((string)Request::param('file_md5', ''))))
         );
         AttachmentDeliveryService::deliver($ctx['row'], $ctx['bucket'], $this->wantDownload());
     }
@@ -43,7 +43,7 @@ class delivery extends CommonController
     /** 时限取件码地址：校验到期时间 + 签名后交付 */
     public function file()
     {
-        $ctx = $this->authorizeCode((string)Request::param('code', ''));
+        $ctx = $this->authorizeCode(AttachmentDeliveryService::stripUrlSuffix((string)Request::param('code', '')));
         AttachmentDeliveryService::deliver(
             $ctx['row'],
             $ctx['bucket'],
@@ -72,12 +72,24 @@ class delivery extends CommonController
 
         // 标准 base64 取件码可能含 / + =，不能按固定段数拆分：
         // 取 /attachment/ 或 /file/ 之后的整段作为动态部分。
-        if (preg_match('#^/attachment/([^/]+)/([0-9a-fA-F]{32})$#', $path, $m) === 1) {
+        // 新地址末尾带安全后缀（.gif/.jpg…），这里统一剥离；旧无后缀地址继续兼容。
+        $suffix = '';
+        if (preg_match('#^/attachment/([^/]+)/([0-9a-fA-F]{32})(\.[A-Za-z0-9]{1,10})?$#', $path, $m) === 1) {
+            $suffix = $m[3] ?? '';
             $ctx = $this->authorizeVirtual($m[1], strtolower($m[2]));
         } elseif (str_starts_with($path, '/file/')) {
-            $ctx = $this->authorizeCode(substr($path, strlen('/file/')));
+            $code = substr($path, strlen('/file/'));
+            if (preg_match('/(\.[A-Za-z0-9]{1,10})$/', $code, $sm) === 1) {
+                $suffix = $sm[1];
+            }
+            $ctx = $this->authorizeCode(AttachmentDeliveryService::stripUrlSuffix($code));
         } else {
             $this->abort(400, '不支持的附件地址');
+        }
+
+        // 后缀须与附件真实类型一致，防止构造后缀改变 nginx 输出的 Content-Type
+        if ($suffix !== '' && strcasecmp($suffix, AttachmentDeliveryService::urlSuffix($ctx['row'])) !== 0) {
+            $this->abort(403, '后缀与附件类型不符');
         }
 
         $relative = AttachmentDeliveryService::safeRelativePath($ctx['row']);

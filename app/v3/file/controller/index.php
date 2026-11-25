@@ -50,7 +50,7 @@ use Throwable;
  * path/url 且不落盘；落盘后、OSS 上传前后各复查一次（双重保险），命中则删除
  * 本次临时文件并返回既有地址。SDK 侧另有 md5_check 前置查询。
  *
- * 本地 Bucket 对外只返回虚拟地址 /attachment/{bucket_path}/{md5}（附时限 file_url），
+ * 本地 Bucket 对外只返回虚拟地址 /attachment/{bucket_path}/{md5}.{ext}（附时限 file_url），
  * 真实路径由 Nginx X-Accel-Redirect 内部映射；PHP 不读取文件正文。
  */
 class index extends CommonController

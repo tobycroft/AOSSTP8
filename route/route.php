@@ -15,8 +15,9 @@
 
 // V3 附件虚拟地址（PHP 鉴权 + X-Accel-Redirect；必须注册在四段式通用路由之前）
 // bucket_path 为 Bucket 可读路径（如 stb_forum）；code 为标准 base64，可含 / + =
+// md5/code 末尾允许带安全后缀（.gif/.jpg…），用于让 nginx 按扩展名输出正确 MIME
 \think\facade\Route::get('attachment/:bucket_path/:file_md5', '\app\v3\file\controller\delivery@attachment')
-    ->pattern(['bucket_path' => '[A-Za-z0-9._\-]+', 'file_md5' => '[0-9a-fA-F]{32}']);
+    ->pattern(['bucket_path' => '[A-Za-z0-9._\-]+', 'file_md5' => '[0-9a-fA-F]{32}(\.[A-Za-z0-9]{1,10})?']);
 \think\facade\Route::get('file/:code', '\app\v3\file\controller\delivery@file')
     ->pattern(['code' => '.+']);
 

@@ -16,9 +16,10 @@ use Throwable;
  * X-Accel-Redirect 直接读取磁盘输出。本类禁止出现 readfile /
  * file_get_contents / fopen 循环输出等任何读取文件正文的操作。
  *
- * 两种入口：
- *   虚拟地址：{domain}/attachment/{bucket_path}/{md5}   —— 永久地址，按 Bucket path + MD5 定位
- *   时限地址：{domain}/file/{code}                      —— 取件码，含到期时间与签名
+ * 两种入口（URL 末尾均附带安全后缀，供 nginx 按扩展名识别 MIME，避免无后缀
+ * 落到 application/octet-stream 触发下载；旧的无后缀地址继续兼容）：
+ *   虚拟地址：{domain}/attachment/{bucket_path}/{md5}.{ext} —— 永久地址，按 Bucket path + MD5 定位
+ *   时限地址：{domain}/file/{code}.{ext}                   —— 取件码，含到期时间与签名
  *
  * 取件码格式：base64("{end_time}|{attachment_id}|{md5(end_time|id|secret)}")
  * 使用标准 Base64（保留 + / = 填充），与既有取件码格式一致。
@@ -34,6 +35,20 @@ final class AttachmentDeliveryService
         'gif'  => 'image/gif',
         'bmp'  => 'image/bmp',
         'webp' => 'image/webp',
+    ];
+
+    /**
+     * 禁止出现在 URL 后缀中的扩展名：脚本、可执行、样式与 SVG/HTML。
+     * 这些类型即使 MIME 正确也必须以附件下载，避免同源脚本执行与内容嗅探。
+     */
+    private const UNSAFE_URL_EXTS = [
+        'svg', 'svgz', 'html', 'htm', 'xhtml', 'shtml',
+        'php', 'php3', 'php4', 'php5', 'php7', 'php8', 'phtml', 'phps',
+        'js', 'mjs', 'cjs', 'jsx', 'ts', 'tsx', 'vbs', 'vba',
+        'jsp', 'jspx', 'asp', 'aspx', 'asa', 'cer', 'cgi', 'fcgi',
+        'pl', 'py', 'rb', 'sh', 'bash', 'zsh', 'bat', 'cmd', 'ps1',
+        'exe', 'msi', 'com', 'scr', 'dll', 'so', 'swf',
+        'css', 'scss', 'less', 'htaccess', 'htpasswd',
     ];
 
     /**
@@ -68,16 +83,43 @@ final class AttachmentDeliveryService
         return $segment;
     }
 
-    /** 永久虚拟地址（本地 Bucket 专用）：/attachment/{bucket_path}/{md5} */
-    public static function virtualUrl(string $bucketPath, string $md5): string
+    /**
+     * URL 末尾的安全后缀（含前导点），无安全后缀返回空串。
+     *
+     * nginx 的 alias 直出模式下 Content-Type 只由请求 URI 的扩展名决定，
+     * 与 X-Accel-Redirect 的路径无关。签发时带上真实后缀，浏览器才能 inline。
+     * 优先取 ext 字段，缺失时从 path 推断；仅允许字母数字短后缀且不在禁用表。
+     */
+    public static function urlSuffix(array $row): string
+    {
+        $ext = strtolower(ltrim(trim((string)($row['ext'] ?? '')), '.'));
+        if ($ext === '') {
+            $ext = strtolower((string)pathinfo(self::normalizePath((string)($row['path'] ?? '')), PATHINFO_EXTENSION));
+        }
+        if (preg_match('/^[a-z0-9]{1,10}$/', $ext) !== 1 || in_array($ext, self::UNSAFE_URL_EXTS, true)) {
+            return '';
+        }
+        return '.' . $ext;
+    }
+
+    /** 剥离 URL 末尾的扩展名，兼容新（带后缀）旧（无后缀）地址 */
+    public static function stripUrlSuffix(string $value): string
+    {
+        return preg_replace('/\.[A-Za-z0-9]{1,10}$/', '', $value) ?? $value;
+    }
+
+    /** 永久虚拟地址（本地 Bucket 专用）：/attachment/{bucket_path}/{md5}.{ext} */
+    public static function virtualUrl(string $bucketPath, string $md5, string $suffix = ''): string
     {
         $bucketPath = trim($bucketPath, '/');
         if ($bucketPath === '' || preg_match('/^[A-Za-z0-9._\-]+$/', $bucketPath) !== 1
             || preg_match('/^[0-9a-f]{32}$/', $md5) !== 1) {
             return '';
         }
+        // 后缀只接受 “.字母数字” 形式，杜绝外部拼接路径或查询串
+        $suffix = preg_match('/^\.[A-Za-z0-9]{1,10}$/', $suffix) === 1 ? $suffix : '';
         $domain = self::domain();
-        return $domain . '/attachment/' . $bucketPath . '/' . strtolower($md5);
+        return $domain . '/attachment/' . $bucketPath . '/' . strtolower($md5) . $suffix;
     }
 
     /** 取件码签名 */
@@ -132,7 +174,7 @@ final class AttachmentDeliveryService
         $code = self::encodeCode($end, $id, $secret);
         $domain = self::domain();
         return [
-            'url'        => ($domain !== '' ? $domain : '') . '/file/' . $code,
+            'url'        => ($domain !== '' ? $domain : '') . '/file/' . $code . self::urlSuffix($row),
             'expired_at' => $end,
             'expires_in' => $ttl,
         ];
@@ -150,7 +192,12 @@ final class AttachmentDeliveryService
             $base = rtrim((string)($bucket['url'] ?? ''), '/');
             return ($withDomain && $base !== '') ? $base . '/' . $path : $path;
         }
-        $virtual = self::virtualUrl(self::bucketSegment($bucket), (string)($row['md5'] ?? ''));
+        // 待签发的数据可能只有 path（如上传回执），urlSuffix 会从 path 推断后缀
+        $virtual = self::virtualUrl(
+            self::bucketSegment($bucket),
+            (string)($row['md5'] ?? ''),
+            self::urlSuffix($row)
+        );
         if ($virtual === '' || !$withDomain) {
             return $path;
         }
