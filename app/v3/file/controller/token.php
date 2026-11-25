@@ -131,7 +131,7 @@ class token extends CommonController
             Ret::Fail(400, null, 'expires_in/ttl 需在 1~' . $maxTtl . ' 秒之间');
         }
 
-        $issued = AttachmentDeliveryService::issueTimed($row, $ttl);
+        $issued = AttachmentDeliveryService::issueTimed($row, $ttl, $this->bucket);
         if (empty($issued)) {
             Ret::Fail(403, null, '附件所属项目不可用，无法签发取件码');
         }
@@ -400,10 +400,10 @@ class token extends CommonController
     }
 
     /**
-     * 补全附件行的访问地址：src / url / surl / file_url
+     * 补全附件行的对外访问地址：path / src / surl / url / file_url
      *
-     * url / file_url 均为虚拟分发地址，不暴露真实落盘路径：
-     *   - 默认（ttl=0）：file_url 与 url 同为 attachment 永久地址，file_expired_at=0
+     * 全部为虚拟分发地址，真实落盘路径只在 AOSS 后台可见：
+     *   - 默认（ttl=0）：url / file_url 同为 attachment 永久地址，file_expired_at=0
      *   - 临时模式（ttl>0）：file_url 改签 file 临时取件码，file_expired_at 为到期时间；
      *     OSS 无法签发时降级为永久地址
      */
@@ -418,21 +418,7 @@ class token extends CommonController
         if (empty($bucket)) {
             $bucket = $this->bucket;
         }
-
-        $file['src'] = $file['path'];
-        $file['url'] = AttachmentDeliveryService::publicUrl($file, $bucket, true) ?: (string)$file['path'];
-        $file['surl'] = $file['path'];
-        $file['file_url'] = $file['url'];
-        $file['file_expired_at'] = 0;
-
-        if ($ttl > 0 && AttachmentDeliveryService::isLocalBucket($bucket)) {
-            $issued = AttachmentDeliveryService::issueTimed($file, $ttl);
-            if (!empty($issued)) {
-                $file['file_url'] = $issued['url'];
-                $file['file_expired_at'] = $issued['expired_at'];
-            }
-        }
-        return $file;
+        return AttachmentDeliveryService::publicRow($file, $bucket, $ttl);
     }
 
     /**

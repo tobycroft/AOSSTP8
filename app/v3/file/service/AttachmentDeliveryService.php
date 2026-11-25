@@ -21,6 +21,9 @@ use Throwable;
  *   虚拟地址：{domain}/attachment/{bucket_path}/{md5}.{ext} —— 永久地址，按 Bucket path + MD5 定位
  *   时限地址：{domain}/file/{code}.{ext}                   —— 取件码，含到期时间与签名
  *
+ * {domain} 取该附件所属 Bucket 配置的 url（后台「存储管理 V3」的访问域名），
+ * 未配置时回退全局 attach_domain，见 bucketDomain()。
+ *
  * 取件码格式：base64("{end_time}|{attachment_id}|{md5(end_time|id|secret)}")
  * 使用标准 Base64（保留 + / = 填充），与既有取件码格式一致。
  * secret 取附件所属项目的 ao_v3_project.secret，不随取件码下发。
@@ -52,7 +55,10 @@ final class AttachmentDeliveryService
     ];
 
     /**
-     * 对外域名前缀：system_param.attach_domain 优先，.env 仅作本地兜底。
+     * 全局对外域名前缀：system_param.attach_domain 优先，.env 仅作本地兜底。
+     *
+     * 这是「Bucket 未单独配置 url」时的兜底域名。Bucket 自己的域名请走
+     * bucketDomain()：不同项目可能挂在不同域名下。
      *
      * 列表页每个附件都会取域名，故做进程内静态缓存；PHP-FPM 每请求独立，
      * 配置变更在下一请求即可生效。配置表不可用时降级到 env，避免分发中断。
@@ -71,6 +77,20 @@ final class AttachmentDeliveryService
         }
         $configured = $fromDb !== '' ? $fromDb : (string)config('attach.domain');
         return $cached = rtrim($configured, '/');
+    }
+
+    /**
+     * Bucket 自己的对外域名：ao_v3_storage.url 优先，留空回退全局 attach_domain。
+     *
+     * 一个 Bucket 对应一个项目/站点，各项目返回地址的域名可能不同：
+     *   - local Bucket：url 是该 Bucket 虚拟目录（/attachment、/file）的域名；
+     *   - oss   Bucket：url 是 OSS 直链前缀，语义与原来一致。
+     * 因此这里不区分 type，统一按「对外地址前缀」处理。
+     */
+    public static function bucketDomain(array $bucket): string
+    {
+        $own = rtrim(trim((string)($bucket['url'] ?? '')), '/');
+        return $own !== '' ? $own : self::domain();
     }
 
     /** Bucket 的对外路径段：path 优先，留空回退 name */
@@ -108,8 +128,8 @@ final class AttachmentDeliveryService
         return preg_replace('/\.[A-Za-z0-9]{1,10}$/', '', $value) ?? $value;
     }
 
-    /** 永久虚拟地址（本地 Bucket 专用）：/attachment/{bucket_path}/{md5}.{ext} */
-    public static function virtualUrl(string $bucketPath, string $md5, string $suffix = ''): string
+    /** 永久虚拟地址的相对路径（本地 Bucket 专用）：/attachment/{bucket_path}/{md5}.{ext} */
+    public static function virtualPath(string $bucketPath, string $md5, string $suffix = ''): string
     {
         $bucketPath = trim($bucketPath, '/');
         if ($bucketPath === '' || preg_match('/^[A-Za-z0-9._\-]+$/', $bucketPath) !== 1
@@ -118,8 +138,76 @@ final class AttachmentDeliveryService
         }
         // 后缀只接受 “.字母数字” 形式，杜绝外部拼接路径或查询串
         $suffix = preg_match('/^\.[A-Za-z0-9]{1,10}$/', $suffix) === 1 ? $suffix : '';
-        $domain = self::domain();
-        return $domain . '/attachment/' . $bucketPath . '/' . strtolower($md5) . $suffix;
+        return '/attachment/' . $bucketPath . '/' . strtolower($md5) . $suffix;
+    }
+
+    /**
+     * 永久虚拟地址（本地 Bucket 专用）：domain + virtualPath
+     *
+     * $domain 传 Bucket 自己的域名（见 bucketDomain）；留空回退全局 attach_domain。
+     */
+    public static function virtualUrl(string $bucketPath, string $md5, string $suffix = '', string $domain = ''): string
+    {
+        $path = self::virtualPath($bucketPath, $md5, $suffix);
+        if ($path === '') {
+            return '';
+        }
+        $domain = rtrim(trim($domain), '/');
+        return ($domain !== '' ? $domain : self::domain()) . $path;
+    }
+
+    /**
+     * 对外的相对地址：local 为 /attachment/{bucket}/{md5}.{ext}，OSS 保留原对象键。
+     *
+     * 用于 src / surl / path 等「相对地址」字段，避免把真实落盘路径返回给客户端。
+     * OSS 的 path 是对象键（原直链中也包含），保持原值以兼容既有 SDK 约定。
+     */
+    public static function publicPath(array $row, array $bucket): string
+    {
+        if (!self::isLocalBucket($bucket)) {
+            return self::normalizePath((string)($row['path'] ?? ''));
+        }
+        return self::virtualPath(
+            self::bucketSegment($bucket),
+            (string)($row['md5'] ?? ''),
+            self::urlSuffix($row)
+        );
+    }
+
+    /**
+     * 对外附件行：所有地址字段统一改为虚拟地址，真实落盘路径只在 AOSS 后台可见。
+     *
+     * 字段口径：
+     *   - path / src / surl：虚拟相对地址（local 为 /attachment/...；OSS 保留原对象键）
+     *   - url              ：虚拟绝对地址（domain + /attachment/...；OSS 为原直链）
+     *   - file_url         ：ttl>0 时签发 /file/{code}.{ext} 时限取件码，否则同 url
+     *   - file_expired_at  ：取件码到期时间戳，永久地址为 0
+     *
+     * 注意：issueTimed 依赖真实 path/token 定位项目 secret，必须在改写前签发。
+     *
+     * @param int $ttl >0 时签发时限取件码
+     */
+    public static function publicRow(array $row, array $bucket, int $ttl = 0): array
+    {
+        $issued = ($ttl > 0 && self::isLocalBucket($bucket)) ? self::issueTimed($row, $ttl, $bucket) : [];
+
+        $absolute = self::publicUrl($row, $bucket, true);
+        $relative = self::publicPath($row, $bucket);
+        if ($relative === '') {
+            $relative = $absolute;
+        }
+
+        $row['path'] = $relative;
+        $row['src'] = $relative;
+        $row['surl'] = $relative;
+        $row['url'] = $absolute;
+        $row['file_url'] = $absolute;
+        $row['file_expired_at'] = 0;
+        if (!empty($issued)) {
+            $row['file_url'] = $issued['url'];
+            $row['file_expired_at'] = $issued['expired_at'];
+        }
+        return $row;
     }
 
     /** 取件码签名 */
@@ -159,9 +247,12 @@ final class AttachmentDeliveryService
     /**
      * 签发给定时限地址。OSS 附件不签发（无法由 Nginx 控制访问）。
      *
+     * $bucket 用于取该 Bucket 自己的域名；不传时回退全局 attach_domain。
+     *
+     * @param array $bucket ao_v3_storage 行，可为空
      * @return array{url:string,expired_at:int,expires_in:int} 失败返回 []
      */
-    public static function issueTimed(array $row, int $ttl): array
+    public static function issueTimed(array $row, int $ttl, array $bucket = []): array
     {
         $id = (int)($row['id'] ?? 0);
         $secret = V3ProjectModel::api_secret_by_attachment($row);
@@ -172,7 +263,7 @@ final class AttachmentDeliveryService
         $ttl = max(1, min($ttl, $maxTtl));
         $end = time() + $ttl;
         $code = self::encodeCode($end, $id, $secret);
-        $domain = self::domain();
+        $domain = self::bucketDomain($bucket);
         return [
             'url'        => ($domain !== '' ? $domain : '') . '/file/' . $code . self::urlSuffix($row),
             'expired_at' => $end,
@@ -192,11 +283,13 @@ final class AttachmentDeliveryService
             $base = rtrim((string)($bucket['url'] ?? ''), '/');
             return ($withDomain && $base !== '') ? $base . '/' . $path : $path;
         }
-        // 待签发的数据可能只有 path（如上传回执），urlSuffix 会从 path 推断后缀
+        // 待签发的数据可能只有 path（如上传回执），urlSuffix 会从 path 推断后缀。
+        // 域名取该 Bucket 自己的配置，不同项目挂不同域名时返回地址才不会串站。
         $virtual = self::virtualUrl(
             self::bucketSegment($bucket),
             (string)($row['md5'] ?? ''),
-            self::urlSuffix($row)
+            self::urlSuffix($row),
+            self::bucketDomain($bucket)
         );
         if ($virtual === '' || !$withDomain) {
             return $path;

@@ -10,9 +10,10 @@
 // 域名可任意：只要指向本站 PHP + 上述 internal location 即可，不绑定 attach.tuuz.cc。
 
 return [
-    // 对外虚拟地址域名前缀（不带尾斜杠）
-    // 生产环境由 system_param.attach_domain 提供（见 AttachmentDeliveryService::domain）；
-    // 此处仅作本地开发兜底，两者都为空时使用默认域名。
+    // 全局对外虚拟地址域名前缀（不带尾斜杠）
+    // 优先级：Bucket 自己的 ao_v3_storage.url → system_param.attach_domain → 本配置 → 默认域名。
+    // 即不同项目挂不同域名时，在后台「存储管理 V3」给对应 Bucket 填「访问域名」即可，
+    // 这里只是没配 url 的 Bucket 的兜底（见 AttachmentDeliveryService::bucketDomain）。
     'domain'          => rtrim((string)env('ATTACH_DOMAIN', 'https://attach.tuuz.cc'), '/'),
 
     // Nginx 内部跳转前缀，必须以 / 开头和结尾；与 nginx internal location 一致

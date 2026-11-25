@@ -17,7 +17,7 @@ CREATE TABLE `ao_v3_storage`（V3 存储 Bucket）:
   `type` enum('local','oss') NOT NULL DEFAULT 'local' COMMENT 'local 存本站，oss 传远程',
   `oss_type` enum('none','aliyun') NOT NULL DEFAULT 'none' COMMENT '远程凭据类型，type=oss 时固定 aliyun',
   `oss_tag` varchar(255) NOT NULL DEFAULT '' COMMENT '远程凭据标识，对应 ao_oss_aliyun.tag',
-  `url` varchar(255) NOT NULL DEFAULT '' COMMENT '访问域名/URL 前缀，远程必填',
+  `url` varchar(255) NOT NULL DEFAULT '' COMMENT '对外访问域名：local 为虚拟目录域名（留空回退全局 attach_domain），oss 为直链前缀（必填）',
   `status` tinyint(1) NOT NULL DEFAULT 1,
   `date` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)

@@ -39,7 +39,7 @@
     </div>
 </div>
 <div class="card">
-    <p>这里只展示 <b>V3 上传</b>的附件（按 Bucket 归组），可按项目 / Bucket / 后缀 / 关键字过滤。本地 Bucket 图片预览使用 <b>10 分钟时限取件码</b>，由图片站鉴权读盘输出，PHP 不接触文件正文、也不暴露真实路径；页面每 8 分钟自动换码，长期开着不会失效。OSS 图片走原直链。仅对 jpg / png / gif / bmp / webp / ico 内联展示；<b>SVG、HTML、PDF 等一律不内联渲染，只能下载</b>。删除附件会将其移入回收站，可从「附件回收站」恢复。</p>
+    <p>这里只展示 <b>V3 上传</b>的附件（按 Bucket 归组），可按项目 / Bucket / 后缀 / 关键字过滤。对外接口（SDK）只返回 <b>/attachment 永久虚拟地址</b>与 <b>/file 时限取件码</b>，真实路径仅在本后台可见。本地 Bucket 图片预览使用 <b>10 分钟时限取件码（File 地址）</b>，由图片站鉴权读盘输出，PHP 不接触文件正文；页面每 8 分钟自动换码，长期开着不会失效，表格「预览地址(File)」列展示当前有效取件码。OSS 图片走原直链。仅对 jpg / png / gif / bmp / webp / ico 内联展示；<b>SVG、HTML、PDF 等一律不内联渲染，只能下载</b>。删除附件会将其移入回收站，可从「附件回收站」恢复。</p>
 </div>
 {if $view == 'list'}
 <div class="table-wrap">
@@ -52,6 +52,7 @@
             <th>文件名</th>
             <th>Path</th>
             <th>文件地址</th>
+            <th>预览地址(File)</th>
             <th>实际地址</th>
             <th>项目 / Bucket</th>
             <th>类型</th>
@@ -103,6 +104,13 @@
                 <span style="color:var(--text-muted);">-</span>
                 {/if}
             </td>
+            <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.preview_url}">
+                {if $item.preview_url !== ''}
+                <a class="mono v3-preview-link" href="{$item.preview_url}" data-preview-for="{$item.id}" target="_blank" rel="noopener noreferrer">{$item.preview_url}</a>
+                {else/}
+                <span style="color:var(--text-muted);">-</span>
+                {/if}
+            </td>
             <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.raw_url}">
                 {if $item.raw_url !== ''}
                 <a class="mono" href="{$item.raw_url}" target="_blank" rel="noopener noreferrer">{$item.raw_url}</a>
@@ -128,7 +136,7 @@
         {/foreach}
         {if empty($list)}
         <tr>
-            <td colspan="14" style="text-align:center;color:var(--text-muted);padding:32px;">暂无附件</td>
+            <td colspan="15" style="text-align:center;color:var(--text-muted);padding:32px;">暂无附件</td>
         </tr>
         {/if}
     </tbody>
@@ -298,6 +306,14 @@ function v3RefreshPreviewUrls() {
                 n.src = urls[id];
             }
         });
+        // 同步后台展示的预览地址文本/链接，避免复制到已过期的取件码
+        document.querySelectorAll('.v3-preview-link[data-preview-for]').forEach(function(a) {
+            var id = a.getAttribute('data-preview-for');
+            if (!id || !urls[id]) return;
+            a.href = urls[id];
+            a.textContent = urls[id];
+            a.parentNode.setAttribute('title', urls[id]);
+        });
         // grid 缩略图（父卡片带 id）
         document.querySelectorAll('.grid-thumb[data-id]').forEach(function(img) {
             var id = img.getAttribute('data-id');
@@ -394,6 +410,8 @@ function openPreview(el) {
     title.textContent = d.name || ('附件 #' + (d.id || ''));
     dl.href = d.download || '#';
 
+    // 预览地址取当前值：换码后 data-preview 已被刷新，避免展示旧取件码
+    var currentPreview = el.getAttribute('data-preview') || d.preview || '';
     renderDetail(meta, [
         ['ID', d.id],
         ['项目', d.project],
@@ -401,6 +419,7 @@ function openPreview(el) {
         ['文件名', d.name],
         ['Path', d.path, 'copy'],
         ['文件地址', d.public, 'url'],
+        ['预览地址(File)', currentPreview || '-', currentPreview ? 'url' : ''],
         ['实际地址', d.raw, 'url'],
         ['下载地址', d.download, 'url'],
         ['MIME', d.mime],

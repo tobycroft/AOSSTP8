@@ -369,7 +369,7 @@ class V3Attachment extends CommonController
             if ($isOss) {
                 $previewUrl = $directUrl;
             } else {
-                $issued = AttachmentDeliveryService::issueTimed($row, self::PREVIEW_TTL);
+                $issued = AttachmentDeliveryService::issueTimed($row, self::PREVIEW_TTL, $bucket ?: []);
                 $previewUrl = (string)($issued['url'] ?? '');
                 $previewExpiresAt = (int)($issued['expired_at'] ?? 0);
             }
@@ -458,7 +458,7 @@ class V3Attachment extends CommonController
             if (($bucket['type'] ?? 'local') === 'oss') {
                 continue; // OSS 直链无时效，无需换码
             }
-            $issued = AttachmentDeliveryService::issueTimed($row, self::PREVIEW_TTL);
+            $issued = AttachmentDeliveryService::issueTimed($row, self::PREVIEW_TTL, $bucket);
             if (!empty($issued['url'])) {
                 $urls[(int)$row['id']] = $issued['url'];
             }

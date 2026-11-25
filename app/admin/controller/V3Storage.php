@@ -176,6 +176,51 @@ class V3Storage extends CommonController
     }
 
     /**
+     * 访问域名（URL 前缀）：每个 Bucket 可配置自己的对外域名
+     *
+     * - local：该 Bucket 虚拟目录（/attachment、/file）的域名，可留空回退全局 attach_domain；
+     * - oss  ：OSS 直链前缀，必填（与原有口径一致）。
+     *
+     * local 只接受纯 origin（scheme://host[:port]）：虚拟地址要在其后直接拼
+     * /attachment/...，一旦带路径就会导致 nginx 的 location 匹配不上。
+     */
+    private function readUrl(string $type, string $method): string
+    {
+        $raw = $method === 'put'
+            ? (string)Input::Put('url', false)
+            : (string)Input::Post('url', false);
+        $url = rtrim(trim($raw), '/');
+
+        if ($url === '') {
+            if ($type === 'oss') {
+                Ret::Fail(400, null, '远程存储必须填写访问域名（URL 前缀）');
+            }
+            // local 留空表示沿用全局 attach_domain
+            return '';
+        }
+        if (mb_strlen($url) > 255) {
+            Ret::Fail(400, null, '访问域名不能超过 255 个字符');
+        }
+
+        $parts = parse_url($url);
+        if ($parts === false
+            || empty($parts['scheme']) || empty($parts['host'])
+            || !in_array(strtolower((string)$parts['scheme']), ['http', 'https'], true)) {
+            Ret::Fail(400, null, '访问域名必须是 http:// 或 https:// 开头的完整地址，例如 https://attach.example.com');
+        }
+        // local 的虚拟地址要在域名后直接拼 /attachment，带路径会导致 nginx 匹配不上；
+        // oss 是直链前缀（base + '/' + 对象键），带路径仍可用，放宽以兼容既有配置。
+        if ($type !== 'oss') {
+            $path = (string)($parts['path'] ?? '');
+            if (isset($parts['query']) || isset($parts['fragment']) || ($path !== '' && $path !== '/')) {
+                Ret::Fail(400, null, '访问域名只能是域名（可带端口），不能带路径、查询串或锚点');
+            }
+        }
+
+        return $url;
+    }
+
+    /**
      * 远程凭据：必须是 ao_oss_aliyun 里存在的 tag；本地类型忽略
      */
     private function readOssTag(string $type, string $method): string
@@ -207,10 +252,7 @@ class V3Storage extends CommonController
         }
         $type = $this->readType('put');
         $ossTag = $this->readOssTag($type, 'put');
-        $url = rtrim(trim((string)Input::Put('url', false)), '/');
-        if ($type === 'oss' && $url === '') {
-            Ret::Fail(400, null, '远程存储必须填写访问域名（URL 前缀）');
-        }
+        $url = $this->readUrl($type, 'put');
 
         AdminV3StorageModel::create([
             // project_id 为历史兼容列，归属关系一律由「存储项目」页维护
@@ -254,11 +296,13 @@ class V3Storage extends CommonController
         if (request()->has('ext', 'post')) $data['ext'] = $this->readExt('post');
         if (request()->has('size', 'post')) $data['size'] = max(1, Input::PostInt('size'));
         if (request()->has('type', 'post')) $data['type'] = $this->readType('post');
-        if (request()->has('url', 'post')) $data['url'] = rtrim(trim((string)Input::Post('url', false)), '/');
+
+        // 域名校验依赖最终类型：oss 必填、local 可留空回退全局
+        $finalType = $data['type'] ?? (string)$item['type'];
+        if (request()->has('url', 'post')) $data['url'] = $this->readUrl($finalType, 'post');
         if (request()->has('status', 'post')) $data['status'] = Input::PostInt('status');
 
         // 类型或凭据有变时，二者一起收敛：oss 必须有 tag，local 清空凭据
-        $finalType = $data['type'] ?? (string)$item['type'];
         if (array_key_exists('type', $data) || request()->has('oss_tag', 'post')) {
             $data['oss_tag'] = $this->readOssTag($finalType, 'post');
             $data['oss_type'] = $finalType === 'oss' ? 'aliyun' : 'none';

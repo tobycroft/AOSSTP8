@@ -11,7 +11,8 @@
     </div>
 </div>
 <div class="card">
-    <p>这里的每一项就是一个 <b>Bucket</b>，只维护「文件存到哪（Path）」「允许哪些后缀」「单文件多大」「存本站还是传远程」。一个项目（secret）可以使用多个 Bucket，授权关系与默认 Bucket 在「存储项目」中配置。</p>
+    <p>这里的每一项就是一个 <b>Bucket</b>，只维护「文件存到哪（Path）」「返回地址用哪个域名」「允许哪些后缀」「单文件多大」「存本站还是传远程」。一个项目（secret）可以使用多个 Bucket，授权关系与默认 Bucket 在「存储项目」中配置。</p>
+    <p style="margin-top:6px;">「访问域名」按 Bucket 独立生效：本地 Bucket 填 <code>https://域名[:端口]</code> 后，<code>/attachment</code> 与 <code>/file</code> 地址都用它拼接（该域名需指向本站，含 nginx internal location）；留空则使用系统参数 <code>attach_domain</code>。OSS Bucket 仍填直链前缀。</p>
 </div>
 <table>
     <thead>
@@ -20,6 +21,7 @@
             <th>Bucket</th>
             <th>类型</th>
             <th>Path</th>
+            <th>访问域名</th>
             <th>允许后缀</th>
             <th>大小上限</th>
             <th>远程桶</th>
@@ -40,6 +42,15 @@
                 {/if}
             </td>
             <td>{if $item.path == ''}<span style="color:#8c8c8c;">默认(Bucket 名)</span>{else/}<span style="font-family:monospace;font-size:12px;color:#1677ff;">{$item.path}</span>{/if}</td>
+            <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.url|htmlspecialchars}">
+                {if $item.url != ''}
+                <span style="font-family:monospace;font-size:12px;color:#1677ff;">{$item.url|htmlspecialchars}</span>
+                {elseif $item.type == 'local'}
+                <span style="color:#8c8c8c;" title="使用系统参数 attach_domain">全局默认</span>
+                {else/}
+                <span style="color:#8c8c8c;">-</span>
+                {/if}
+            </td>
             <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{$item.ext}">{$item.ext}</td>
             <td>{$item.size} KB</td>
             <td>
@@ -110,11 +121,11 @@
                 <select id="formOssTag"><option value="">加载中…</option></select>
                 <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">accesskey / accesssecret / endpoint / bucket 从所选凭据读取（凭据仓库见「存储管理 → 阿里云OSS」）。</div>
             </div>
-            <div class="form-group">
-                <label>访问域名（URL 前缀）</label>
-                <input type="text" id="formUrl" placeholder="https://image.example.com">
-                <div style="font-size:12px;color:#8c8c8c;margin-top:4px;">拼接返回地址用，远程必填。</div>
-            </div>
+        </div>
+        <div class="form-group">
+            <label>访问域名（URL 前缀）</label>
+            <input type="text" id="formUrl" placeholder="https://attach.example.com">
+            <div id="urlHint" style="font-size:12px;color:#8c8c8c;margin-top:4px;"></div>
         </div>
         <div class="form-group">
             <label>允许上传的后缀</label>
@@ -289,6 +300,19 @@ function closeModal() { document.getElementById('v3StorageModal').classList.remo
 function toggleType() {
     var type = document.getElementById('formType').value;
     document.getElementById('ossFields').style.display = (type === 'oss') ? '' : 'none';
+
+    // 同一条配置项在两种类型下含义不同：local 是虚拟目录域名，oss 是直链前缀
+    var input = document.getElementById('formUrl');
+    var hint = document.getElementById('urlHint');
+    if (type === 'oss') {
+        input.placeholder = 'https://image.example.com';
+        hint.innerHTML = 'OSS 直链前缀，<b>远程必填</b>：返回地址为「域名 + / + 对象键」。';
+    } else {
+        input.placeholder = 'https://attach.example.com';
+        hint.innerHTML = '该 Bucket 返回地址用的域名（<code>/attachment</code> 与 <code>/file</code> 都在它下面），'
+            + '只填 <b>https://域名[:端口]</b>，不要带路径；'
+            + '留空则使用系统参数 <code>attach_domain</code>。该域名需指向本站（含 nginx internal location）。';
+    }
 }
 
 function applyOssTag(tag) {
@@ -382,6 +406,16 @@ function submitForm() {
     }
     if (type === 'oss' && !ossTag) { alert('远程存储必须选择 OSS 凭据'); return; }
     if (type === 'oss' && !url) { alert('远程存储必须填写访问域名'); return; }
+    // 与后端同口径：local 只允许 scheme://host[:port]（虚拟地址要在其后直接拼 /attachment），
+    // OSS 直链前缀允许带路径
+    if (url && !/^https?:\/\//i.test(url)) {
+        alert('访问域名必须是 http:// 或 https:// 开头的完整地址');
+        return;
+    }
+    if (type !== 'oss' && url && !/^https?:\/\/[^\/?#]+$/i.test(url)) {
+        alert('本地 Bucket 的访问域名只填 https://域名[:端口]，不要带路径、查询串或锚点');
+        return;
+    }
     var ext = document.getElementById('formExt').value.trim();
     if (!ext) { alert('请至少选择一种允许上传的后缀'); return; }
     var params = 'name=' + encodeURIComponent(name)

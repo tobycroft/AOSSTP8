@@ -55,6 +55,34 @@ use Throwable;
  */
 class index extends CommonController
 {
+    /**
+     * 永远禁止上传的后缀，与 Bucket 的 ext 配置无关。
+     * 这些后缀要么会被 Web 服务器当脚本执行（php/phtml/jsp/asp…），
+     * 要么会在浏览器里直接运行脚本（html/js/svg 之外的 html 家族），
+     * 作为"后台把 ext 配错就变成 RCE / 存储型 XSS"的最后一道闸。
+     * 注：svg 不在此列——它是现有 Bucket 的合法白名单项，由分发侧 nosniff 兜。
+     */
+    private const FORBIDDEN_EXTENSIONS = [
+        'php', 'php2', 'php3', 'php4', 'php5', 'php6', 'php7', 'php8',
+        'phtml', 'pht', 'phps', 'phar', 'inc',
+        'html', 'htm', 'shtml', 'xhtml', 'xht',
+        'js', 'mjs', 'jsp', 'jspx', 'jsw', 'jsv', 'asp', 'aspx', 'asa', 'asax',
+        'cer', 'cgi', 'pl', 'py', 'rb', 'sh', 'bash', 'zsh', 'bat', 'cmd',
+        'exe', 'dll', 'com', 'vbs', 'ps1', 'jar', 'war',
+        'htaccess', 'htpasswd', 'ini', 'conf', 'userini',
+    ];
+
+    /**
+     * 服务端嗅探后不允许的 MIME。
+     * 客户端 Content-Type 可以随便写，所以判定必须基于文件真实内容。
+     */
+    private const FORBIDDEN_MIMES = [
+        'text/x-php', 'application/x-php', 'application/x-httpd-php',
+        'application/x-httpd-php-source', 'text/html', 'application/xhtml+xml',
+        'application/x-sh', 'application/x-shellscript', 'text/x-shellscript',
+        'application/x-msdownload', 'application/x-dosexec', 'application/x-msdos-program',
+    ];
+
     /** V3 附件的归属标记：与 V1/V2 共用 ao_attachment 时用于隔离同名 token */
     protected string $upload_tag = 'v3';
     protected mixed $token;
@@ -217,23 +245,39 @@ class index extends CommonController
         // 统一小写：MD5 查重、落盘文件名、DB 记录三处口径一致
         $md5 = strtolower((string)$file->md5());
         $sha1 = strtolower((string)$file->sha1());
-        $mime = $file->getOriginalMime();
 
-        // 第一层：上传前按 MD5 全局（跨项目）去重，命中直接秒传返回既有地址，不落盘。
-        // 用户确认相同文件只保留一份；sha1 / 后缀 / 当前 Bucket 不再参与命中判断。
-        $file_exists = $this->findDuplicate($md5);
-        if ($file_exists) {
-            $this->getStr($full, $this->existingUrl($file_exists, $proc), $file_exists, $type);
-            return;
+        // 校验必须前置在 MD5 去重之前：否则一个本该被拒的文件，只要库里有同内容文件，
+        // 就会走"秒传"分支拿到地址，绕过后面所有检查。
+        $ext = (string)$file->getOriginalExtension();
+        $ext_lower = strtolower($ext);
+        if (in_array($ext_lower, self::FORBIDDEN_EXTENSIONS, true)) {
+            $this->fail($type, 403, '禁止上传该类型文件');
         }
-        if ($file->getOriginalMime() == 'text/x-php' || $file->getOriginalMime() == 'text/html') {
-            $this->fail($type, 403, '禁止上传非法文件');
+        if (!in_array($ext, explode(',', $proc['ext']))) {
+            $this->fail($type, 403, '后缀不符合规范');
         }
         if ($file->getSize() >= $proc['size'] * 1024) {
             $this->fail($type, 400, '大小不符合规范');
         }
-        if (!in_array($file->getOriginalExtension(), explode(',', $proc['ext']))) {
-            $this->fail($type, 403, '后缀不符合规范');
+
+        // 类型判定：客户端提交的 Content-Type（原 getOriginalMime）由请求方随意填写，
+        // 改 Content-Type 就能绕过原有 php/html 黑名单，因此改为服务端嗅探文件真实内容。
+        $mime = $this->sniffMime($file->getPathname());
+        if (in_array($mime, self::FORBIDDEN_MIMES, true)) {
+            $this->fail($type, 403, '禁止上传非法文件');
+        }
+        // 图片 polyglot 兜底：`GIF89a<?php ...` 的 MIME 仍是 image/gif，只能靠内容排查
+        if (in_array($ext_lower, self::IMAGE_EXTENSIONS, true)
+            && $this->hasScriptPolyglot($file->getPathname())) {
+            $this->fail($type, 403, '禁止上传非法文件');
+        }
+
+        // 第二层：按 MD5 全局（跨项目）去重，命中直接秒传返回既有地址，不落盘。
+        // 用户确认相同文件只保留一份；sha1 / 后缀 / 当前 Bucket 不再参与命中判断。
+        $file_exists = $this->findDuplicate($md5);
+        if ($file_exists) {
+            $this->getStr($full, $file_exists, $type);
+            return;
         }
 
         // 当日分片：upload/{bucket}/{YYYYMMDD}/{1000|2000|...}/md5.ext
@@ -301,7 +345,7 @@ class index extends CommonController
         $duplicate = $this->findDuplicate($md5);
         if ($duplicate) {
             @unlink($info->getPathname());
-            $this->getStr($full, $this->existingUrl($duplicate, $proc), $duplicate, $type);
+            $this->getStr($full, $duplicate, $type);
             return;
         }
 
@@ -325,13 +369,11 @@ class index extends CommonController
             'ip' => $ip,
         ];
 
-        // 对外地址：local 走虚拟分发地址（隐藏真实落盘路径），oss 仍用 Bucket 域名直链
-        $publicUrl = AttachmentDeliveryService::publicUrl(
-            ['md5' => $md5, 'path' => $fileName],
-            $this->bucket,
-            true
-        );
-        $sav = ($full && $publicUrl !== '') ? $publicUrl : $fileName;
+        // 对外地址统一为虚拟分发地址（local 走 /attachment 与 /file，OSS 保留直链），
+        // 真实落盘路径只写入数据库、只在 AOSS 后台可见。
+        // up 返回相对虚拟地址、upfull 返回带域名的绝对虚拟地址，保持原有口径。
+        $publicInfo = AttachmentDeliveryService::publicRow($file_info, $this->bucket);
+        $sav = $full ? (string)$publicInfo['url'] : (string)$publicInfo['path'];
 
         $ossUploaded = false;
         if ($proc['type'] === 'oss') {
@@ -357,7 +399,7 @@ class index extends CommonController
                 } catch (Throwable $ignore) {
                     // 清理失败不影响秒传结果
                 }
-                $this->getStr($full, $this->existingUrl($duplicate, $proc), $duplicate, $type);
+                $this->getStr($full, $duplicate, $type);
                 return;
             }
         }
@@ -377,7 +419,7 @@ class index extends CommonController
                     }
                 }
                 @unlink($info->getPathname());
-                $this->getStr($full, $this->existingUrl($duplicate, $proc), $duplicate, $type);
+                $this->getStr($full, $duplicate, $type);
                 return;
             }
             throw $e;
@@ -389,13 +431,8 @@ class index extends CommonController
                     break;
 
                 case "complete":
-                    $file_info["src"] = $sav;
-                    $file_info["url"] = $sav;
-                    $file_info["surl"] = $file_info['path'];
-                    // 上传入口统一返回永久虚拟地址；临时地址由客户端按需调用 token/temp_url 签发
-                    $file_info['file_url'] = $sav;
-                    $file_info['file_expired_at'] = 0;
-                    Ret::Success(0, $file_info);
+                    // 所有对外地址字段统一为虚拟地址，真实 path 不随接口返回
+                    Ret::Success(0, $publicInfo);
                     break;
 
                 case "hash":
@@ -413,6 +450,63 @@ class index extends CommonController
         } else {
             $this->fail($type, 300, null);
         }
+    }
+
+    /** 需要在内容层额外排查脚本片段的图片后缀：这类 polyglot 文件 MIME 判定为图片 */
+    private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'ico'];
+
+    /**
+     * 服务端嗅探文件真实 MIME（基于 magic bytes，不信任客户端 Content-Type）
+     *
+     * fileinfo 不可用时降级为 application/octet-stream——此时只剩后缀白名单 +
+     * FORBIDDEN_EXTENSIONS 两层防护，属于"少一层"而不是"放行"。
+     */
+    private function sniffMime(string $path): string
+    {
+        if (!function_exists('finfo_open')) {
+            return 'application/octet-stream';
+        }
+        $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo === false) {
+            return 'application/octet-stream';
+        }
+        // 不调用 finfo_close：PHP 8.5 起该函数已废弃，finfo 对象自动释放
+        $mime = @finfo_file($finfo, $path);
+
+        return is_string($mime) && $mime !== '' ? strtolower($mime) : 'application/octet-stream';
+    }
+
+    /**
+     * 排查"图片头 + PHP 代码"的 polyglot 文件
+     *
+     * finfo 只看文件头，`GIF89a<?php ...` 会被判成 image/gif 而通过 MIME 检查。
+     * 正常图片不可能包含 PHP 起始标记，所以对图片后缀做一次内容级兜底；
+     * 分块读取并回退 4 字节，避免标记正好跨在两块交界处被漏检。
+     */
+    private function hasScriptPolyglot(string $path): bool
+    {
+        $fh = @fopen($path, 'rb');
+        if ($fh === false) {
+            return false;
+        }
+
+        $found = false;
+        while (!feof($fh)) {
+            $chunk = fread($fh, 8192);
+            if ($chunk === false || $chunk === '') {
+                break;
+            }
+            if (stripos($chunk, '<?php') !== false || str_contains($chunk, '<?=')) {
+                $found = true;
+                break;
+            }
+            if (strlen($chunk) > 4) {
+                fseek($fh, -4, SEEK_CUR);
+            }
+        }
+        fclose($fh);
+
+        return $found;
     }
 
     /**
@@ -434,22 +528,12 @@ class index extends CommonController
     }
 
     /**
-     * 秒传返回的 URL 前缀：按既有附件的 path 反查真实 Bucket，避免跨项目命中时用错域名
-     */
-    private function existingUrl(AttachmentModel $file, array $proc): string
-    {
-        $bucket = V3StorageProjectModel::api_match_by_path(
-            (string)($file['token'] ?? ''),
-            (string)($file['path'] ?? '')
-        );
-        $url = !empty($bucket) ? rtrim((string)($bucket['url'] ?? ''), '/') : '';
-        return $url !== '' ? $url : rtrim((string)($proc['url'] ?? ''), '/');
-    }
-
-    /**
      * 统一成功响应：新上传与秒传命中都走这里，保证各上传入口返回结构一致
+     *
+     * 秒传命中时按 path 前缀反查真实 Bucket，所有对外地址一律走虚拟分发，
+     * 真实 path 只在 AOSS 后台可见。
      */
-    public function getStr(mixed $full, $url, AttachmentModel $file_exists, mixed $type): string
+    public function getStr(mixed $full, AttachmentModel $file_exists, mixed $type): string
     {
         $row = [
             'id'    => (int)$file_exists['id'],
@@ -459,25 +543,20 @@ class index extends CommonController
             'name'  => (string)($file_exists['name'] ?? ''),
         ];
         $bucket = V3StorageProjectModel::api_match_by_path($row['token'], $row['path']);
-        $publicUrl = AttachmentDeliveryService::publicUrl($row, $bucket, true);
-        if (empty($bucket) && $publicUrl === '') {
-            $urlPrefix = rtrim((string)$url, '/');
-            $publicUrl = $urlPrefix !== '' ? $urlPrefix . '/' . $row['path'] : $row['path'];
+        if (empty($bucket)) {
+            $bucket = $this->bucket;
         }
-        $sav = $full ? $publicUrl : $row['path'];
+        $publicInfo = AttachmentDeliveryService::publicRow($row, $bucket);
+        $publicUrl = (string)$publicInfo['url'];
+        $sav = $full ? $publicUrl : (string)$publicInfo['path'];
         switch ($type) {
             case "ue":
                 Ret::Success(0, ['src' => $sav]);
                 break;
 
             case "complete":
-                $file_exists["src"] = $row['path'];
-                $file_exists["url"] = $publicUrl;
-                $file_exists["surl"] = $row['path'];
-                // 秒传命中同样只返回永久虚拟地址，避免与正常上传口径不一致
-                $file_exists['file_url'] = $publicUrl;
-                $file_exists['file_expired_at'] = 0;
-                Ret::Success(0, $file_exists);
+                // 与正常上传口径一致：所有对外地址字段都是虚拟地址
+                Ret::Success(0, array_merge($file_exists->toArray(), $publicInfo));
                 break;
 
             case "hash":
