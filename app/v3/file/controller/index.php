@@ -50,7 +50,7 @@ use Throwable;
  * path/url 且不落盘；落盘后、OSS 上传前后各复查一次（双重保险），命中则删除
  * 本次临时文件并返回既有地址。SDK 侧另有 md5_check 前置查询。
  *
- * 本地 Bucket 对外只返回虚拟地址 /attachment/{bucket_path}/{md5}.{ext}（附时限 file_url），
+ * 本地 Bucket 对外只返回永久虚拟地址 /attachment/{bucket_path}/{md5}.{ext}（file_url 同值），
  * 真实路径由 Nginx X-Accel-Redirect 内部映射；PHP 不读取文件正文。
  */
 class index extends CommonController
@@ -392,11 +392,9 @@ class index extends CommonController
                     $file_info["src"] = $sav;
                     $file_info["url"] = $sav;
                     $file_info["surl"] = $file_info['path'];
-                    $issued = AttachmentDeliveryService::isLocalBucket($this->bucket)
-                        ? AttachmentDeliveryService::issueTimed($file_info, (int)config('attach.ttl'))
-                        : [];
-                    $file_info['file_url'] = $issued['url'] ?? '';
-                    $file_info['file_expired_at'] = $issued['expired_at'] ?? 0;
+                    // 上传入口统一返回永久虚拟地址；临时地址由客户端按需调用 token/temp_url 签发
+                    $file_info['file_url'] = $sav;
+                    $file_info['file_expired_at'] = 0;
                     Ret::Success(0, $file_info);
                     break;
 
@@ -476,11 +474,9 @@ class index extends CommonController
                 $file_exists["src"] = $row['path'];
                 $file_exists["url"] = $publicUrl;
                 $file_exists["surl"] = $row['path'];
-                $issued = AttachmentDeliveryService::isLocalBucket($bucket)
-                    ? AttachmentDeliveryService::issueTimed($row, (int)config('attach.ttl'))
-                    : [];
-                $file_exists['file_url'] = $issued['url'] ?? '';
-                $file_exists['file_expired_at'] = $issued['expired_at'] ?? 0;
+                // 秒传命中同样只返回永久虚拟地址，避免与正常上传口径不一致
+                $file_exists['file_url'] = $publicUrl;
+                $file_exists['file_expired_at'] = 0;
                 Ret::Success(0, $file_exists);
                 break;
 

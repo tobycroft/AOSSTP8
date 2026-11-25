@@ -36,12 +36,13 @@ use think\facade\Db;
  *   POST /v3/file/token/hash_query      按 md5 查询已上传文件完整信息
  *   POST /v3/file/token/md5             按 md5 反查文件完整地址（同 V1 search::md5）
  *   POST /v3/file/token/md5s            按 md5 批量反查文件完整地址（同 V1 search::md5s）
- *   POST /v3/file/token/file_url        按 id/md5 签发时限取件码（本地 Bucket）
+ *   POST /v3/file/token/temp_url        按 id/md5 签发临时地址，ttl 由客户端指定（本地 Bucket）
+ *   POST /v3/file/token/file_url        旧入口别名，等价于 temp_url
  *   POST /v3/file/token/delete          软删文件：移入 upload/recycle/YYYYMMDD/
  *   POST /v3/file/token/restore         从回收站恢复文件
  *
- * 本地 Bucket 的 url 返回虚拟分发地址 /attachment/{bucket_path}/{md5}.{ext}，
- * 另附 file_url（时限取件码）；OSS Bucket 仍返回原直链。
+ * 本地 Bucket 的 url/file_url 均返回永久虚拟地址 /attachment/{bucket_path}/{md5}.{ext}；
+ * 需要临时地址时调用 temp_url 按客户端指定的 ttl 签发；OSS Bucket 仍返回原直链。
  */
 class token extends CommonController
 {
@@ -89,12 +90,26 @@ class token extends CommonController
     }
 
     /**
-     * 签发时限取件码（仅本地 Bucket）
+     * 获取临时地址（仅本地 Bucket，有效期由客户端决定）
      *
-     * 参数二选一：id（ao_attachment.id）或 md5/hash。附件必须属于当前项目已授权的
-     * 当前 Bucket，避免借其他项目的文件签发访问凭据。expires_in 省略时用配置默认值。
+     * POST /v3/file/token/temp_url
+     * 定位参数二选一：id（ao_attachment.id）或 md5/hash。
+     * 有效期参数：expires_in 或 ttl（秒），省略时用配置默认值，上限 max_ttl。
+     * 附件必须属于当前项目已授权的 Bucket，避免借其他项目的文件签发访问凭据。
      */
+    public function temp_url()
+    {
+        $this->issueTemporaryUrl();
+    }
+
+    /** 旧入口别名：与 temp_url 完全等价，保留兼容既有客户端 */
     public function file_url()
+    {
+        $this->issueTemporaryUrl();
+    }
+
+    /** temp_url / file_url 共用的签发逻辑 */
+    private function issueTemporaryUrl(): void
     {
         if (!AttachmentDeliveryService::isLocalBucket($this->bucket)) {
             Ret::Fail(403, null, '远程附件不支持时限分发');
@@ -107,9 +122,12 @@ class token extends CommonController
 
         $maxTtl = max(1, (int)config('attach.max_ttl'));
         $expiresIn = trim((string)Input::Combi('expires_in', false));
+        if ($expiresIn === '') {
+            $expiresIn = trim((string)Input::Combi('ttl', false));
+        }
         $ttl = $expiresIn === '' ? (int)config('attach.ttl') : (int)$expiresIn;
         if ($ttl < 1 || $ttl > $maxTtl) {
-            Ret::Fail(400, null, 'expires_in 需在 1~' . $maxTtl . ' 秒之间');
+            Ret::Fail(400, null, 'expires_in/ttl 需在 1~' . $maxTtl . ' 秒之间');
         }
 
         $issued = AttachmentDeliveryService::issueTimed($row, $ttl);
@@ -396,11 +414,9 @@ class token extends CommonController
         $file['url'] = AttachmentDeliveryService::publicUrl($file, $bucket, true) ?: (string)$file['path'];
         $file['surl'] = $file['path'];
 
-        $issued = AttachmentDeliveryService::isLocalBucket($bucket)
-            ? AttachmentDeliveryService::issueTimed($file, (int)config('attach.ttl'))
-            : [];
-        $file['file_url'] = $issued['url'] ?? '';
-        $file['file_expired_at'] = $issued['expired_at'] ?? 0;
+        // 与上传入口一致：默认只给永久虚拟地址。临时地址由客户端按需调 temp_url 签发。
+        $file['file_url'] = $file['url'];
+        $file['file_expired_at'] = 0;
         return $file;
     }
 
