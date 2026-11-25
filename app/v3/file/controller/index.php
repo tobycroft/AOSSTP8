@@ -3,6 +3,7 @@
 namespace app\v3\file\controller;
 
 use app\v1\file\model\AttachmentModel;
+use app\v3\file\service\AttachmentDeliveryService;
 use app\v3\storage\model\V3StorageModel;
 use app\v3\storage\model\V3StorageProjectModel;
 use app\v3\storage\model\V3UploadShardModel;
@@ -48,6 +49,9 @@ use Throwable;
  * MD5 秒传（数据清洗）：上传前按 md5 全局查 V3 未软删附件，命中直接返回既有
  * path/url 且不落盘；落盘后、OSS 上传前后各复查一次（双重保险），命中则删除
  * 本次临时文件并返回既有地址。SDK 侧另有 md5_check 前置查询。
+ *
+ * 本地 Bucket 对外只返回虚拟地址 /attachment/{bucket_id}/{md5}（附时限 file_url），
+ * 真实路径由 Nginx X-Accel-Redirect 内部映射；PHP 不读取文件正文。
  */
 class index extends CommonController
 {
@@ -55,6 +59,8 @@ class index extends CommonController
     protected string $upload_tag = 'v3';
     protected mixed $token;
     protected mixed $proc;
+    /** 本次上传命中的 Bucket 配置（虚拟地址/取件码签发用） */
+    protected array $bucket = [];
     protected ?string $upload_ip = null;
     /** 当前一次上传命中的 Bucket id，用于当日分片计数（ao_v3_upload_shard） */
     protected int $storageId = 0;
@@ -84,6 +90,7 @@ class index extends CommonController
             Ret::Fail(401, null, '存储配置不可用');
         }
         $this->storageId = $storageId;
+        $this->bucket = $bucket;
         $this->token = V3StorageModel::api_group_key($storageId);
         $this->proc = V3StorageModel::api_proc($bucket);
 
@@ -318,9 +325,13 @@ class index extends CommonController
             'ip' => $ip,
         ];
 
-        // 返回地址：local 直接给出 upload/ 下的相对（或带域名）路径；oss 传完后再拼域名
-        $urlPrefix = rtrim((string)($proc['url'] ?? ''), '/');
-        $sav = ($full && $urlPrefix !== '') ? $urlPrefix . '/' . $fileName : $fileName;
+        // 对外地址：local 走虚拟分发地址（隐藏真实落盘路径），oss 仍用 Bucket 域名直链
+        $publicUrl = AttachmentDeliveryService::publicUrl(
+            ['md5' => $md5, 'path' => $fileName],
+            $this->bucket,
+            true
+        );
+        $sav = ($full && $publicUrl !== '') ? $publicUrl : $fileName;
 
         $ossUploaded = false;
         if ($proc['type'] === 'oss') {
@@ -352,7 +363,8 @@ class index extends CommonController
         }
 
         try {
-            AttachmentModel::create($file_info);
+            $created = AttachmentModel::create($file_info);
+            $file_info['id'] = (int)$created->getKey();
         } catch (Throwable $e) {
             // 并发插入兜底：唯一键冲突时查回先入库那份，按秒传成功返回。
             $duplicate = $this->findDuplicate($md5);
@@ -378,8 +390,13 @@ class index extends CommonController
 
                 case "complete":
                     $file_info["src"] = $sav;
-                    $file_info["url"] = $urlPrefix !== '' ? $urlPrefix . '/' . $file_info['path'] : $file_info['path'];
+                    $file_info["url"] = $sav;
                     $file_info["surl"] = $file_info['path'];
+                    $issued = AttachmentDeliveryService::isLocalBucket($this->bucket)
+                        ? AttachmentDeliveryService::issueTimed($file_info, (int)config('attach.ttl'))
+                        : [];
+                    $file_info['file_url'] = $issued['url'] ?? '';
+                    $file_info['file_expired_at'] = $issued['expired_at'] ?? 0;
                     Ret::Success(0, $file_info);
                     break;
 
@@ -436,17 +453,34 @@ class index extends CommonController
      */
     public function getStr(mixed $full, $url, AttachmentModel $file_exists, mixed $type): string
     {
-        $urlPrefix = rtrim((string)$url, '/');
-        $sav = ($full && $urlPrefix !== '') ? $urlPrefix . '/' . $file_exists['path'] : $file_exists['path'];
+        $row = [
+            'id'    => (int)$file_exists['id'],
+            'token' => (string)($file_exists['token'] ?? ''),
+            'path'  => (string)($file_exists['path'] ?? ''),
+            'md5'   => (string)($file_exists['md5'] ?? ''),
+            'name'  => (string)($file_exists['name'] ?? ''),
+        ];
+        $bucket = V3StorageProjectModel::api_match_by_path($row['token'], $row['path']);
+        $publicUrl = AttachmentDeliveryService::publicUrl($row, $bucket, true);
+        if (empty($bucket) && $publicUrl === '') {
+            $urlPrefix = rtrim((string)$url, '/');
+            $publicUrl = $urlPrefix !== '' ? $urlPrefix . '/' . $row['path'] : $row['path'];
+        }
+        $sav = $full ? $publicUrl : $row['path'];
         switch ($type) {
             case "ue":
                 Ret::Success(0, ['src' => $sav]);
                 break;
 
             case "complete":
-                $file_exists["src"] = $file_exists['path'];
-                $file_exists["url"] = $urlPrefix !== '' ? $urlPrefix . '/' . $file_exists['path'] : $file_exists['path'];
-                $file_exists["surl"] = $file_exists['path'];
+                $file_exists["src"] = $row['path'];
+                $file_exists["url"] = $publicUrl;
+                $file_exists["surl"] = $row['path'];
+                $issued = AttachmentDeliveryService::isLocalBucket($bucket)
+                    ? AttachmentDeliveryService::issueTimed($row, (int)config('attach.ttl'))
+                    : [];
+                $file_exists['file_url'] = $issued['url'] ?? '';
+                $file_exists['file_expired_at'] = $issued['expired_at'] ?? 0;
                 Ret::Success(0, $file_exists);
                 break;
 

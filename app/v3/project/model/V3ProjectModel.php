@@ -55,6 +55,53 @@ class V3ProjectModel extends Model
     }
 
     /**
+     * 取附件所属项目的签名密钥（v3 取件码用）
+     *
+     * 优先按 ao_attachment.token（项目名）定位；历史 token=v3bucket:{id}
+     * 或项目已改名时，用 path 反查 Bucket，再经 ao_v3_storage_project 找项目。
+     * 密钥只用于服务端签发/验签，不下发到取件码本身。
+     */
+    public static function api_secret_by_attachment(array $row): string
+    {
+        $token = trim((string)($row['token'] ?? ''));
+        $path = str_replace('\\', '/', (string)($row['path'] ?? ''));
+        $bucketId = 0;
+        $projectId = 0;
+
+        if ($token !== '' && preg_match('/^v3bucket:(\d+)$/', $token, $m) !== 1) {
+            $projectId = (int)\think\facade\Db::name('ao_v3_project')
+                ->where('name', $token)
+                ->where('status', 1)
+                ->value('id');
+        }
+
+        if ($projectId <= 0) {
+            if (preg_match('/^v3bucket:(\d+)$/', $token, $m) === 1) {
+                $bucketId = (int)$m[1];
+            } else {
+                $bucket = \app\v3\storage\model\V3StorageProjectModel::api_match_by_path($token, $path);
+                $bucketId = (int)($bucket['id'] ?? 0);
+            }
+            if ($bucketId > 0) {
+                $projectId = (int)\think\facade\Db::name('ao_v3_storage_project')
+                    ->where('bucket_id', $bucketId)
+                    ->where('status', 1)
+                    ->order('is_default', 'desc')
+                    ->order('id', 'asc')
+                    ->value('project_id');
+            }
+        }
+
+        if ($projectId <= 0) {
+            return '';
+        }
+        return trim((string)\think\facade\Db::name('ao_v3_project')
+            ->where('id', $projectId)
+            ->where('status', 1)
+            ->value('secret'));
+    }
+
+    /**
      * 取项目被授权且启用中的默认 Agnes API 配置
      *
      * 仅返回 is_default=1 的授权；对应 Agnes API 不存在或被禁用时返回空数组

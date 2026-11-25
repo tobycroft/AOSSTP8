@@ -5,6 +5,7 @@ namespace app\v3\file\controller;
 use app\admin\service\AttachmentFileService;
 use app\v2\file\model\FileTokenModel;
 use app\v3\common\V3EnvelopeAuth;
+use app\v3\file\service\AttachmentDeliveryService;
 use app\v3\project\model\V3ProjectModel;
 use app\v3\storage\model\V3StorageModel;
 use app\v3\storage\model\V3StorageProjectModel;
@@ -35,8 +36,12 @@ use think\facade\Db;
  *   POST /v3/file/token/hash_query      按 md5 查询已上传文件完整信息
  *   POST /v3/file/token/md5             按 md5 反查文件完整地址（同 V1 search::md5）
  *   POST /v3/file/token/md5s            按 md5 批量反查文件完整地址（同 V1 search::md5s）
+ *   POST /v3/file/token/file_url        按 id/md5 签发时限取件码（本地 Bucket）
  *   POST /v3/file/token/delete          软删文件：移入 upload/recycle/YYYYMMDD/
  *   POST /v3/file/token/restore         从回收站恢复文件
+ *
+ * 本地 Bucket 的 url 返回虚拟分发地址 /attachment/{bucket_id}/{md5}，
+ * 另附 file_url（时限取件码）；OSS Bucket 仍返回原直链。
  */
 class token extends CommonController
 {
@@ -80,6 +85,44 @@ class token extends CommonController
         Ret::Success(0, [
             'token' => $data['token'],
             'expired_at' => $data['expired_at'],
+        ]);
+    }
+
+    /**
+     * 签发时限取件码（仅本地 Bucket）
+     *
+     * 参数二选一：id（ao_attachment.id）或 md5/hash。附件必须属于当前项目已授权的
+     * 当前 Bucket，避免借其他项目的文件签发访问凭据。expires_in 省略时用配置默认值。
+     */
+    public function file_url()
+    {
+        if (!AttachmentDeliveryService::isLocalBucket($this->bucket)) {
+            Ret::Fail(403, null, '远程附件不支持时限分发');
+        }
+
+        $row = $this->findInCurrentBucket();
+        if (empty($row)) {
+            Ret::Fail(404, null, '未找到文件，或文件不属于当前 Bucket');
+        }
+
+        $maxTtl = max(1, (int)config('attach.max_ttl'));
+        $expiresIn = trim((string)Input::Combi('expires_in', false));
+        $ttl = $expiresIn === '' ? (int)config('attach.ttl') : (int)$expiresIn;
+        if ($ttl < 1 || $ttl > $maxTtl) {
+            Ret::Fail(400, null, 'expires_in 需在 1~' . $maxTtl . ' 秒之间');
+        }
+
+        $issued = AttachmentDeliveryService::issueTimed($row, $ttl);
+        if (empty($issued)) {
+            Ret::Fail(403, null, '附件所属项目不可用，无法签发取件码');
+        }
+        Ret::Success(0, [
+            'id'           => (int)$row['id'],
+            'md5'          => (string)$row['md5'],
+            'url'          => $issued['url'],
+            'file_url'     => $issued['url'],
+            'expires_in'   => $issued['expires_in'],
+            'expired_at'   => $issued['expired_at'],
         ]);
     }
 
@@ -305,25 +348,59 @@ class token extends CommonController
             ->findOrEmpty();
     }
 
-    /** 补全附件行的访问地址：src / url / surl */
+    /** 按 id / md5 定位当前 Bucket 下的附件（取件码签发用） */
+    private function findInCurrentBucket(): array
+    {
+        $id = trim((string)Input::Combi('id', false));
+        $hash = trim((string)Input::Combi('md5', false));
+        if ($hash === '') {
+            $hash = trim((string)Input::Combi('hash', false));
+        }
+
+        $query = Db::name('ao_attachment')
+            ->where('token', $this->groupKey())
+            ->where('tag', 'v3')
+            ->where('is_deleted', 0);
+        if ($id !== '' && ctype_digit($id)) {
+            $query->where('id', (int)$id);
+        } elseif ($hash !== '') {
+            $query->where('md5', strtolower($hash));
+        } else {
+            Ret::Fail(400, null, '需要 id 或 md5 字段');
+            return [];
+        }
+
+        $rows = $query->select()->toArray();
+        foreach ($rows as $row) {
+            if (AttachmentDeliveryService::pathBelongsToBucket($this->bucket, (string)($row['path'] ?? ''))) {
+                return $row;
+            }
+        }
+        return [];
+    }
+
+    /** 补全附件行的访问地址：src / url / surl / file_url */
     private function decorateFile(array $file): array
     {
         // 跨项目命中时不能用当前 Bucket 的域名拼旧 path；按 path 前缀反查真实 Bucket。
         // 找不到时（历史数据/关联已删）才回退当前 Bucket。
-        $url = '';
         $bucket = V3StorageProjectModel::api_match_by_path(
             (string)($file['token'] ?? ''),
             (string)($file['path'] ?? '')
         );
-        if (!empty($bucket)) {
-            $url = rtrim((string)($bucket['url'] ?? ''), '/');
+        if (empty($bucket)) {
+            $bucket = $this->bucket;
         }
-        if ($url === '') {
-            $url = rtrim((string)$this->bucket['url'], '/');
-        }
+
         $file['src'] = $file['path'];
-        $file['url'] = $url !== '' ? $url . '/' . $file['path'] : $file['path'];
+        $file['url'] = AttachmentDeliveryService::publicUrl($file, $bucket, true) ?: (string)$file['path'];
         $file['surl'] = $file['path'];
+
+        $issued = AttachmentDeliveryService::isLocalBucket($bucket)
+            ? AttachmentDeliveryService::issueTimed($file, (int)config('attach.ttl'))
+            : [];
+        $file['file_url'] = $issued['url'] ?? '';
+        $file['file_expired_at'] = $issued['expired_at'] ?? 0;
         return $file;
     }
 

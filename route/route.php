@@ -13,6 +13,12 @@
     return 'hello,ThinkPHP5!';
 });
 
+// V3 附件虚拟地址（PHP 鉴权 + X-Accel-Redirect；必须注册在四段式通用路由之前）
+\think\facade\Route::get('attachment/:bucket_id/:file_md5', '\app\v3\file\controller\delivery@attachment')
+    ->pattern(['bucket_id' => '\d+', 'file_md5' => '[0-9a-fA-F]{32}']);
+\think\facade\Route::get('file/:code', '\app\v3\file\controller\delivery@file')
+    ->pattern(['code' => '[A-Za-z0-9_\-=]+']);
+
 \think\facade\Route::any(':version/:module/:controller/:function',
     '\app\:version\:module\controller\:controller@:function')->before(function () {
     header('Access-Control-Allow-Origin: *');
