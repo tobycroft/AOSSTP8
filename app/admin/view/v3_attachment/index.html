@@ -1,5 +1,6 @@
 {extend name="layout/base" /}
 {block name="content"}
+<span id="v3PreviewCfg" data-refresh="{$previewRefreshSec|default=480}" style="display:none;"></span>
 <div class="toolbar">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <h2>附件列表 V3</h2>
@@ -38,7 +39,7 @@
     </div>
 </div>
 <div class="card">
-    <p>这里只展示 <b>V3 上传</b>的附件（按 Bucket 归组），可按项目 / Bucket / 后缀 / 关键字过滤。图片地址优先拼接 Bucket 的访问域名（本地 Bucket 未配置时用图片站 <code>https://image.tuuz.cc:433</code>），加载失败自动回退站内受控代理。仅对 jpg / png / gif / bmp / webp / ico 内联展示，并校验真实文件类型；<b>SVG、HTML、PDF 等一律不内联渲染，只能下载</b>，避免图片中暗藏脚本在后台执行。删除附件会将其移入回收站（本地与 OSS 均保留可恢复副本），可从「附件回收站」恢复。</p>
+    <p>这里只展示 <b>V3 上传</b>的附件（按 Bucket 归组），可按项目 / Bucket / 后缀 / 关键字过滤。本地 Bucket 图片预览使用 <b>10 分钟时限取件码</b>，由图片站鉴权读盘输出，PHP 不接触文件正文、也不暴露真实路径；页面每 8 分钟自动换码，长期开着不会失效。OSS 图片走原直链。仅对 jpg / png / gif / bmp / webp / ico 内联展示；<b>SVG、HTML、PDF 等一律不内联渲染，只能下载</b>。删除附件会将其移入回收站，可从「附件回收站」恢复。</p>
 </div>
 {if $view == 'list'}
 <div class="table-wrap">
@@ -69,6 +70,7 @@
                 <img class="attach-thumb" src="{$item.thumb_url}" alt="" loading="lazy" referrerpolicy="no-referrer"
                      data-id="{$item.id}" data-name="{$item.name}" data-ext="{$item.ext}"
                      data-size="{$item.size}" data-open="{$item.open_url}" data-download="{$item.download_url}"
+                     data-preview="{$item.preview_url}" data-preview-expires="{$item.preview_expires_at}"
                      data-fallback="{$item.fallback_url}" onerror="attachFallback(this)"
                      data-project="{$item.project_name}" data-bucket="{$item.bucket_name}" data-type="{$item.bucket_type}"
                      data-path="{$item.path}" data-mime="{$item.mime}" data-resolution="{$item.resolution}"
@@ -79,6 +81,7 @@
                 {else/}
                 <span class="attach-badge" data-id="{$item.id}" data-name="{$item.name}" data-ext="{$item.ext}"
                       data-size="{$item.size}" data-open="{$item.open_url}" data-download="{$item.download_url}"
+                      data-preview="{$item.preview_url}" data-preview-expires="{$item.preview_expires_at}"
                       data-project="{$item.project_name}" data-bucket="{$item.bucket_name}" data-type="{$item.bucket_type}"
                       data-path="{$item.path}" data-mime="{$item.mime}" data-resolution="{$item.resolution}"
                       data-duration="{$item.duration}" data-md5="{$item.md5}" data-sha1="{$item.sha1}"
@@ -129,6 +132,7 @@
     <div class="attach-card"
          data-id="{$item.id}" data-name="{$item.name}" data-ext="{$item.ext}" data-size="{$item.size}"
          data-open="{$item.open_url}" data-download="{$item.download_url}"
+         data-preview="{$item.preview_url}" data-preview-expires="{$item.preview_expires_at}"
          data-project="{$item.project_name}" data-bucket="{$item.bucket_name}" data-type="{$item.bucket_type}"
          data-path="{$item.path}" data-mime="{$item.mime}" data-resolution="{$item.resolution}"
          data-duration="{$item.duration}" data-md5="{$item.md5}" data-sha1="{$item.sha1}"
@@ -137,7 +141,7 @@
          data-previewable="{if $item.thumb_url != ''}1{else/}0{/if}" onclick="openPreview(this)">
         {if $item.thumb_url != ''}
         <img class="grid-thumb" src="{$item.thumb_url}" alt="" loading="lazy" referrerpolicy="no-referrer"
-             data-fallback="{$item.fallback_url}" onerror="attachFallback(this)">
+             data-id="{$item.id}" data-fallback="{$item.fallback_url}" onerror="attachFallback(this)">
         {else/}
         <div class="grid-thumb grid-thumb-badge">{$item.ext|default='file'}</div>
         {/if}
@@ -240,12 +244,70 @@ function applyProjectFilter() {
     if (!keep) bucketSelect.value = '0';
 }
 
-// 图片站缩略图加载失败时，回退到后台受控代理
+// 取件码图片加载失败：尝试后台受控代理（仅 PHP 与文件同站时可用；独立 image 站下会失败）
 function attachFallback(img) {
     var fb = img.getAttribute('data-fallback');
     img.onerror = null;
     if (fb) img.src = fb;
 }
+
+// 定时批量换码：本地图片的取件码 10 分钟过期，每 8 分钟重签一次并替换 <img src>
+// 与弹窗大图，避免页面长期打开导致图片 403。OSS 与非图片不在返回中，保持不变。
+// 换码间隔由后端下发（literal 块内不解析模板变量，故从 DOM 读取）
+var _cfg = document.getElementById('v3PreviewCfg');
+var PREVIEW_REFRESH_SEC = parseInt((_cfg && _cfg.getAttribute('data-refresh')) || '480', 10) || 480;
+var v3RefreshTimer = null;
+function v3RefreshPreviewUrls() {
+    var nodes = document.querySelectorAll('[data-preview]:not([data-preview=""])');
+    var ids = [];
+    nodes.forEach(function(n) {
+        var id = n.getAttribute('data-id');
+        if (id && ids.indexOf(id) === -1) ids.push(id);
+    });
+    // grid 视图下 <img> 未带 data-id，改从父卡片取
+    document.querySelectorAll('.grid-thumb[data-id]').forEach(function(img) {
+        var id = img.getAttribute('data-id');
+        if (id && ids.indexOf(id) === -1) ids.push(id);
+    });
+    if (ids.length === 0) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/v3_attachment/preview_urls', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
+        var res;
+        try { res = JSON.parse(xhr.responseText); } catch (e) { return; }
+        if (res.code != 0 || !res.data || !res.data.urls) return;
+        var urls = res.data.urls;
+        document.querySelectorAll('[data-preview]:not([data-preview=""])').forEach(function(n) {
+            var id = n.getAttribute('data-id');
+            if (!id || !urls[id]) return;
+            n.setAttribute('data-preview', urls[id]);
+            n.setAttribute('data-open', urls[id]);
+            if (n.tagName === 'IMG') {
+                n.onerror = null;
+                n.src = urls[id];
+            }
+        });
+        // grid 缩略图（父卡片带 id）
+        document.querySelectorAll('.grid-thumb[data-id]').forEach(function(img) {
+            var id = img.getAttribute('data-id');
+            if (id && urls[id]) { img.onerror = null; img.src = urls[id]; }
+        });
+        // 弹窗正打开着就同步换掉大图
+        var modal = document.getElementById('previewModal');
+        var pImg = document.getElementById('previewImg');
+        if (modal && modal.classList.contains('show') && pImg && pImg.getAttribute('src')) {
+            var openId = pImg.getAttribute('data-preview-id');
+            if (openId && urls[openId]) pImg.src = urls[openId];
+        }
+    };
+    xhr.send('ids=' + ids.join(','));
+}
+document.addEventListener('DOMContentLoaded', function() {
+    v3RefreshTimer = setInterval(v3RefreshPreviewUrls, PREVIEW_REFRESH_SEC * 1000);
+});
 
 // 复制文本：优先 Clipboard API，失败回退 execCommand
 function copyValue(text, btn) {
@@ -344,11 +406,15 @@ function openPreview(el) {
     ]);
 
     if (d.previewable === '1') {
-        img.src = el.tagName === 'IMG' ? el.src : (d.open || '');
+        var previewSrc = d.preview || (el.tagName === 'IMG' ? el.src : (d.open || ''));
+        img.src = previewSrc;
+        img.setAttribute('data-preview-id', d.id || '');
+        img.onerror = null;
         img.style.display = 'inline-block';
         tip.style.display = 'none';
     } else {
         img.removeAttribute('src');
+        img.removeAttribute('data-preview-id');
         img.style.display = 'none';
         tip.style.display = 'block';
         tip.textContent = '该类型不提供在线预览（避免 SVG / HTML 等文件在后台执行脚本），请下载后查看。';
@@ -359,6 +425,7 @@ function openPreview(el) {
 function closePreview() {
     var img = document.getElementById('previewImg');
     img.removeAttribute('src');
+    img.removeAttribute('data-preview-id');
     document.getElementById('previewModal').classList.remove('show');
 }
 

@@ -137,6 +137,7 @@
 
     // v3 附件列表（存储管理 V3 → 附件列表；按项目/Bucket 过滤，图片受控预览）
     \think\facade\Route::any('admin/v3_attachment/file', '\app\admin\controller\V3Attachment@file');
+    \think\facade\Route::any('admin/v3_attachment/preview_urls', '\app\admin\controller\V3Attachment@preview_urls');
     \think\facade\Route::any('admin/v3_attachment', '\app\admin\controller\V3Attachment@index');
 
     // v3 目录压力（存储管理 V3 → 目录压力；只读查看每 Bucket+日期的上传计数与落盘子目录）

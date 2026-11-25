@@ -5,6 +5,7 @@ namespace app\admin\controller;
 use app\admin\service\AttachmentFileService;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
+use app\v3\file\service\AttachmentDeliveryService;
 use app\v3\storage\model\V3StorageProjectModel;
 use BaseController\CommonController;
 use Ret;
@@ -18,18 +19,27 @@ use think\facade\Db;
  * 后缀、关键字过滤。一个项目可关联多个 Bucket，因此 Bucket 归属按
  * attachment.path 的前缀匹配关联 Bucket（不再按项目名唯一映射）。
  *
- * 安全说明：图片预览统一走本站的 file 接口，而不是直接把 upload/ 下的文件
- * 交给浏览器解析：
- *   - 只对光栅图片（jpg/jpeg/png/gif/bmp/webp/ico）允许 inline 展示；
- *   - 再用 getimagesize 校验文件真实类型，扩展名与实际内容不符一律降级为下载；
- *   - SVG / HTML / PDF 等可能携带脚本的类型永不 inline，强制 attachment 下载；
- *   - 所有响应带 nosniff、CSP sandbox、私有缓存等安全头。
- * 这样即使历史上已上传了恶意文件，也不会在后台页面里被执行。
+ * 安全说明：本地 Bucket 的图片预览统一使用 v3 分发服务的「时限取件码」
+ * （/file/{code}，默认 10 分钟有效），由 image 站的 nginx 鉴权后读盘输出，
+ * PHP 不接触文件正文，也不向浏览器暴露真实 storage path：
+ *   - 取件码由 AttachmentDeliveryService::issueTimed 签发，服务端 secret 签名；
+ *   - 页面加载时签发一次，前端每 8 分钟调 preview_urls 批量换码，避免过期；
+ *   - OSS Bucket 无法走取件码，保留原直链；
+ *   - 只对光栅图片（jpg/jpeg/png/gif/bmp/webp/ico）inline 展示，
+ *     SVG / HTML / PDF 等可能携带脚本的类型一律不内联，仅提供下载。
+ *   - 历史 file() 受控代理保留作下载/兜底（要求 PHP 与文件同站，
+ *     在 image 独立站的部署下不参与图片预览）。
  */
 class V3Attachment extends CommonController
 {
-    /** 本站本地文件对外访问的图片站地址（Bucket 未配置 url 时兜底） */
+    /** 本站本地文件对外访问的图片站地址（OSS 直链兜底，本地预览不再用它） */
     private const IMAGE_BASE_URL = 'https://image.tuuz.cc:433';
+
+    /** 后台图片预览取件码有效期（秒）：10 分钟 */
+    private const PREVIEW_TTL = 600;
+
+    /** 前端换码间隔（秒）：须小于 PREVIEW_TTL，留 2 分钟缓冲 */
+    private const PREVIEW_REFRESH_SEC = 480;
 
     /** 允许 inline 预览的光栅图片：扩展名 => [Content-Type, getimagesize 类型] */
     private const RASTER_TYPES = [
@@ -282,6 +292,8 @@ class V3Attachment extends CommonController
             'keyword' => $keyword,
             'ext' => $ext,
             'view' => $view,
+            'previewRefreshSec' => self::PREVIEW_REFRESH_SEC,
+            'previewTtl' => self::PREVIEW_TTL,
             'listUrl' => $listUrl,
             'gridUrl' => $gridUrl,
             'pagination' => $pagination,
@@ -321,19 +333,43 @@ class V3Attachment extends CommonController
             $bucketName = '已删除 Bucket';
         }
 
-        // 对外图片地址：Bucket 配了 url 就用它；本地 Bucket 未配置时回退到图片站地址。
-        // 拼接后形如 https://image.tuuz.cc:433/stb/20261121/xxx.jpg
+        // 对外展示地址：
+        //   - 本地 Bucket：永久虚拟地址（隐藏真实 path），供复制/展示，不用于 <img>；
+        //   - OSS Bucket：原直链，且作为唯一可用的对外地址。
+        $isOss = $bucket && (string)$bucket['type'] === 'oss';
         $imageBase = rtrim((string)($bucket['url'] ?? ''), '/');
-        if ($imageBase === '' && (!$bucket || (string)$bucket['type'] === 'local')) {
+        if ($imageBase === '' && $isOss) {
             $imageBase = self::IMAGE_BASE_URL;
         }
-        $publicUrl = ($imageBase !== '' && $this->isSafeRelativePath($path)) ? $imageBase . '/' . $path : '';
+        $directUrl = ($isOss && $imageBase !== '' && $this->isSafeRelativePath($path))
+            ? $imageBase . '/' . $path
+            : '';
+        $publicUrl = $isOss
+            ? $directUrl
+            : AttachmentDeliveryService::publicUrl($row, $bucket ?: [], true);
         $proxyUrl = '/admin/v3_attachment/file?id=' . $id;
 
         $isRaster = isset(self::RASTER_TYPES[$ext]);
-        // 光栅图优先使用拼接后的图片站地址；没有可用地址时回退到后台受控代理
-        $thumbUrl = $isRaster ? ($publicUrl !== '' ? $publicUrl : $proxyUrl) : '';
-        $fallbackUrl = $isRaster && $publicUrl !== '' ? $proxyUrl : '';
+
+        // 图片预览地址：本地光栅图走 10 分钟取件码（image 站鉴权读盘，PHP 不读正文）；
+        // 签发失败时回退空，由前端显示占位。OSS 光栅图直接用原直链。
+        $previewUrl = '';
+        $previewExpiresAt = 0;
+        if ($isRaster) {
+            if ($isOss) {
+                $previewUrl = $directUrl;
+            } else {
+                $issued = AttachmentDeliveryService::issueTimed($row, self::PREVIEW_TTL);
+                $previewUrl = (string)($issued['url'] ?? '');
+                $previewExpiresAt = (int)($issued['expired_at'] ?? 0);
+            }
+        }
+        // <img src> 优先取件码；本地图签发失败时空串，前端改用占位 badge
+        $thumbUrl = $previewUrl;
+        // 大图查看沿用同一取件码；OSS 也可直接打开
+        $openUrl = $previewUrl !== '' ? $previewUrl : ($directUrl !== '' ? $directUrl : $proxyUrl);
+        // 兜底代理：本地签发失败时仍可点开（同站部署可用；独立 image 站会失败，仅作最后兜底）
+        $fallbackUrl = '';
 
         $width = (int)($row['width'] ?? 0);
         $height = (int)($row['height'] ?? 0);
@@ -364,15 +400,58 @@ class V3Attachment extends CommonController
             'is_raster' => $isRaster,
             'thumb_url' => $thumbUrl,
             'fallback_url' => $fallbackUrl,
-            // 对外文件地址（图片站/OSS 域名 + path），供展示与复制
+            // 对外文件地址：本地=永久虚拟地址，OSS=原直链；供展示与复制
             'public_url' => $publicUrl,
-            // 查看：光栅图跳图片站原图；其余走后台受控接口（远程 Bucket 会 302 到 OSS）
-            'open_url' => $isRaster && $publicUrl !== '' ? $publicUrl : $proxyUrl,
+            // 时限取件码地址（本地光栅图 10 分钟；OSS 为直链；非图片为空）
+            'preview_url' => $previewUrl,
+            'preview_expires_at' => $previewExpiresAt,
+            // 查看：图片走取件码/直链；其余走后台受控接口（远程 Bucket 会 302 到 OSS）
+            'open_url' => $openUrl,
             // 下载：本地强制 attachment，远程直接使用 OSS 地址
-            'download_url' => ($bucket && (string)$bucket['type'] === 'oss' && $publicUrl !== '')
-                ? $publicUrl
+            'download_url' => $isOss && $directUrl !== ''
+                ? $directUrl
                 : $proxyUrl . '&download=1',
         ];
+    }
+
+    /**
+     * 批量刷新图片预览取件码（供后台列表定时换码）
+     *
+     * 入参 ids 逗号分隔；仅对本地 Bucket 的光栅图片重新签发，OSS/非图片
+     * 不下发（其地址不带时效，前端保持不变）。返回 id => url 的映射。
+     * 走后台登录鉴权（initialize），不额外暴露给匿名调用。
+     */
+    public function preview_urls()
+    {
+        $ids = trim((string)input('post.ids', ''));
+        $idArr = array_values(array_filter(array_unique(array_map('intval', explode(',', $ids)))));
+        if (empty($idArr) || count($idArr) > 500) {
+            Ret::Fail(400, null, 'ids 需为 1~500 个附件 id');
+        }
+
+        $rows = Db::name('ao_attachment')
+            ->whereIn('id', $idArr)
+            ->where('is_deleted', 0)
+            ->select()
+            ->toArray();
+
+        $urls = [];
+        foreach ($rows as $row) {
+            $ext = strtolower((string)($row['ext'] ?? ''));
+            if (!isset(self::RASTER_TYPES[$ext])) {
+                continue;
+            }
+            $path = str_replace('\\', '/', (string)($row['path'] ?? ''));
+            $bucket = V3StorageProjectModel::api_match_by_path((string)($row['token'] ?? ''), $path);
+            if (($bucket['type'] ?? 'local') === 'oss') {
+                continue; // OSS 直链无时效，无需换码
+            }
+            $issued = AttachmentDeliveryService::issueTimed($row, self::PREVIEW_TTL);
+            if (!empty($issued['url'])) {
+                $urls[(int)$row['id']] = $issued['url'];
+            }
+        }
+        Ret::Success(0, ['urls' => $urls, 'expires_in' => self::PREVIEW_TTL]);
     }
 
     /**
