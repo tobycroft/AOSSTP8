@@ -41,8 +41,9 @@ use think\facade\Db;
  *   POST /v3/file/token/delete          软删文件：移入 upload/recycle/YYYYMMDD/
  *   POST /v3/file/token/restore         从回收站恢复文件
  *
- * 本地 Bucket 的 url/file_url 均返回永久虚拟地址 /attachment/{bucket_path}/{md5}.{ext}；
- * 需要临时地址时调用 temp_url 按客户端指定的 ttl 签发；OSS Bucket 仍返回原直链。
+ * 本地 Bucket 的 url/file_url 均返回虚拟地址：默认 attachment 永久地址
+ * /attachment/{bucket_path}/{md5}.{ext}；md5/hash 查询传 ttl 或调用 temp_url 时，
+ * file_url 改签 file 临时取件码（file_expired_at 为到期时间）。OSS Bucket 仍返回原直链。
  */
 class token extends CommonController
 {
@@ -202,7 +203,7 @@ class token extends CommonController
             ]);
         }
 
-        $decorated = $this->decorateFile($file);
+        $decorated = $this->decorateFile($file, $this->queryTtl());
         Ret::Success(0, [
             'exists' => true,
             'path' => $decorated['path'],
@@ -230,7 +231,7 @@ class token extends CommonController
             Ret::Fail(404, null, '未找到文件');
         }
 
-        Ret::Success(0, $this->decorateFile($file));
+        Ret::Success(0, $this->decorateFile($file, $this->queryTtl()));
     }
 
     /** 按 md5 反查文件完整地址（对齐 V1 search::md5） */
@@ -246,7 +247,7 @@ class token extends CommonController
             Ret::Fail(404, null, '未找到文件,请先上传');
         }
 
-        Ret::Success(0, $this->decorateFile($file));
+        Ret::Success(0, $this->decorateFile($file, $this->queryTtl()));
     }
 
     /** 按 md5 批量反查文件完整地址（对齐 V1 search::md5s） */
@@ -272,9 +273,10 @@ class token extends CommonController
             Ret::Fail(404, null, '未找到文件,请先上传');
         }
 
+        $ttl = $this->queryTtl();
         $list = [];
         foreach ($rows as $row) {
-            $list[] = $this->decorateFile($row);
+            $list[] = $this->decorateFile($row, $ttl);
         }
         Ret::Success(0, $list);
     }
@@ -397,8 +399,15 @@ class token extends CommonController
         return [];
     }
 
-    /** 补全附件行的访问地址：src / url / surl / file_url */
-    private function decorateFile(array $file): array
+    /**
+     * 补全附件行的访问地址：src / url / surl / file_url
+     *
+     * url / file_url 均为虚拟分发地址，不暴露真实落盘路径：
+     *   - 默认（ttl=0）：file_url 与 url 同为 attachment 永久地址，file_expired_at=0
+     *   - 临时模式（ttl>0）：file_url 改签 file 临时取件码，file_expired_at 为到期时间；
+     *     OSS 无法签发时降级为永久地址
+     */
+    private function decorateFile(array $file, int $ttl = 0): array
     {
         // 跨项目命中时不能用当前 Bucket 的域名拼旧 path；按 path 前缀反查真实 Bucket。
         // 找不到时（历史数据/关联已删）才回退当前 Bucket。
@@ -413,11 +422,35 @@ class token extends CommonController
         $file['src'] = $file['path'];
         $file['url'] = AttachmentDeliveryService::publicUrl($file, $bucket, true) ?: (string)$file['path'];
         $file['surl'] = $file['path'];
-
-        // 与上传入口一致：默认只给永久虚拟地址。临时地址由客户端按需调 temp_url 签发。
         $file['file_url'] = $file['url'];
         $file['file_expired_at'] = 0;
+
+        if ($ttl > 0 && AttachmentDeliveryService::isLocalBucket($bucket)) {
+            $issued = AttachmentDeliveryService::issueTimed($file, $ttl);
+            if (!empty($issued)) {
+                $file['file_url'] = $issued['url'];
+                $file['file_expired_at'] = $issued['expired_at'];
+            }
+        }
         return $file;
+    }
+
+    /**
+     * 解析查询接口的临时模式 ttl 参数：不传/留空返回 0（永久地址），
+     * 传入须在 1~max_ttl 之间，否则 400。
+     */
+    private function queryTtl(): int
+    {
+        $raw = trim((string)Input::Combi('ttl', false));
+        if ($raw === '') {
+            return 0;
+        }
+        $maxTtl = max(1, (int)config('attach.max_ttl'));
+        $ttl = (int)$raw;
+        if ($ttl < 1 || $ttl > $maxTtl) {
+            Ret::Fail(400, null, 'ttl 需在 1~' . $maxTtl . ' 秒之间');
+        }
+        return $ttl;
     }
 
     /**
