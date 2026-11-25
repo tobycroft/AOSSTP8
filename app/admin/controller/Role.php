@@ -67,6 +67,8 @@ class Role extends CommonController
 
     private function create()
     {
+        AdminAuth::requireSuper();
+
         $name = request()->put('name');
         $description = request()->put('description', '');
 
@@ -84,6 +86,8 @@ class Role extends CommonController
 
     private function update()
     {
+        AdminAuth::requireSuper();
+
         $id = Input::PostInt('id');
         $model = new AdminRoleModel();
         $role = $model->findOrEmpty($id);
@@ -109,6 +113,8 @@ class Role extends CommonController
 
     private function delete()
     {
+        AdminAuth::requireSuper();
+
         $id = intval(request()->delete('id'));
         if (!$id) {
             Ret::Fail(400, null, '缺少参数[id]');
@@ -145,6 +151,9 @@ class Role extends CommonController
 
     public function bind()
     {
+        // 角色分配是提权路径（角色一旦接上权限就是权限来源），仅超管可操作
+        AdminAuth::requireSuper();
+
         $user_id = Input::PostInt('user_id');
         $role_ids = Input::PostJson('role_ids');
 

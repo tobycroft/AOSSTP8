@@ -70,6 +70,9 @@ class User extends CommonController
 
     private function create()
     {
+        // 建号属于提权入口：仅超管可操作，否则任意登录用户都能造一个自己的后台账号
+        AdminAuth::requireSuper();
+
         $username = request()->put('username');
         $password = request()->put('password');
         $nickname = request()->put('nickname', '') ?: $username;
@@ -104,6 +107,10 @@ class User extends CommonController
 
     private function update()
     {
+        // 改密/改状态属于提权入口：仅超管可操作。
+        // 修复前任何登录用户 POST id=1&password=xxx 即可直接接管超级管理员。
+        AdminAuth::requireSuper();
+
         $id = Input::PostInt('id');
         $model = new AdminUserModel();
         $user = $model->api_find_id($id);
@@ -132,6 +139,13 @@ class User extends CommonController
             $data['password'] = password_hash(Input::Post('password'), PASSWORD_BCRYPT, ['cost' => 10]);
         }
 
+        // 不允许停用最后一个启用中的超管，否则后台再没人能管
+        if (isset($data['status']) && (int)$data['status'] !== 1
+            && (int)$user['is_super'] === 1
+            && AdminAuth::countActiveSuper() <= 1) {
+            Ret::Fail(403, null, '不能停用最后一个超级管理员');
+        }
+
         $user->save($data);
         Ret::Success(0, [], '更新成功');
     }
@@ -143,7 +157,7 @@ class User extends CommonController
             Ret::Fail(400, null, '缺少参数[id]');
         }
 
-        $current = AdminAuth::getLoginUser();
+        $current = AdminAuth::requireSuper();
         if ($current['id'] == $id) {
             Ret::Fail(403, null, '不能删除自己');
         }
@@ -153,6 +167,10 @@ class User extends CommonController
 
         if ($user->isEmpty()) {
             Ret::Fail(404, null, '用户不存在');
+        }
+
+        if ((int)$user['is_super'] === 1 && AdminAuth::countActiveSuper() <= 1) {
+            Ret::Fail(403, null, '不能删除最后一个超级管理员');
         }
 
         $user->delete();

@@ -27,6 +27,8 @@ return [
 
     // 错误显示信息,非调试模式有效
     'error_message'    => '页面错误！请稍后再试～',
-    // 显示错误信息
-    'show_error_msg' => true,
+    // 显示错误信息：由 .env 的 APP_SHOW_ERROR_MSG 决定，缺省关闭。
+    // 开启后异常页会输出异常消息（含文件路径等细节），生产环境必须为 false。
+    // 注意：APP_DEBUG=true 时 TP 会直接走调试渲染、绕过此开关，生产同样必须关闭。
+    'show_error_msg'   => (bool)env('APP_SHOW_ERROR_MSG', false),
 ];

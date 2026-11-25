@@ -21,8 +21,18 @@
 \think\facade\Route::get('file/:code', '\app\v3\file\controller\delivery@file')
     ->pattern(['code' => '.+']);
 
+// 四段式通用路由。
+// 各段加白名单：version 必须 v1/v2/v3，module/controller 限标识符，function 必须以字母开头。
+// 这样 __construct / __destruct / __call 等魔术方法、以及 _ 开头的内部方法都不会被 URL 直接触达。
 \think\facade\Route::any(':version/:module/:controller/:function',
-    '\app\:version\:module\controller\:controller@:function')->before(function () {
+    '\app\:version\:module\controller\:controller@:function')
+    ->pattern([
+        'version'    => 'v[0-9]+',
+        'module'     => '[A-Za-z0-9_]+',
+        'controller' => '[A-Za-z0-9_]+',
+        'function'   => '[A-Za-z][A-Za-z0-9_]*',
+    ])
+    ->before(function () {
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Max-Age: 86400');
     header('Access-Control-Allow-Credentials: true');

@@ -60,4 +60,30 @@ class AdminAuth
         }
         return $user;
     }
+
+    /**
+     * 要求超级管理员身份，非超管直接 403
+     *
+     * 用于管理员账号与角色的增删改：这类操作本身就是提权入口，
+     * 不能让"任意已登录用户"都能改别人的密码或给谁分配角色。
+     */
+    public static function requireSuper(): array
+    {
+        $user = self::requireLogin();
+        if ((int)($user['is_super'] ?? 0) !== 1) {
+            Ret::Fail(403, null, '该操作仅限超级管理员');
+        }
+        return $user;
+    }
+
+    /**
+     * 统计当前仍处于启用状态的超管数量
+     */
+    public static function countActiveSuper(): int
+    {
+        $model = new AdminUserModel();
+        return (int)$model->where('is_super', '=', 1)
+            ->where('status', '=', 1)
+            ->count();
+    }
 }
