@@ -2,10 +2,12 @@
 
 namespace app\v3\file\service;
 
+use app\v1\system\model\SystemParamModel;
 use app\v3\project\model\V3ProjectModel;
 use app\v3\storage\model\V3StorageModel;
 use app\v3\storage\model\V3StorageProjectModel;
 use think\facade\Db;
+use Throwable;
 
 /**
  * V3 附件分发服务
@@ -33,10 +35,26 @@ final class AttachmentDeliveryService
         'webp' => 'image/webp',
     ];
 
-    /** 对外域名前缀 */
+    /**
+     * 对外域名前缀：system_param.attach_domain 优先，.env 仅作本地兜底。
+     *
+     * 列表页每个附件都会取域名，故做进程内静态缓存；PHP-FPM 每请求独立，
+     * 配置变更在下一请求即可生效。配置表不可用时降级到 env，避免分发中断。
+     */
     public static function domain(): string
     {
-        return rtrim((string)config('attach.domain'), '/');
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+        $fromDb = '';
+        try {
+            $fromDb = trim((string)SystemParamModel::api_find_key('attach_domain'));
+        } catch (Throwable $e) {
+            // 降级到 env
+        }
+        $configured = $fromDb !== '' ? $fromDb : (string)config('attach.domain');
+        return $cached = rtrim($configured, '/');
     }
 
     /** 永久虚拟地址（本地 Bucket 专用） */

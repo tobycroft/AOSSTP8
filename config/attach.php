@@ -11,6 +11,8 @@
 
 return [
     // 对外虚拟地址域名前缀（不带尾斜杠）
+    // 生产环境由 system_param.attach_domain 提供（见 AttachmentDeliveryService::domain）；
+    // 此处仅作本地开发兜底，两者都为空时使用默认域名。
     'domain'          => rtrim((string)env('ATTACH_DOMAIN', 'https://attach.tuuz.cc'), '/'),
 
     // Nginx 内部跳转前缀，必须以 / 开头和结尾；与 nginx internal location 一致
