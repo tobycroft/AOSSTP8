@@ -2,6 +2,7 @@
 
 namespace app\v3\file\controller;
 
+use app\v1\system\model\SystemParamModel;
 use app\v3\file\service\AttachmentDeliveryService;
 use app\v3\project\model\V3ProjectModel;
 use app\v3\storage\model\V3StorageModel;
@@ -150,10 +151,13 @@ class delivery extends CommonController
         return ['row' => $row, 'bucket' => $bucket, 'expires_at' => $parsed['end']];
     }
 
-    /** check 接口的共享密钥校验 */
+    /** check 接口的共享密钥校验：system_param 优先，env 仅作本地兜底 */
     private function requireAuthKey(): void
     {
-        $configured = trim((string)config('attach.auth_key'));
+        $configured = trim((string)SystemParamModel::api_find_key('attach_auth_key'));
+        if ($configured === '') {
+            $configured = trim((string)config('attach.auth_key'));
+        }
         $provided = trim((string)Request::header('X-Aoss-Attach-Auth', ''));
         if ($configured === '' || $provided === '' || !hash_equals($configured, $provided)) {
             $this->abort(403, '鉴权密钥无效');
