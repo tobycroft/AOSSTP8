@@ -251,10 +251,10 @@ class index extends CommonController
         $ext = (string)$file->getOriginalExtension();
         $ext_lower = strtolower($ext);
         if (in_array($ext_lower, self::FORBIDDEN_EXTENSIONS, true)) {
-            $this->fail($type, 403, '禁止上传该类型文件');
+            $this->fail($type, 403, '禁止上传该类型文件：后缀 .' . $ext_lower . ' 属于系统全局高危后缀（脚本/可执行文件），任何存储都不允许上传');
         }
         if (!in_array($ext, explode(',', $proc['ext']))) {
-            $this->fail($type, 403, '后缀不符合规范');
+            $this->fail($type, 403, '后缀不符合规范：.' . $ext . ' 不在当前存储允许的后缀列表中（允许：' . $proc['ext'] . '）');
         }
         if ($file->getSize() >= $proc['size'] * 1024) {
             $this->fail($type, 400, '大小不符合规范');
@@ -264,12 +264,12 @@ class index extends CommonController
         // 改 Content-Type 就能绕过原有 php/html 黑名单，因此改为服务端嗅探文件真实内容。
         $mime = $this->sniffMime($file->getPathname());
         if (in_array($mime, self::FORBIDDEN_MIMES, true)) {
-            $this->fail($type, 403, '禁止上传非法文件');
+            $this->fail($type, 403, '禁止上传非法文件：检测到文件真实内容类型为 ' . $mime . '（后缀 .' . $ext_lower . '），属于禁止上传的脚本/可执行内容');
         }
         // 图片 polyglot 兜底：`GIF89a<?php ...` 的 MIME 仍是 image/gif，只能靠内容排查
         if (in_array($ext_lower, self::IMAGE_EXTENSIONS, true)
             && $this->hasScriptPolyglot($file->getPathname())) {
-            $this->fail($type, 403, '禁止上传非法文件');
+            $this->fail($type, 403, '禁止上传非法文件：图片内容中检测到可执行脚本片段（后缀 .' . $ext_lower . '），已拒绝上传');
         }
 
         // 第二层：按 MD5 全局（跨项目）去重，命中直接秒传返回既有地址，不落盘。

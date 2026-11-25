@@ -70,13 +70,13 @@ class index extends search
             }
         }
         if ($file->getOriginalMime() == 'text/x-php' || $file->getOriginalMime() == 'text/html') {
-            Ret::Fail(403, null, '禁止上传非法文件');
+            Ret::Fail(403, null, '禁止上传非法文件：检测到文件类型为 ' . $mime . '（后缀 .' . $file->getOriginalExtension() . '），属于禁止上传的脚本/网页内容');
         }
         if ($file->getSize() >= $proc['size'] * 1024) {
             Ret::Fail(400, null, '大小不符合规范');
         }
         if (!in_array($file->getOriginalExtension(), explode(',', $proc['ext']))) {
-            Ret::Fail(403, null, '后缀不符合规范');
+            Ret::Fail(403, null, '后缀不符合规范：.' . $file->getOriginalExtension() . ' 不在当前存储允许的后缀列表中（允许：' . $proc['ext'] . '）');
         }
 
         $sav_path = $proc['name'] . DIRECTORY_SEPARATOR . date("Ymd");

@@ -167,13 +167,13 @@ class dp extends CommonController
         }
 
         if ($file->getOriginalMime() == 'text/x-php' || $file->getOriginalMime() == 'text/html') {
-            return $this->uploadError($from, "禁止上传非法文件", $callback);
+            return $this->uploadError($from, "禁止上传非法文件：检测到文件类型为 {$mime}（后缀 ." . $file->getOriginalExtension() . "），属于禁止上传的脚本/网页内容", $callback);
         }
         if ($file->getSize() >= $proc['size'] * 1024) {
             return $this->uploadError($from, '大小不符合规范', $callback);
         }
         if (!in_array($file->getOriginalExtension(), explode(',', $proc['ext']))) {
-            return $this->uploadError($from, '后缀不符合规范', $callback);
+            return $this->uploadError($from, '后缀不符合规范：.' . $file->getOriginalExtension() . ' 不在当前存储允许的后缀列表中（允许：' . $proc['ext'] . '）', $callback);
         }
 
         $sav_path = $proc['name'] . DIRECTORY_SEPARATOR . date('Ymd');
