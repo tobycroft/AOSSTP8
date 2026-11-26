@@ -239,13 +239,14 @@ class V3Attachment extends CommonController
 
         // 可选的扩展名过滤项：仅取 V3 附件已有后缀（覆盖索引扫描仍需 0.3s+，
         // 下拉项变化极少，缓存 5 分钟避免每页重复扫描）
-        $extOptions = Cache::store()->remember('admin:v3_attachment:ext_options', 300, function () {
+        // 注意 ThinkPHP 签名是 remember($name, $value, $expire)，值在前、有效期在后
+        $extOptions = Cache::store()->remember('admin:v3_attachment:ext_options', function () {
             return Db::name('ao_attachment')
                 ->where('is_deleted', 0)
                 ->where('tag', 'v3')
                 ->distinct(true)
                 ->column('ext');
-        });
+        }, 300);
 
         $projectOptions = [];
         foreach ($projectNames as $id => $name) {

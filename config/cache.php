@@ -17,8 +17,8 @@ return [
             'path'       => '',
             // 缓存前缀
             'prefix'     => env('CACHE_PREFIX', ''),
-            // 缓存有效期 0表示永久缓存
-            'expire'     => env('CACHE_EXPIRE', 0),
+            // 缓存有效期 0表示永久缓存（强转 int：env 读出的是字符串，会被 getExpireTime 的类型声明拒绝）
+            'expire'     => (int) env('CACHE_EXPIRE', 0),
             // 缓存标签前缀
             'tag_prefix' => 'tag:',
             // 序列化机制 例如 ['serialize', 'unserialize']
@@ -51,8 +51,8 @@ return [
             'timeout'    => env('REDIS_TIMEOUT', 0),
             // 是否使用长连接
             'persistent' => env('CACHE_REDIS_PERSISTENT', false),
-            // 缓存有效期 0表示永久缓存
-            'expire'     => env('CACHE_EXPIRE', 0),
+            // 缓存有效期 0表示永久缓存（强转 int：env 读出的是字符串，会被 getExpireTime 的类型声明拒绝）
+            'expire'     => (int) env('CACHE_EXPIRE', 0),
             // 缓存前缀（共享同一 Redis 库时务必区分）
             'prefix'     => env('CACHE_PREFIX', ''),
             // 缓存标签前缀
