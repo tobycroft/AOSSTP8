@@ -9,15 +9,21 @@ use app\v3\file\service\AttachmentDeliveryService;
 use app\v3\storage\model\V3StorageProjectModel;
 use BaseController\CommonController;
 use Ret;
+use think\facade\Cache;
 use think\facade\Db;
 
 /**
  * 存储管理 V3 → 附件列表
  *
- * 只展示 V3 上传产生的附件（ao_attachment.tag = v3；token 为项目名称，
- * 历史数据兼容 v3bucket:{storage_id}），支持按项目/Bucket 筛选，并可叠加
- * 后缀、关键字过滤。一个项目可关联多个 Bucket，因此 Bucket 归属按
- * attachment.path 的前缀匹配关联 Bucket（不再按项目名唯一映射）。
+ * 只展示 V3 上传产生的附件（ao_attachment.tag = v3；token 为项目名称），
+ * 支持按项目/Bucket 筛选，并可叠加后缀、关键字过滤。一个项目可关联多个
+ * Bucket，因此 Bucket 归属按 attachment.path 的前缀匹配关联 Bucket（不再按
+ * 项目名唯一映射）。
+ *
+ * 性能说明：历史数据曾用 token LIKE 'v3bucket:%' 兼容旧格式，经核实该格式
+ * 行数为 0（2026-11-26），且 OR 条件会让优化器放弃 idx_isdel_tag_ext 覆盖
+ * 索引（COUNT 从 0.36s 退化到 3.8s），故列表查询只按 tag='v3' 过滤；
+ * 单行读取（file/preview）仍保留 v3bucket 兼容判断。
  *
  * 安全说明：本地 Bucket 的图片预览统一使用 v3 分发服务的「时限取件码」
  * （/file/{code}.{ext}，默认 10 分钟有效），由 image 站的 nginx 鉴权后读盘输出，
@@ -167,9 +173,7 @@ class V3Attachment extends CommonController
 
         $query = Db::name('ao_attachment')
             ->where('is_deleted', 0)
-            ->where(function ($q) {
-                $q->where('tag', 'v3')->whereOr('token', 'like', 'v3bucket:%');
-            });
+            ->where('tag', 'v3');
 
         // 维度过滤：Bucket 优先。token 为项目名时无法区分同项目的多个 Bucket，
         // 按 Bucket 过滤需再叠加 path 前缀（历史 token=v3bucket:{id} 仍按 id 命中）。
@@ -233,14 +237,15 @@ class V3Attachment extends CommonController
             $items[] = $this->formatItem($row, $bucketMap, $bucketProjectMap, $projectNameIds, $projectNames);
         }
 
-        // 可选的扩展名过滤项：仅取 V3 附件已有后缀
-        $extOptions = Db::name('ao_attachment')
-            ->where('is_deleted', 0)
-            ->where(function ($q) {
-                $q->where('tag', 'v3')->whereOr('token', 'like', 'v3bucket:%');
-            })
-            ->distinct(true)
-            ->column('ext');
+        // 可选的扩展名过滤项：仅取 V3 附件已有后缀（覆盖索引扫描仍需 0.3s+，
+        // 下拉项变化极少，缓存 5 分钟避免每页重复扫描）
+        $extOptions = Cache::store()->remember('admin:v3_attachment:ext_options', 300, function () {
+            return Db::name('ao_attachment')
+                ->where('is_deleted', 0)
+                ->where('tag', 'v3')
+                ->distinct(true)
+                ->column('ext');
+        });
 
         $projectOptions = [];
         foreach ($projectNames as $id => $name) {
