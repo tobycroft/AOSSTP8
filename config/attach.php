@@ -31,6 +31,10 @@ return [
     // 虚拟地址的浏览器/CDN 缓存时间（秒）
     'cache_ttl'       => max(0, (int)env('ATTACH_CACHE_TTL', 86400)),
 
+    // 分发解析缓存（md5/取件码 → 真实落盘路径）的有效期（秒），0 关闭缓存
+    // 见 AttachmentDeliveryService::findForBucket / findById
+    'deliver_cache_ttl' => max(0, (int)env('ATTACH_DELIVER_CACHE_TTL', 300)),
+
     // image 站 auth_request 共享密钥的本地开发兜底值
     // 生产环境由 system_param.attach_auth_key 提供（见 delivery.php::requireAuthKey）；
     // 两者都为空时 check 接口一律拒绝。

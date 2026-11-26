@@ -6,6 +6,7 @@ use app\v1\system\model\SystemParamModel;
 use app\v3\project\model\V3ProjectModel;
 use app\v3\storage\model\V3StorageModel;
 use app\v3\storage\model\V3StorageProjectModel;
+use think\facade\Cache;
 use think\facade\Db;
 use Throwable;
 
@@ -30,6 +31,9 @@ use Throwable;
  */
 final class AttachmentDeliveryService
 {
+    /** 分发解析缓存 key 前缀：v: 为 永久地址（bucket_path+md5），c: 为取件码（attachment id） */
+    private const CACHE_PREFIX = 'v3:deliver:';
+
     /** 允许 inline 输出的类型；SVG/HTML 等一律按附件下载，避免同源脚本执行 */
     private const INLINE_TYPES = [
         'jpg'  => 'image/jpeg',
@@ -324,7 +328,7 @@ final class AttachmentDeliveryService
         return $prefix !== '' && str_starts_with($path, $prefix . '/');
     }
 
-    /** 永久地址定位：Bucket path + md5 → 附件行 */
+    /** 永久地址定位：Bucket path + md5 → 附件行（带分发缓存，见 cacheableRow） */
     public static function findForBucket(string $bucketPath, string $md5): array
     {
         $bucket = V3StorageModel::api_find_path($bucketPath);
@@ -335,6 +339,17 @@ final class AttachmentDeliveryService
         $md5 = strtolower(trim($md5));
         if (preg_match('/^[0-9a-f]{32}$/', $md5) !== 1) {
             return [];
+        }
+
+        // 分发高频路径：bucket_path + md5 → 真实落盘路径等最小字段走 Redis，
+        // 避免 nginx auth_request 每次都扫 ao_attachment；失效靠 TTL。
+        $ttl = self::deliverCacheTtl();
+        $cacheKey = self::CACHE_PREFIX . 'v:' . $bucketPath . ':' . $md5;
+        if ($ttl > 0) {
+            $hit = Cache::store()->get($cacheKey);
+            if (is_array($hit) && isset($hit['path'])) {
+                return $hit;
+            }
         }
 
         $token = V3StorageModel::api_group_key($bucketId);
@@ -353,23 +368,70 @@ final class AttachmentDeliveryService
         $rows = $query->select()->toArray();
         foreach ($rows as $row) {
             if (self::pathBelongsToBucket($bucket, (string)($row['path'] ?? ''))) {
-                return $row;
+                $cached = self::cacheableRow($row);
+                if ($ttl > 0) {
+                    Cache::store()->set($cacheKey, $cached, $ttl);
+                }
+                return $cached;
             }
         }
         return [];
     }
 
-    /** 取件码定位：attachment.id → 附件行 */
+    /** 取件码定位：attachment.id → 附件行（带分发缓存，见 cacheableRow） */
     public static function findById(int $id): array
     {
         if ($id <= 0) {
             return [];
         }
-        return Db::name('ao_attachment')
+        $ttl = self::deliverCacheTtl();
+        $cacheKey = self::CACHE_PREFIX . 'c:' . $id;
+        if ($ttl > 0) {
+            $hit = Cache::store()->get($cacheKey);
+            if (is_array($hit) && isset($hit['path'])) {
+                return $hit;
+            }
+        }
+        $row = Db::name('ao_attachment')
             ->where('id', $id)
             ->where('is_deleted', 0)
             ->whereRaw("(`tag` = 'v3' OR `token` LIKE 'v3bucket:%')")
             ->findOrEmpty();
+        if (empty($row)) {
+            return [];
+        }
+        $cached = self::cacheableRow($row);
+        if ($ttl > 0) {
+            Cache::store()->set($cacheKey, $cached, $ttl);
+        }
+        return $cached;
+    }
+
+    /**
+     * 分发解析缓存：md5 / 取件码 → 真实落盘路径等最小字段。
+     *
+     * 只缓存分发链路（deliver / check）实际读取的字段，后续的
+     * api_secret_by_attachment / bucketForRow 只用 token + path，
+     * 也在缓存字段内。删除/换路径后最长滞后一个 TTL（默认 300s），
+     * 本地文件删除后 is_file 兜底返回 404，可接受。
+     */
+    private static function cacheableRow(array $row): array
+    {
+        return [
+            'id'         => (int)($row['id'] ?? 0),
+            'md5'        => (string)($row['md5'] ?? ''),
+            'token'      => (string)($row['token'] ?? ''),
+            'path'       => (string)($row['path'] ?? ''),
+            'ext'        => (string)($row['ext'] ?? ''),
+            'name'       => (string)($row['name'] ?? ''),
+            'is_deleted' => (int)($row['is_deleted'] ?? 0),
+        ];
+    }
+
+    /** 分发解析缓存有效期（秒），0 关闭缓存 */
+    private static function deliverCacheTtl(): int
+    {
+        return max(0, (int)config('attach.deliver_cache_ttl', 300));
     }
 
     /** 按附件的 token + path 反查所属 Bucket */
