@@ -31,6 +31,9 @@ use Throwable;
  */
 final class AttachmentDeliveryService
 {
+    /** 进程内域名缓存（可由后台列表预热注入，避免缓存命中时再查 system_param） */
+    private static ?string $domainCached = null;
+
     /** 分发解析缓存 key 前缀：v: 为 永久地址（bucket_path+md5），c: 为取件码（attachment id） */
     private const CACHE_PREFIX = 'v3:deliver:';
 
@@ -69,9 +72,8 @@ final class AttachmentDeliveryService
      */
     public static function domain(): string
     {
-        static $cached = null;
-        if ($cached !== null) {
-            return $cached;
+        if (self::$domainCached !== null) {
+            return self::$domainCached;
         }
         $fromDb = '';
         try {
@@ -80,7 +82,15 @@ final class AttachmentDeliveryService
             // 降级到 env
         }
         $configured = $fromDb !== '' ? $fromDb : (string)config('attach.domain');
-        return $cached = rtrim($configured, '/');
+        return self::$domainCached = rtrim($configured, '/');
+    }
+
+    /**
+     * 预热域名（后台列表从本地缓存注入，避免每次请求再查 system_param）
+     */
+    public static function primeDomain(string $domain): void
+    {
+        self::$domainCached = rtrim($domain, '/');
     }
 
     /**

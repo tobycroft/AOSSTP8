@@ -162,42 +162,58 @@ class V3Attachment extends CommonController
         $keyword = trim((string)input('get.keyword', ''));
         $ext = strtolower(trim((string)input('get.ext', '')));
 
-        // 用查询构造器取数组：避开 Model::toArray() 在 PHP 8.6 下对字符串属性
-        // 调用 is_subclass_of(..., false) 触发的弃用告警（与 V3 其它接口保持一致）。
-        $buckets = Db::name('ao_v3_storage')->order('id', 'asc')->select()->toArray();
+        // 配置表几乎不变，整体走本地 file 缓存（无网络往返）；缓存 miss 才查 4 条 SQL。
+        // 注意与粗估缓存分开键，刷新页码会一并删除，保证配置变更后可在 TTL 内生效。
+        $configCacheHit = true;
+        $config = Cache::store('file')->remember('admin:v3_attachment:config', function () use (&$configCacheHit) {
+            $configCacheHit = false;
+            $buckets = Db::name('ao_v3_storage')->order('id', 'asc')->select()->toArray();
+            $projectNames = [];
+            $projectSecrets = [];
+            foreach (Db::name('ao_v3_project')->field('id, name, secret, status')->select()->toArray() as $project) {
+                $pid = (int)$project['id'];
+                $projectNames[$pid] = (string)$project['name'];
+                if ((int)($project['status'] ?? 0) === 1) {
+                    $projectSecrets[$pid] = (string)$project['secret'];
+                }
+            }
+            // Bucket → 项目：新关联表优先，ao_v3_storage.project_id 仅作历史兜底
+            $bucketProjectMap = [];
+            $bindings = Db::name('ao_v3_storage_project')->select()->toArray();
+            foreach ($bindings as $binding) {
+                $bucketProjectMap[(int)$binding['bucket_id']] = (int)$binding['project_id'];
+            }
+            foreach ($buckets as $bucket) {
+                $bid = (int)$bucket['id'];
+                if (!isset($bucketProjectMap[$bid])) {
+                    $bucketProjectMap[$bid] = (int)($bucket['project_id'] ?? 0);
+                }
+            }
+            return [
+                'buckets' => $buckets,
+                'bindings' => $bindings,
+                'projectNames' => $projectNames,
+                'projectSecrets' => $projectSecrets,
+                'bucketProjectMap' => $bucketProjectMap,
+                'domain' => AttachmentDeliveryService::domain(),
+            ];
+        }, 300);
+        $buckets = $config['buckets'];
+        $bindings = $config['bindings'];
+        $projectNames = $config['projectNames'];
+        $projectSecrets = $config['projectSecrets'];
+        $bucketProjectMap = $config['bucketProjectMap'];
+
         $bucketMap = [];
         foreach ($buckets as $bucket) {
             $bucketMap[(int)$bucket['id']] = $bucket;
-        }
-
-        $projectNames = [];
-        $projectSecrets = [];
-        foreach (Db::name('ao_v3_project')->field('id, name, secret, status')->select()->toArray() as $project) {
-            $pid = (int)$project['id'];
-            $projectNames[$pid] = (string)$project['name'];
-            if ((int)($project['status'] ?? 0) === 1) {
-                $projectSecrets[$pid] = (string)$project['secret'];
-            }
-        }
-
-        // Bucket → 项目：新关联表优先，ao_v3_storage.project_id 仅作历史兜底
-        $bucketProjectMap = [];
-        $bindings = Db::name('ao_v3_storage_project')->select()->toArray();
-        foreach ($bindings as $binding) {
-            $bucketProjectMap[(int)$binding['bucket_id']] = (int)$binding['project_id'];
-        }
-        foreach ($buckets as $bucket) {
-            $bid = (int)$bucket['id'];
-            if (!isset($bucketProjectMap[$bid])) {
-                $bucketProjectMap[$bid] = (int)($bucket['project_id'] ?? 0);
-            }
         }
         // 把已读入的配置灌入 Model 静态缓存，formatItem 逐行不再查库
         $projectNameIds = array_flip($projectNames);
         V3StorageProjectModel::prime($projectNameIds, $buckets, $bindings);
         V3ProjectModel::prime($projectNames, $projectSecrets);
-        AttachmentDeliveryService::domain(); // 预热 attach_domain，避免计入 formatItem
-        if ($timerOn) $mark('配置表读取（4 条）+ 预热');
+        AttachmentDeliveryService::primeDomain((string)($config['domain'] ?? ''));
+        if ($timerOn) $mark('配置读取（file ' . ($configCacheHit ? '命中' : 'miss') . '）+ 预热');
 
         // token 现在是项目名称（如 stb / flamecloud）；tag=v3 用于与 V1/V2 隔离。
         // 一个项目可关联多个 Bucket，不能按项目名唯一映射，具体归属由 path 前缀判断。
@@ -264,14 +280,14 @@ class V3Attachment extends CommonController
         // TABLE_ROWS 是元数据快照（ANALYZE / 自动统计后刷新），读取 O(1)、不扫表。
         // 注入 total 后 paginate 跳过内部 COUNT；筛选态页码为粗估值，不代表精确结果数。
         $totalCacheHit = true;
-        $total = Cache::store()->remember('admin:v3_attachment:rough_total', function () use (&$totalCacheHit) {
+        $total = Cache::store('file')->remember('admin:v3_attachment:rough_total', function () use (&$totalCacheHit) {
             $totalCacheHit = false;
             $row = Db::query(
                 "SELECT TABLE_ROWS FROM information_schema.TABLES "
                 . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ao_attachment'"
             );
             return (int)($row[0]['TABLE_ROWS'] ?? 0);
-        }, 300);
+        }, 3600);
         if ($total <= 0) {
             // 元数据缺失兜底：保证当前页可用，绝不回退到 COUNT
             $total = $page * $limit;
@@ -519,7 +535,9 @@ class V3Attachment extends CommonController
             . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ao_attachment'"
         );
         $total = (int)($row[0]['TABLE_ROWS'] ?? 0);
-        Cache::set('admin:v3_attachment:rough_total', $total, 300);
+        Cache::store('file')->set('admin:v3_attachment:rough_total', $total, 3600);
+        // 配置缓存一并清除：Bucket/项目变更后下一次访问即可生效（最多滞后一个 TTL 的名额）
+        Cache::store('file')->delete('admin:v3_attachment:config');
         Ret::Success(0, ['total' => $total]);
     }
 
