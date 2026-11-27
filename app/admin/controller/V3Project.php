@@ -5,6 +5,7 @@ namespace app\admin\controller;
 use app\admin\model\AdminV3ProjectModel;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
+use app\v3\common\ConfigCache;
 use Aoss\Envelope;
 use BaseController\CommonController;
 use Input;
@@ -121,6 +122,7 @@ class V3Project extends CommonController
         ];
 
         AdminV3ProjectModel::create($data);
+        ConfigCache::flush();
         Ret::Success(0, [
             'secret' => $secret,
             'kid' => Envelope::kid($secret),
@@ -145,6 +147,8 @@ class V3Project extends CommonController
 
         $secret = Envelope::randomSecret();
         $item->save(['secret' => $secret]);
+        // 旧 kid 的鉴权缓存必须立即失效
+        ConfigCache::flush();
 
         Ret::Success(0, [
             'secret' => $secret,
@@ -193,6 +197,7 @@ class V3Project extends CommonController
                 ->update(['token' => $data['name']]);
         }
 
+        ConfigCache::flush();
         Ret::Success(0, ['kid' => Envelope::kid((string)$item['secret'])], '更新成功');
     }
 
@@ -210,6 +215,7 @@ class V3Project extends CommonController
         }
 
         $item->delete();
+        ConfigCache::flush();
         Ret::Success(0, [], '删除成功');
     }
 }

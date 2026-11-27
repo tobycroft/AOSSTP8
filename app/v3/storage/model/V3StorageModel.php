@@ -3,6 +3,8 @@
 namespace app\v3\storage\model;
 
 use app\v1\file\action\OssSelectionAction;
+use app\v3\common\ConfigCache;
+use app\v3\project\model\V3ProjectModel;
 use think\facade\Db;
 use think\Model;
 
@@ -66,10 +68,13 @@ class V3StorageModel extends Model
             return [];
         }
         if (!array_key_exists($id, self::$cacheById)) {
-            self::$cacheById[$id] = \think\facade\Db::name('ao_v3_storage')
-                ->where('id', $id)
-                ->where('status', 1)
-                ->findOrEmpty();
+            // 直传每个请求都要定位 Bucket，缓存跨请求复用；后台改 Bucket 时 ConfigCache::flush()
+            self::$cacheById[$id] = ConfigCache::remember('storage:' . $id, function () use ($id) {
+                return \think\facade\Db::name('ao_v3_storage')
+                    ->where('id', $id)
+                    ->where('status', 1)
+                    ->findOrEmpty();
+            });
         }
         return self::$cacheById[$id];
     }
@@ -115,15 +120,18 @@ class V3StorageModel extends Model
         }
         // 归属关系已迁到关联表（新建 Bucket 的 project_id 固定为 0），
         // 不能再从 ao_v3_storage.project_id 关联项目名，否则分组键退化。
-        $name = Db::name('ao_v3_storage_project')
-            ->alias('sp')
-            ->join('ao_v3_project p', 'p.id = sp.project_id')
-            ->where('sp.bucket_id', $id)
-            ->where('sp.status', 1)
-            ->order('sp.is_default', 'desc')
-            ->order('sp.id', 'asc')
-            ->value('p.name');
-        return ($name !== null && $name !== '') ? (string)$name : ('v3bucket:' . $id);
+        // attachment.token 存的就是分组键，查询/删除/恢复都会用，按 Bucket 缓存。
+        return (string)ConfigCache::remember('gkey:' . $id, function () use ($id) {
+            $name = Db::name('ao_v3_storage_project')
+                ->alias('sp')
+                ->join('ao_v3_project p', 'p.id = sp.project_id')
+                ->where('sp.bucket_id', $id)
+                ->where('sp.status', 1)
+                ->order('sp.is_default', 'desc')
+                ->order('sp.id', 'asc')
+                ->value('p.name');
+            return ($name !== null && $name !== '') ? (string)$name : ('v3bucket:' . $id);
+        });
     }
 
     /**
@@ -144,7 +152,7 @@ class V3StorageModel extends Model
         if (preg_match('/^v3bucket:(\d+)$/', $token, $m) === 1) {
             return self::api_find_id((int)$m[1]);
         }
-        $projectId = (int)Db::name('ao_v3_project')->where('name', $token)->value('id');
+        $projectId = V3ProjectModel::api_id_by_name($token);
         if ($projectId <= 0) {
             return [];
         }

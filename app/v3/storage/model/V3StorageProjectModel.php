@@ -2,6 +2,8 @@
 
 namespace app\v3\storage\model;
 
+use app\v3\common\ConfigCache;
+use app\v3\project\model\V3ProjectModel;
 use think\facade\Db;
 use think\Model;
 
@@ -101,17 +103,20 @@ class V3StorageProjectModel extends Model
         if ($projectId <= 0) {
             return [];
         }
-        return Db::name('ao_v3_storage_project')
-            ->alias('sp')
-            ->join('ao_v3_storage s', 's.id = sp.bucket_id')
-            ->where('sp.project_id', $projectId)
-            ->where('sp.status', 1)
-            ->where('s.status', 1)
-            ->field('s.*, sp.is_default AS sp_is_default, sp.id AS sp_id')
-            ->order('sp.is_default', 'desc')
-            ->order('sp.id', 'asc')
-            ->select()
-            ->toArray();
+        // 签发 token、直传定位、分发都会用到同一项目的授权列表，按项目缓存跨请求复用。
+        return ConfigCache::remember('buckets:' . $projectId, function () use ($projectId) {
+            return Db::name('ao_v3_storage_project')
+                ->alias('sp')
+                ->join('ao_v3_storage s', 's.id = sp.bucket_id')
+                ->where('sp.project_id', $projectId)
+                ->where('sp.status', 1)
+                ->where('s.status', 1)
+                ->field('s.*, sp.is_default AS sp_is_default, sp.id AS sp_id')
+                ->order('sp.is_default', 'desc')
+                ->order('sp.id', 'asc')
+                ->select()
+                ->toArray();
+        });
     }
 
     /**
@@ -175,7 +180,7 @@ class V3StorageProjectModel extends Model
         if (array_key_exists($token, self::$projectIdByToken)) {
             $projectId = self::$projectIdByToken[$token];
         } else {
-            $projectId = (int)Db::name('ao_v3_project')->where('name', $token)->value('id');
+            $projectId = V3ProjectModel::api_id_by_name($token);
             self::$projectIdByToken[$token] = $projectId;
         }
         if ($projectId <= 0) {
@@ -254,6 +259,8 @@ class V3StorageProjectModel extends Model
                 ]);
             }
             Db::commit();
+            // 关联关系变更后让项目 ↔ Bucket 缓存整体失效
+            ConfigCache::flush();
             return true;
         } catch (\Throwable $e) {
             Db::rollback();

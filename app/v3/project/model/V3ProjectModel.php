@@ -2,6 +2,7 @@
 
 namespace app\v3\project\model;
 
+use app\v3\common\ConfigCache;
 use think\Model;
 
 /*
@@ -67,10 +68,31 @@ class V3ProjectModel extends Model
         // 用查询构造器直接取数组：避开 Model::toArray() 在 PHP 8.6 下对字符串属性
         // 调用 is_subclass_of(..., false) 触发的弃用告警（该告警在 debug 下会中断请求）。
         // 凭证查询只需原始行，无需模型属性/关联转换。
-        return \think\facade\Db::name('ao_v3_project')
-            ->where('status', 1)
-            ->whereRaw('LOWER(LEFT(SHA2(`secret`, 256), 8)) = ?', [$kid])
-            ->findOrEmpty();
+        // 每次 v3 调用都要按 kid 鉴权，缓存跨请求复用；后台改凭证/状态时 ConfigCache::flush()。
+        return ConfigCache::remember('kid:' . $kid, function () use ($kid) {
+            return \think\facade\Db::name('ao_v3_project')
+                ->where('status', 1)
+                ->whereRaw('LOWER(LEFT(SHA2(`secret`, 256), 8)) = ?', [$kid])
+                ->findOrEmpty();
+        });
+    }
+
+    /**
+     * 按项目名反查项目 id（附件 token → 项目）
+     *
+     * token 即项目名称，分发/查询链路会反复用到；缓存以避免每次回表。
+     */
+    public static function api_id_by_name(string $name): int
+    {
+        $name = trim($name);
+        if ($name === '') {
+            return 0;
+        }
+        return (int)ConfigCache::remember('pname:' . $name, function () use ($name) {
+            return (int)\think\facade\Db::name('ao_v3_project')
+                ->where('name', $name)
+                ->value('id');
+        });
     }
 
     /**

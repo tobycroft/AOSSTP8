@@ -3,6 +3,7 @@
 namespace app\v3\file\service;
 
 use app\v1\system\model\SystemParamModel;
+use app\v3\common\ConfigCache;
 use app\v3\project\model\V3ProjectModel;
 use app\v3\storage\model\V3StorageModel;
 use app\v3\storage\model\V3StorageProjectModel;
@@ -77,7 +78,10 @@ final class AttachmentDeliveryService
         }
         $fromDb = '';
         try {
-            $fromDb = trim((string)SystemParamModel::api_find_key('attach_domain'));
+            // 全局域名极少变化，缓存跨请求复用；TTL 兜底后台直接改库后的生效延迟。
+            $fromDb = trim((string)ConfigCache::remember('sysparam:attach_domain', function () {
+                return (string)SystemParamModel::api_find_key('attach_domain');
+            }, 300));
         } catch (Throwable $e) {
             // 降级到 env
         }

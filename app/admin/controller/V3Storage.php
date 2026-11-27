@@ -6,6 +6,7 @@ use app\admin\model\AdminOssAliyunModel;
 use app\admin\model\AdminV3StorageModel;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
+use app\v3\common\ConfigCache;
 use app\v3\common\UploadFolder;
 use BaseController\CommonController;
 use Input;
@@ -267,6 +268,7 @@ class V3Storage extends CommonController
             'url' => $url,
             'status' => Input::PutInt('status', 1),
         ]);
+        ConfigCache::flush();
         Ret::Success(0, [], '创建成功');
     }
 
@@ -313,6 +315,7 @@ class V3Storage extends CommonController
         }
 
         $item->save($data);
+        ConfigCache::flush();
         Ret::Success(0, [], '更新成功');
     }
 
@@ -327,6 +330,7 @@ class V3Storage extends CommonController
             Ret::Fail(404, null, 'Bucket 不存在');
         }
         $item->delete();
+        ConfigCache::flush();
         Ret::Success(0, [], '删除成功');
     }
 }

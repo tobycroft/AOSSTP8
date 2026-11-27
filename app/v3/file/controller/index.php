@@ -329,14 +329,14 @@ class index extends CommonController
             case "bmp":
             case "gif":
             case "tiff":
-                $getId3 = new getID3();
-                $ana = $getId3->analyze($info->getPathname());
-                $video = $ana["video"] ?? [];
-                $width = empty($video['resolution_x']) ? 0 : $video['resolution_x'];
-                $height = empty($video['resolution_y']) ? 0 : $video['resolution_y'];
-                if (!empty($video)) {
-                    $bitrate = empty($video['bits_per_sample']) ? 0 : $video['bits_per_sample'];
-                    $duration_str = empty($video['compression_ratio']) ? "00:00" : $video['compression_ratio'];
+            case "webp":
+            case "ico":
+                // 图片只需要宽高：getimagesize 只读文件头，比 getID3 解析整份文件轻得多
+                $image = @getimagesize($info->getPathname());
+                if (is_array($image)) {
+                    $width = (int)$image[0];
+                    $height = (int)$image[1];
+                    $bitrate = isset($image['bits']) ? (int)$image['bits'] : 0;
                 }
                 break;
 
