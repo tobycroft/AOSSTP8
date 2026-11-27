@@ -250,16 +250,23 @@ class V3Attachment extends CommonController
             $query->where('ext', $ext);
         }
 
-        // 分页总数缓存 60 秒：COUNT 走 idx_isdel_tag_ext 覆盖索引扫描也要数 60 万+ 行
-        // （实测 0.4s+/次），管理页无需每页实时精确，注入已知总数后 paginate 跳过 COUNT。
-        // key 按筛选条件区分；删数据后总数最多滞后 60 秒，可接受。
-        $totalKey = 'admin:v3_attachment:total:' . md5($projectId . '|' . $bucketId . '|' . $keyword . '|' . $ext);
+        // 虚拟页码：不执行 COUNT(*)，改用 information_schema.TABLES.TABLE_ROWS 粗估。
+        // TABLE_ROWS 是元数据快照（ANALYZE / 自动统计后刷新），读取 O(1)、不扫表。
+        // 注入 total 后 paginate 跳过内部 COUNT；筛选态页码为粗估值，不代表精确结果数。
         $totalCacheHit = true;
-        $total = Cache::store()->remember($totalKey, function () use ($query, &$totalCacheHit) {
+        $total = Cache::store()->remember('admin:v3_attachment:rough_total', function () use (&$totalCacheHit) {
             $totalCacheHit = false;
-            return (clone $query)->count();
-        }, 60);
-        if ($timerOn) $mark('分页总数 COUNT' . ($totalCacheHit ? '（缓存命中）' : '（查库）'));
+            $row = Db::query(
+                "SELECT TABLE_ROWS FROM information_schema.TABLES "
+                . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ao_attachment'"
+            );
+            return (int)($row[0]['TABLE_ROWS'] ?? 0);
+        }, 300);
+        if ($total <= 0) {
+            // 元数据缺失兜底：保证当前页可用，绝不回退到 COUNT
+            $total = $page * $limit;
+        }
+        if ($timerOn) $mark('虚拟页码粗估（TABLE_ROWS' . ($totalCacheHit ? '·缓存命中' : '·读元数据') . '）');
 
         $list = $query->order('id', 'desc')->paginate($limit, $total, ['page' => $page])->toArray();
         if ($timerOn) $mark('列表 SELECT');
