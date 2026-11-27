@@ -21,7 +21,8 @@ class Console extends CommonController
         $user['phone'] = $user['phone'] ?? '-';
         $user['is_super_text'] = $user['is_super'] ? '是' : '否';
 
-        $stats = DashboardService::collect();
+        // 缓存快照 5 分钟；?refresh=1 可强制重采（约 75 条统计 SQL，仅手工运维时使用）
+        $stats = DashboardService::collect(input('get.refresh', 0, 'intval') === 1);
 
         return $this->renderPage('console/index', [
             'user' => $user,

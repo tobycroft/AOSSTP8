@@ -2,6 +2,7 @@
 
 namespace app\admin\service;
 
+use think\facade\Cache;
 use think\facade\Db;
 
 /**
@@ -12,12 +13,40 @@ use think\facade\Db;
  */
 class DashboardService
 {
+    /** 快照缓存 key：一次完整采集约 75 条统计 SQL，含 60 万+ 行附件表全表 COUNT/SUM/GROUP BY */
+    private const SNAPSHOT_KEY = 'admin:dashboard:snapshot';
+
+    /** 快照有效期（秒）：仪表盘是聚合快照，5 分钟滞后可接受 */
+    private const SNAPSHOT_TTL = 300;
+
     /**
-     * 采集全部仪表板数据
+     * 采集全部仪表板数据（命中快照缓存则不执行任何统计 SQL）
      *
+     * @param bool $force 强制刷新：删除快照后重新采集
      * @return array{kpi:array,resources:array,charts:array,health:array,updatedAt:string}
      */
-    public static function collect(): array
+    public static function collect(bool $force = false): array
+    {
+        try {
+            $cache = Cache::store();
+            if ($force) {
+                $cache->delete(self::SNAPSHOT_KEY);
+            }
+            // ThinkPHP 签名：remember($name, $value, $expire)，值在前、有效期在后
+            return $cache->remember(self::SNAPSHOT_KEY, function () {
+                return self::collectFresh();
+            }, self::SNAPSHOT_TTL);
+        } catch (\Throwable $e) {
+            // 缓存不可用（如 Redis 连接失败）时降级直查，保证控制台可用
+            trace('dashboard snapshot cache unavailable: ' . $e->getMessage(), 'error');
+            return self::collectFresh();
+        }
+    }
+
+    /**
+     * 真正执行聚合查询（仅在未命中快照或强制刷新时调用）
+     */
+    private static function collectFresh(): array
     {
         return [
             'kpi'       => self::kpi(),
