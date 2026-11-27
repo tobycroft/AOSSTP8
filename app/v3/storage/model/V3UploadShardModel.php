@@ -21,7 +21,7 @@ CREATE TABLE `ao_v3_upload_shard`（V3 上传分片计数）:
 说明：
   - 每个 Bucket + 日期一行，file_count 只增不减；用于把当天上传分摊到
     upload/{bucket}/{YYYYMMDD}/{1000|2000|...}/ 子目录，避免单目录文件堆积。
-  - 取号优先 Redis INCR；Redis 不可用时回退 DB：用一条
+  - 取号优先走缓存自增（生产为 Redis INCR，单命令原子）；缓存不可用时回退 DB：用一条
     INSERT ... ON DUPLICATE KEY UPDATE 原子自增，只有行级瞬时锁，不锁表。
   - file_count 是「分配序号」不是物理文件数：秒传不取号、删文件或 move 失败
     都不会回退，允许多几个（tolerance 高），不影响分片目的。
@@ -37,9 +37,9 @@ class V3UploadShardModel extends Model
     /**
      * 原子分配一个当日序号
      *
-     * 优先用 Redis INCR（单命令原子自增，无 DB 写入、无行锁），
+     * 优先用缓存自增（生产缓存为 Redis，即 INCR：单命令原子自增，无 DB 写入、无行锁），
      * 零碎文件高并发时不会在 (bucket_id, day) 这一行上串行；
-     * Redis 不可用时回退原来的 DB 原子取号，保证上传不中断。
+     * 缓存不可用时回退原来的 DB 原子取号，保证上传不中断。
      *
      * @param int    $bucketId ao_v3_storage.id
      * @param string $day      YYYYMMDD
@@ -55,22 +55,21 @@ class V3UploadShardModel extends Model
     }
 
     /**
-     * 用 Redis INCR 取号；失败返回 0，由调用方回退到 DB
+     * 用缓存自增取号（生产缓存为 Redis，即 Redis INCR）；失败返回 0，由调用方回退到 DB
      *
-     * 序号只用于分摊目录，Redis 被清空后从 1 重新开始不会覆盖文件
+     * 序号只用于分摊目录，缓存被清空后从 1 重新开始不会覆盖文件
      * （文件名是 md5，且同 md5 会先走秒传），最多是目录分布回到第一个分片。
      */
     private static function allocateByCache(int $bucketId, string $day): int
     {
         try {
-            $store = Cache::store('redis');
             $key = 'v3shard:' . $bucketId . ':' . $day;
-            $seq = (int)$store->inc($key);
+            $seq = (int)Cache::inc($key);
             if ($seq === 1) {
-                // 首次分配时补 TTL，跨天后计数键自动清理
-                $store->handler()->expire($store->getCacheKey($key), 3 * 86400);
+                // 当天首次取号时清理前两天的计数键，避免键无限累积
+                Cache::delete('v3shard:' . $bucketId . ':' . date('Ymd', strtotime('-2 days')));
             }
-            return $seq;
+            return $seq > 0 ? $seq : 0;
         } catch (\Throwable $e) {
             return 0;
         }
