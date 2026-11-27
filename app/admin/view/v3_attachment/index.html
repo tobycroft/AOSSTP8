@@ -44,6 +44,7 @@
             <a class="view-btn {if $view=='list'}active{/if}" href="{$listUrl}">列表</a>
             <a class="view-btn {if $view=='grid'}active{/if}" href="{$gridUrl}">横排</a>
         </div>
+        <button class="btn" id="v3RefreshPagesBtn" onclick="v3RefreshPages()" title="执行 ANALYZE TABLE 更新行数统计，让虚拟页码更精确">刷新页码</button>
         {if $view == 'list'}
         <button class="btn btn-danger" onclick="v3BatchDelete()" style="display:none;" id="v3BatchDelBtn">批量删除</button>
         {/if}
@@ -269,6 +270,28 @@ function applyProjectFilter() {
         if (match && opt.value === current) keep = true;
     });
     if (!keep) bucketSelect.value = '0';
+}
+
+// 刷新虚拟页码：ANALYZE TABLE 后重载页面，让粗估页数更精确
+function v3RefreshPages() {
+    var btn = document.getElementById('v3RefreshPagesBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '分析中...'; }
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/admin/v3_attachment/refresh_pages', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('admin-token', localStorage.getItem('admin_token'));
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
+        var res;
+        try { res = JSON.parse(xhr.responseText); } catch (e) { res = null; }
+        if (!res || res.code != 0) {
+            if (btn) { btn.disabled = false; btn.textContent = '刷新页码'; }
+            alert((res && res.echo) ? res.echo : '刷新页码失败');
+            return;
+        }
+        location.reload();
+    };
+    xhr.send('');
 }
 
 // 取件码图片加载失败：尝试后台受控代理（仅 PHP 与文件同站时可用；独立 image 站下会失败）

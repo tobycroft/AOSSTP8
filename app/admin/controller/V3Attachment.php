@@ -493,6 +493,26 @@ class V3Attachment extends CommonController
     }
 
     /**
+     * 刷新虚拟页码：执行 ANALYZE TABLE 更新 information_schema 统计，
+     * 让 TABLE_ROWS 更接近真实行数，并同步刷新粗估缓存。
+     * 走后台登录鉴权（initialize），仅接受 POST。
+     */
+    public function refresh_pages()
+    {
+        if (request()->method() !== 'POST') {
+            Ret::Fail(405, null, '不支持的请求方法');
+        }
+        Db::query('ANALYZE TABLE `ao_attachment`');
+        $row = Db::query(
+            "SELECT TABLE_ROWS FROM information_schema.TABLES "
+            . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ao_attachment'"
+        );
+        $total = (int)($row[0]['TABLE_ROWS'] ?? 0);
+        Cache::set('admin:v3_attachment:rough_total', $total, 300);
+        Ret::Success(0, ['total' => $total]);
+    }
+
+    /**
      * 批量刷新图片预览取件码（供后台列表定时换码）
      *
      * 入参 ids 逗号分隔；仅对本地 Bucket 的光栅图片重新签发，OSS/非图片
