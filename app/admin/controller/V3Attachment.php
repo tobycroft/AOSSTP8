@@ -277,19 +277,20 @@ class V3Attachment extends CommonController
         }
         if ($timerOn) $mark('formatItem 逐行格式化（' . count($items) . ' 行）');
 
-        // 可选的扩展名过滤项：仅取 V3 附件已有后缀（覆盖索引扫描仍需 0.3s+，
-        // 下拉项变化极少，缓存 5 分钟避免每页重复扫描）
-        // 注意 ThinkPHP 签名是 remember($name, $value, $expire)，值在前、有效期在后
-        $extCacheHit = true;
-        $extOptions = Cache::store()->remember('admin:v3_attachment:ext_options', function () use (&$extCacheHit) {
-            $extCacheHit = false;
-            return Db::name('ao_attachment')
-                ->where('is_deleted', 0)
-                ->where('tag', 'v3')
-                ->distinct(true)
-                ->column('ext');
-        }, 300);
-        if ($timerOn) $mark('后缀选项 DISTINCT ext' . ($extCacheHit ? '（缓存命中）' : '（查库）'));
+        // 后缀下拉：直接取 Bucket 允许的 ext 配置（页面开头已读入 $buckets，零查询）。
+        // 不再 DISTINCT ext 扫附件表（实测 1.7s）；配置是白名单，比历史数据更准。
+        $extSet = [];
+        foreach ($buckets as $bucket) {
+            foreach (explode(',', (string)($bucket['ext'] ?? '')) as $one) {
+                $one = strtolower(trim($one));
+                if ($one !== '' && preg_match('/^[a-z0-9]+$/', $one) === 1) {
+                    $extSet[$one] = true;
+                }
+            }
+        }
+        $extOptions = array_keys($extSet);
+        sort($extOptions, SORT_STRING);
+        if ($timerOn) $mark('后缀选项（Bucket 配置，零查询）');
 
         $projectOptions = [];
         foreach ($projectNames as $id => $name) {
