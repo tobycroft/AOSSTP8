@@ -1,6 +1,17 @@
 {extend name="layout/base" /}
 {block name="content"}
 <span id="v3PreviewCfg" data-refresh="{$previewRefreshSec|default=480}" style="display:none;"></span>
+{if !empty($timerView)}
+<div class="card" style="border-left:3px solid var(--primary);">
+    <h3 style="margin:0 0 10px;">调试计时器 · 总计 {$timerView.total_ms} ms · SQL {$timerView.sql_count} 条</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;">
+        {foreach $timerView.marks as $m}
+        <span style="font-family:ui-monospace,Menlo,Consolas,monospace;"><span style="color:var(--text-muted);">{$m.label}：</span><b style="color:{$m.color};">{$m.ms} ms</b></span>
+        {/foreach}
+    </div>
+    <p style="margin:8px 0 0;color:var(--text-muted);font-size:12px;">明细已写入日志 v3_attachment timer；移除 URL 的 &amp;timer=1 即关闭。</p>
+</div>
+{/if}
 <div class="toolbar">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <h2>附件列表 V3</h2>

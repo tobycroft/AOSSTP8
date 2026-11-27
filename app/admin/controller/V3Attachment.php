@@ -11,6 +11,7 @@ use BaseController\CommonController;
 use Ret;
 use think\facade\Cache;
 use think\facade\Db;
+use think\facade\Log;
 
 /**
  * 存储管理 V3 → 附件列表
@@ -130,6 +131,24 @@ class V3Attachment extends CommonController
 
     private function page()
     {
+        // 调试计时器：?timer=1 开启。记录各阶段耗时 + SQL 条数，输出到日志与页面顶部。
+        // 默认关闭，不影响正常访问。SQL 监听放在所有查询之前，覆盖整页（含渲染阶段）。
+        $timerOn = input('get.timer', 0, 'intval') === 1;
+        $timer = ['marks' => [], 'sql_count' => 0, 'sqls' => [], 'start' => microtime(true)];
+        if ($timerOn) {
+            Db::listen(function ($sql) use (&$timer) {
+                $timer['sql_count']++;
+                if (count($timer['sqls']) < 200) {
+                    $timer['sqls'][] = preg_replace('/\s+/', ' ', trim((string)$sql));
+                }
+            });
+        }
+        $mark = function (string $label) use (&$timer): void {
+            $ms = round((microtime(true) - $timer['start']) * 1000, 1);
+            $color = $ms >= 1000 ? 'var(--danger)' : ($ms >= 200 ? 'var(--warning)' : 'var(--text)');
+            $timer['marks'][] = ['label' => $label, 'ms' => $ms, 'color' => $color];
+        };
+
         $page = input('get.page', 1, 'intval');
         // 两种排版：list 列表（每页 24）；grid 横排卡片（每页 60，单页展示更多）
         $view = (string)input('get.view', 'list');
@@ -166,6 +185,7 @@ class V3Attachment extends CommonController
                 $bucketProjectMap[$bid] = (int)($bucket['project_id'] ?? 0);
             }
         }
+        if ($timerOn) $mark('配置表读取（3 条）');
 
         // token 现在是项目名称（如 stb / flamecloud）；tag=v3 用于与 V1/V2 隔离。
         // 一个项目可关联多个 Bucket，不能按项目名唯一映射，具体归属由 path 前缀判断。
@@ -234,27 +254,35 @@ class V3Attachment extends CommonController
         // （实测 0.4s+/次），管理页无需每页实时精确，注入已知总数后 paginate 跳过 COUNT。
         // key 按筛选条件区分；删数据后总数最多滞后 60 秒，可接受。
         $totalKey = 'admin:v3_attachment:total:' . md5($projectId . '|' . $bucketId . '|' . $keyword . '|' . $ext);
-        $total = Cache::store()->remember($totalKey, function () use ($query) {
+        $totalCacheHit = true;
+        $total = Cache::store()->remember($totalKey, function () use ($query, &$totalCacheHit) {
+            $totalCacheHit = false;
             return (clone $query)->count();
         }, 60);
+        if ($timerOn) $mark('分页总数 COUNT' . ($totalCacheHit ? '（缓存命中）' : '（查库）'));
 
         $list = $query->order('id', 'desc')->paginate($limit, $total, ['page' => $page])->toArray();
+        if ($timerOn) $mark('列表 SELECT');
 
         $items = [];
         foreach ($list['data'] as $row) {
             $items[] = $this->formatItem($row, $bucketMap, $bucketProjectMap, $projectNameIds, $projectNames);
         }
+        if ($timerOn) $mark('formatItem 逐行格式化（' . count($items) . ' 行）');
 
         // 可选的扩展名过滤项：仅取 V3 附件已有后缀（覆盖索引扫描仍需 0.3s+，
         // 下拉项变化极少，缓存 5 分钟避免每页重复扫描）
         // 注意 ThinkPHP 签名是 remember($name, $value, $expire)，值在前、有效期在后
-        $extOptions = Cache::store()->remember('admin:v3_attachment:ext_options', function () {
+        $extCacheHit = true;
+        $extOptions = Cache::store()->remember('admin:v3_attachment:ext_options', function () use (&$extCacheHit) {
+            $extCacheHit = false;
             return Db::name('ao_attachment')
                 ->where('is_deleted', 0)
                 ->where('tag', 'v3')
                 ->distinct(true)
                 ->column('ext');
         }, 300);
+        if ($timerOn) $mark('后缀选项 DISTINCT ext' . ($extCacheHit ? '（缓存命中）' : '（查库）'));
 
         $projectOptions = [];
         foreach ($projectNames as $id => $name) {
@@ -296,6 +324,22 @@ class V3Attachment extends CommonController
             $limit
         );
 
+        $timerView = null;
+        if ($timerOn) {
+            $timer['total_ms'] = round((microtime(true) - $timer['start']) * 1000, 1);
+            Log::info('v3_attachment timer', [
+                'total_ms' => $timer['total_ms'],
+                'sql_count' => $timer['sql_count'],
+                'marks' => $timer['marks'],
+                'sqls' => $timer['sqls'],
+            ]);
+            $timerView = [
+                'total_ms' => $timer['total_ms'],
+                'sql_count' => $timer['sql_count'],
+                'marks' => $timer['marks'],
+            ];
+        }
+
         return $this->renderPage('v3_attachment/index', [
             'list' => $items,
             'extOptions' => $extOptions,
@@ -311,6 +355,7 @@ class V3Attachment extends CommonController
             'listUrl' => $listUrl,
             'gridUrl' => $gridUrl,
             'pagination' => $pagination,
+            'timerView' => $timerView,
         ], '附件列表 V3', 'v3_storage', 'v3_attachment');
     }
 
