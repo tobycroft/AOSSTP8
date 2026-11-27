@@ -30,6 +30,9 @@ class V3ProjectModel extends Model
 {
     protected $table = 'ao_v3_project';
 
+    /** 单请求内缓存：后台附件列表逐行签发取件码时避免重复查库 */
+    private static array $secretCache = [];
+
     /**
      * 按凭证定位标识（kid）查找可用项目
      *
@@ -65,10 +68,15 @@ class V3ProjectModel extends Model
     {
         $token = trim((string)($row['token'] ?? ''));
         $path = str_replace('\\', '/', (string)($row['path'] ?? ''));
+        $isLegacy = preg_match('/^v3bucket:(\d+)$/', $token, $m) === 1;
+        $cacheKey = $isLegacy ? 'b:' . (int)$m[1] : 't:' . $token;
+        if (array_key_exists($cacheKey, self::$secretCache)) {
+            return self::$secretCache[$cacheKey];
+        }
         $bucketId = 0;
         $projectId = 0;
 
-        if ($token !== '' && preg_match('/^v3bucket:(\d+)$/', $token, $m) !== 1) {
+        if ($token !== '' && !$isLegacy) {
             $projectId = (int)\think\facade\Db::name('ao_v3_project')
                 ->where('name', $token)
                 ->where('status', 1)
@@ -76,7 +84,7 @@ class V3ProjectModel extends Model
         }
 
         if ($projectId <= 0) {
-            if (preg_match('/^v3bucket:(\d+)$/', $token, $m) === 1) {
+            if ($isLegacy) {
                 $bucketId = (int)$m[1];
             } else {
                 $bucket = \app\v3\storage\model\V3StorageProjectModel::api_match_by_path($token, $path);
@@ -93,9 +101,9 @@ class V3ProjectModel extends Model
         }
 
         if ($projectId <= 0) {
-            return '';
+            return self::$secretCache[$cacheKey] = '';
         }
-        return trim((string)\think\facade\Db::name('ao_v3_project')
+        return self::$secretCache[$cacheKey] = trim((string)\think\facade\Db::name('ao_v3_project')
             ->where('id', $projectId)
             ->where('status', 1)
             ->value('secret'));

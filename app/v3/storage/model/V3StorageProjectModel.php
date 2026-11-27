@@ -38,6 +38,10 @@ class V3StorageProjectModel extends Model
 {
     protected $table = 'ao_v3_storage_project';
 
+    /** 单请求内缓存：后台列表逐行反查 Bucket 时避免重复查库（PHP-FPM 每请求重建） */
+    private static array $projectIdByToken = [];
+    private static array $bucketsByProject = [];
+
     /**
      * 项目已授权的启用 Bucket 列表（默认 Bucket 排在最前）
      *
@@ -122,11 +126,19 @@ class V3StorageProjectModel extends Model
             return V3StorageModel::api_find_id((int)$m[1]);
         }
 
-        $projectId = (int)Db::name('ao_v3_project')->where('name', $token)->value('id');
+        if (array_key_exists($token, self::$projectIdByToken)) {
+            $projectId = self::$projectIdByToken[$token];
+        } else {
+            $projectId = (int)Db::name('ao_v3_project')->where('name', $token)->value('id');
+            self::$projectIdByToken[$token] = $projectId;
+        }
         if ($projectId <= 0) {
             return [];
         }
-        $buckets = self::api_buckets($projectId);
+        if (!array_key_exists($projectId, self::$bucketsByProject)) {
+            self::$bucketsByProject[$projectId] = self::api_buckets($projectId);
+        }
+        $buckets = self::$bucketsByProject[$projectId];
         if (empty($buckets)) {
             return [];
         }

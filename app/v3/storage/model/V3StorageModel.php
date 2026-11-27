@@ -33,6 +33,9 @@ class V3StorageModel extends Model
 {
     protected $table = 'ao_v3_storage';
 
+    /** 单请求内缓存：历史 token=v3bucket:{id} 的逐行反查避免重复查库 */
+    private static array $cacheById = [];
+
     /**
      * 旧版「一项目一 Bucket」查询，已弃用
      *
@@ -62,10 +65,13 @@ class V3StorageModel extends Model
         if ($id <= 0) {
             return [];
         }
-        return \think\facade\Db::name('ao_v3_storage')
-            ->where('id', $id)
-            ->where('status', 1)
-            ->findOrEmpty();
+        if (!array_key_exists($id, self::$cacheById)) {
+            self::$cacheById[$id] = \think\facade\Db::name('ao_v3_storage')
+                ->where('id', $id)
+                ->where('status', 1)
+                ->findOrEmpty();
+        }
+        return self::$cacheById[$id];
     }
 
     /**
