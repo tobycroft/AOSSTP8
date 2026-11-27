@@ -43,6 +43,52 @@ class V3StorageProjectModel extends Model
     private static array $bucketsByProject = [];
 
     /**
+     * 预热缓存：后台列表页已把配置表读入内存，直接灌入可让逐行 formatItem 零查询。
+     * 过滤/排序语义与 api_buckets() 完全一致（关联表与 Bucket 自身 status 均为 1，
+     * 默认 Bucket 优先），避免展示/签发结果与未预热时不同。
+     *
+     * @param array $projectNameIds 项目名 => 项目 id
+     * @param array $buckets ao_v3_storage 全表行
+     * @param array $bindings ao_v3_storage_project 全表行（含 status/is_default/id）
+     */
+    public static function prime(array $projectNameIds, array $buckets, array $bindings): void
+    {
+        foreach ($projectNameIds as $name => $id) {
+            self::$projectIdByToken[(string)$name] = (int)$id;
+        }
+        $bucketRows = [];
+        foreach ($buckets as $bucket) {
+            $bucketRows[(int)($bucket['id'] ?? 0)] = $bucket;
+        }
+        $grouped = [];
+        $seq = [];
+        foreach ($bindings as $binding) {
+            $pid = (int)($binding['project_id'] ?? 0);
+            $bid = (int)($binding['bucket_id'] ?? 0);
+            if ($pid <= 0 || $bid <= 0 || (int)($binding['status'] ?? 0) !== 1) {
+                continue;
+            }
+            $bucket = $bucketRows[$bid] ?? null;
+            if ($bucket === null || (int)($bucket['status'] ?? 0) !== 1) {
+                continue;
+            }
+            $grouped[$pid][] = $bucket + [
+                'sp_is_default' => (int)($binding['is_default'] ?? 0),
+                'sp_id' => (int)($binding['id'] ?? 0),
+            ];
+            $seq[$pid][] = [(int)($binding['is_default'] ?? 0), (int)($binding['id'] ?? 0)];
+        }
+        foreach ($grouped as $pid => $list) {
+            array_multisort(
+                array_column($seq[$pid], 0), SORT_DESC, SORT_NUMERIC,
+                array_column($seq[$pid], 1), SORT_ASC, SORT_NUMERIC,
+                $list
+            );
+            self::$bucketsByProject[(int)$pid] = $list;
+        }
+    }
+
+    /**
      * 项目已授权的启用 Bucket 列表（默认 Bucket 排在最前）
      *
      * 同时过滤关联表 status 与 Bucket 自身 status，任一停用即不可用。

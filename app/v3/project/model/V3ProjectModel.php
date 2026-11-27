@@ -34,6 +34,22 @@ class V3ProjectModel extends Model
     private static array $secretCache = [];
 
     /**
+     * 预热缓存：后台列表页已读入项目名/id/secret，直接灌入避免逐行查库。
+     * @param array $projectNames 项目 id => 项目名
+     * @param array $projectSecrets 项目 id => secret（仅 status=1）
+     */
+    public static function prime(array $projectNames, array $projectSecrets): void
+    {
+        foreach ($projectNames as $id => $name) {
+            // 只预热启用项目：停用项目留空，让 api_secret_by_attachment 走原 path 反查兜底
+            if (!array_key_exists((int)$id, $projectSecrets)) {
+                continue;
+            }
+            self::$secretCache['t:' . (string)$name] = (string)$projectSecrets[(int)$id];
+        }
+    }
+
+    /**
      * 按凭证定位标识（kid）查找可用项目
      *
      * kid = substr(sha256(secret), 0, 8)，与 Aoss\Envelope::kid() 保持一致；

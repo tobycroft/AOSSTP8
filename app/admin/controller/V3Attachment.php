@@ -6,6 +6,7 @@ use app\admin\service\AttachmentFileService;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
 use app\v3\file\service\AttachmentDeliveryService;
+use app\v3\project\model\V3ProjectModel;
 use app\v3\storage\model\V3StorageProjectModel;
 use BaseController\CommonController;
 use Ret;
@@ -170,13 +171,19 @@ class V3Attachment extends CommonController
         }
 
         $projectNames = [];
-        foreach (Db::name('ao_v3_project')->field('id, name')->select()->toArray() as $project) {
-            $projectNames[(int)$project['id']] = (string)$project['name'];
+        $projectSecrets = [];
+        foreach (Db::name('ao_v3_project')->field('id, name, secret, status')->select()->toArray() as $project) {
+            $pid = (int)$project['id'];
+            $projectNames[$pid] = (string)$project['name'];
+            if ((int)($project['status'] ?? 0) === 1) {
+                $projectSecrets[$pid] = (string)$project['secret'];
+            }
         }
 
         // Bucket → 项目：新关联表优先，ao_v3_storage.project_id 仅作历史兜底
         $bucketProjectMap = [];
-        foreach (Db::name('ao_v3_storage_project')->select()->toArray() as $binding) {
+        $bindings = Db::name('ao_v3_storage_project')->select()->toArray();
+        foreach ($bindings as $binding) {
             $bucketProjectMap[(int)$binding['bucket_id']] = (int)$binding['project_id'];
         }
         foreach ($buckets as $bucket) {
@@ -185,12 +192,15 @@ class V3Attachment extends CommonController
                 $bucketProjectMap[$bid] = (int)($bucket['project_id'] ?? 0);
             }
         }
-        if ($timerOn) $mark('配置表读取（3 条）');
+        // 把已读入的配置灌入 Model 静态缓存，formatItem 逐行不再查库
+        $projectNameIds = array_flip($projectNames);
+        V3StorageProjectModel::prime($projectNameIds, $buckets, $bindings);
+        V3ProjectModel::prime($projectNames, $projectSecrets);
+        AttachmentDeliveryService::domain(); // 预热 attach_domain，避免计入 formatItem
+        if ($timerOn) $mark('配置表读取（4 条）+ 预热');
 
         // token 现在是项目名称（如 stb / flamecloud）；tag=v3 用于与 V1/V2 隔离。
         // 一个项目可关联多个 Bucket，不能按项目名唯一映射，具体归属由 path 前缀判断。
-        $projectNameIds = array_flip($projectNames);
-
         $query = Db::name('ao_attachment')
             ->where('is_deleted', 0)
             ->where('tag', 'v3');
