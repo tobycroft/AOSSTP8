@@ -115,15 +115,14 @@ class V3StorageModel extends Model
         }
         // 归属关系已迁到关联表（新建 Bucket 的 project_id 固定为 0），
         // 不能再从 ao_v3_storage.project_id 关联项目名，否则分组键退化。
-        $projectId = (int)Db::name('ao_v3_storage_project')
-            ->where('bucket_id', $id)
-            ->where('status', 1)
-            ->order('is_default', 'desc')
-            ->order('id', 'asc')
-            ->value('project_id');
-        $name = $projectId > 0
-            ? Db::name('ao_v3_project')->where('id', $projectId)->value('name')
-            : null;
+        $name = Db::name('ao_v3_storage_project')
+            ->alias('sp')
+            ->join('ao_v3_project p', 'p.id = sp.project_id')
+            ->where('sp.bucket_id', $id)
+            ->where('sp.status', 1)
+            ->order('sp.is_default', 'desc')
+            ->order('sp.id', 'asc')
+            ->value('p.name');
         return ($name !== null && $name !== '') ? (string)$name : ('v3bucket:' . $id);
     }
 

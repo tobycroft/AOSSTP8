@@ -128,13 +128,19 @@ class index extends CommonController
             $this->upload_ip = $fileToken['ip'];
             $recordIp = $fileToken['ip'];
         }
-        Db::name('ao_attachment_token')
+        $consumed = Db::name('ao_attachment_token')
             ->where('id', $fileToken['id'])
+            ->where('token', $tempToken)
+            ->where('expired_at', '>', date('Y-m-d H:i:s'))
+            ->where('is_used', 0)
             ->update([
                 'is_used' => 1,
                 'ip' => $recordIp,
                 'update_time' => date('Y-m-d H:i:s'),
             ]);
+        if ($consumed < 1) {
+            Ret::Fail(401, null, '临时token无效或已过期');
+        }
     }
 
     public function up(Request $request)
@@ -242,12 +248,6 @@ class index extends CommonController
             $this->fail($type, 400, 'file字段没有用文件提交');
         }
         $file_name = $file->getOriginalName();
-        // 统一小写：MD5 查重、落盘文件名、DB 记录三处口径一致
-        $md5 = strtolower((string)$file->md5());
-        $sha1 = strtolower((string)$file->sha1());
-
-        // 校验必须前置在 MD5 去重之前：否则一个本该被拒的文件，只要库里有同内容文件，
-        // 就会走"秒传"分支拿到地址，绕过后面所有检查。
         $ext = (string)$file->getOriginalExtension();
         $ext_lower = strtolower($ext);
         if (in_array($ext_lower, self::FORBIDDEN_EXTENSIONS, true)) {
@@ -259,6 +259,10 @@ class index extends CommonController
         if ($file->getSize() >= $proc['size'] * 1024) {
             $this->fail($type, 400, '大小不符合规范');
         }
+
+        // 统一小写：MD5 查重、落盘文件名、DB 记录三处口径一致
+        $md5 = strtolower((string)$file->md5());
+        $sha1 = strtolower((string)$file->sha1());
 
         // 类型判定：客户端提交的 Content-Type（原 getOriginalMime）由请求方随意填写，
         // 改 Content-Type 就能绕过原有 php/html 黑名单，因此改为服务端嗅探文件真实内容。
@@ -492,7 +496,7 @@ class index extends CommonController
 
         $found = false;
         while (!feof($fh)) {
-            $chunk = fread($fh, 8192);
+            $chunk = fread($fh, 262144);
             if ($chunk === false || $chunk === '') {
                 break;
             }
