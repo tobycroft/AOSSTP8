@@ -28,8 +28,20 @@ class index extends search
         }
     }
 
+    /**
+     * v1 上传入口已下线，统一使用 v3 文件接口。
+     * 门户图床（app\index\controller\Image）等子类通过继承复用上传逻辑，不受影响。
+     */
+    private function denyLegacyUploadEntry(): void
+    {
+        if (static::class === self::class) {
+            Ret::Fail(410, null, 'v1 上传入口已下线，请使用 v3 文件接口');
+        }
+    }
+
     public function up(Request $request)
     {
+        $this->denyLegacyUploadEntry();
         try {
             $file = $request->file('file');
             if ($file) {
@@ -49,6 +61,7 @@ class index extends search
 
     public function upload_file(Request $request, $full = 0, $type = null)
     {
+        $this->denyLegacyUploadEntry();
         $token = $this->token;
         $proc = $this->proc;
 
@@ -244,6 +257,7 @@ class index extends search
 
     public function upfull(Request $request)
     {
+        $this->denyLegacyUploadEntry();
         try {
             $file = $request->file('file');
             if ($file) {
@@ -264,6 +278,7 @@ class index extends search
 
     public function up_ue(Request $request)
     {
+        $this->denyLegacyUploadEntry();
         try {
             $file = $request->file('file');
             if ($file) {
@@ -280,6 +295,7 @@ class index extends search
 
     public function up_complete(Request $request)
     {
+        $this->denyLegacyUploadEntry();
         try {
             $file = $request->file('file');
             if ($file) {

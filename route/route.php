@@ -186,9 +186,7 @@
     \think\facade\Route::any('admin', '\app\admin\controller\Index@index');
 });
 
-\think\facade\Route::any('up', '\app\v1\file\controller\index@up');
-
-\think\facade\Route::any('upfull', '\app\v1\file\controller\index@upfull');
+// v1 上传入口（up / upfull）已下线，统一使用 v3 文件接口；此处不再注册别名路由。
 
 \think\facade\Route::any('hook', '\app\v1\hook\controller\push@single');
 \think\facade\Route::any('github', '\app\v1\hook\controller\push@github');
