@@ -1,9 +1,9 @@
 <?php
 
-namespace app\v1\cert\action;
+namespace app\admin\action;
 
-use app\v1\cert\model\CertUrlModel;
-use app\v1\cert\model\CertWebsiteModel;
+use app\admin\model\AdminCertUrlModel;
+use app\admin\model\AdminCertWebsiteModel;
 use think\Exception;
 use tobycroft\Bt\Site;
 
@@ -27,7 +27,7 @@ class SiteAction
      */
     public static function updatessl(string $cert_name): array|null
     {
-        $cert_url = CertUrlModel::where('cert', $cert_name)->find();
+        $cert_url = AdminCertUrlModel::where('cert', $cert_name)->find();
         if (!$cert_url) {
             throw new Exception("未找到证书项目");
         }
@@ -36,7 +36,7 @@ class SiteAction
         if (empty($url_key) || empty($url_cert)) {
             throw new Exception("证书获取失败");
         }
-        CertUrlModel::where('cert', $cert_name)->update(['publickey' => $url_cert, 'privatekey' => $url_key]);
+        AdminCertUrlModel::where('cert', $cert_name)->update(['publickey' => $url_cert, 'privatekey' => $url_key]);
         return [
             'crt' => $url_cert,
             'key' => $url_key,
@@ -119,7 +119,7 @@ class SiteAction
         $root = self::extractMainDomain($domain);
 
         if ($certNames === null) {
-            $certNames = CertUrlModel::column('cert');
+            $certNames = AdminCertUrlModel::column('cert');
         }
         $certNames = array_values(array_filter(array_map('strval', (array)$certNames), function ($item) {
             return $item !== '';
@@ -176,8 +176,8 @@ class SiteAction
         }
         $data = [];
         $insertData = [];
-        $certNames = CertUrlModel::column('cert');
-        $siteNames = CertWebsiteModel::where('type', 'web')->column('website');
+        $certNames = AdminCertUrlModel::column('cert');
+        $siteNames = AdminCertWebsiteModel::where('type', 'web')->column('website');
 
         foreach ($ret['data'] as $site) {
             if ($site['ssl'] !== -1) {
@@ -205,7 +205,7 @@ class SiteAction
         }
 
         if (!empty($insertData)) {
-            CertWebsiteModel::insertAll($insertData);
+            AdminCertWebsiteModel::insertAll($insertData);
         }
         return $data;
     }

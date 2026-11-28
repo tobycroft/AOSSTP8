@@ -4,7 +4,7 @@ namespace app\admin\service;
 
 use app\admin\model\AdminCertPveModel;
 use app\admin\model\AdminCertUrlModel;
-use app\v1\cert\action\PveAction;
+use app\admin\action\PveAction;
 use Exception;
 use Proxmox\Proxmox;
 

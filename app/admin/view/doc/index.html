@@ -132,7 +132,6 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
         <a href="#doc-api">接口清单</a>
         <a href="#doc-api-file">文件与上传</a>
         <a class="sub" href="#doc-api-sms">短信</a>
-        <a class="sub" href="#doc-api-cert">证书</a>
         <a class="sub" href="#doc-api-ai">AI</a>
         <a class="sub" href="#doc-api-ai-thinking">推理模式（Thinking）</a>
         <a class="sub" href="#doc-api-mail">邮件</a>
@@ -147,19 +146,19 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
         <a class="sub" href="#doc-sign-rsa">RSA 签名</a>
         <a class="sub" href="#doc-sign-cert">证书私钥</a>
         <a href="#doc-response">响应与错误码</a>
-        <a href="#doc-cert">证书接口链路</a>
+        <a href="#doc-cert">证书管理链路</a>
         <a class="sub" href="#doc-cert-data">数据表</a>
         <a class="sub" href="#doc-cert-bind">绑定规则</a>
-        <a class="sub" href="#doc-cert-deploy">下发接口</a>
+        <a class="sub" href="#doc-cert-deploy">下发入口</a>
     </aside>
 
     <main class="doc-body">
         <div class="doc-hero">
             <h1>开放接口文档</h1>
-            <p>本文档说明系统对外接口的<strong style="color:#fff;">访问方式</strong>（凭据与鉴权）、<strong style="color:#fff;">链接方式</strong>（地址拼装与路由规则）、<strong style="color:#fff;">加密方式</strong>（签名与密钥），以及各业务域的接口清单、统一响应结构与证书接口链路。内容按现有代码实现整理。</p>
+            <p>本文档说明系统对外接口的<strong style="color:#fff;">访问方式</strong>（凭据与鉴权）、<strong style="color:#fff;">链接方式</strong>（地址拼装与路由规则）、<strong style="color:#fff;">加密方式</strong>（签名与密钥），以及各业务域的接口清单、统一响应结构与证书管理链路。内容按现有代码实现整理。</p>
             <div class="meta">
-                <span>版本 v1.6</span>
-                <span>更新 2026-11-20</span>
+                <span>版本 v1.7</span>
+                <span>更新 2026-11-28</span>
                 <span>接口域名 upload.tuuz.cc:433</span>
                 <span>默认时区 Asia/Shanghai</span>
             </div>
@@ -167,11 +166,11 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
 
         <section class="doc-section" id="doc-overview">
             <h2>接口概览</h2>
-            <p>系统对外提供三类接口入口，彼此独立鉴权，令牌不可混用：</p>
+            <p>系统对外提供两类接口入口，另有仅在后台使用的证书下发能力，彼此独立鉴权，令牌不可混用：</p>
             <div class="doc-grid">
                 <div class="cell"><b>开放接口</b><span>业务系统调用，四段式路径 <code class="inline">/{version}/{module}/{controller}/{action}</code>，域名根 <code class="inline">upload.tuuz.cc:433</code>。</span></div>
                 <div class="cell"><b>上传服务</b><span>独立主机 <code class="inline">https://upload.tuuz.cc:433</code>，使用一次性临时令牌，避免长期令牌暴露。</span></div>
-                <div class="cell"><b>证书下发</b><span>面向宝塔面板、爱快路由器、Proxmox VE 与宝塔邮局，按证书名称串联拉取与部署。</span></div>
+                <div class="cell"><b>证书下发（仅后台）</b><span>面向宝塔面板、爱快路由器、Proxmox VE 与宝塔邮局，按证书名称串联拉取与部署，只通过后台登录操作触发，不提供开放接口。</span></div>
             </div>
             <p>接口统一返回 JSON（<code class="inline">code</code> / <code class="inline">data</code> / <code class="inline">echo</code>），按 <code class="inline">application/x-www-form-urlencoded</code> 或 JSON 字符串提交参数，详见后文各节。</p>
             <div class="note">本页与代码同步维护：路由在 <code class="inline">route/route.php</code>，鉴权在各模块 <code class="inline">initialize()</code>，签名规则在对应控制器内。调整实现时请同步更新本页。</div>
@@ -186,13 +185,12 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
                 <thead><tr><th style="width:120px;">业务域</th><th style="width:230px;">凭据</th><th>传递方式</th><th style="width:200px;">校验位置</th></tr></thead>
                 <tbody>
                     <tr><td>文件 / 短信 / 存储</td><td>项目令牌（<code class="inline">ao_oss.token</code>）</td><td>文件类：URL 参数 <code class="inline">token</code>；短信：POST 参数 <code class="inline">name</code></td><td><code class="inline">OssModel::api_find_token</code></td></tr>
-                    <tr><td>证书管理</td><td><code class="inline">appname</code> + <code class="inline">appkey</code>（<code class="inline">ao_cert</code>）</td><td>GET / POST 参数</td><td><code class="inline">/v1/cert/*</code> 初始化</td></tr>
                     <tr><td>AI 能力</td><td>项目 Secret（<code class="inline">ao_v3_project.secret</code>，服务端签发的 64 位随机串），同时作为信封加密密钥</td><td>请求头 <code class="inline">X-Aoss-Ts</code> / <code class="inline">X-Aoss-Kid</code> / <code class="inline">X-Aoss-Auth</code>，secret 不出现在请求中</td><td><code class="inline">V3ProjectModel::api_find_kid</code> + 默认 agnes 授权 + <code class="inline">Aoss\Envelope::open</code></td></tr>
                     <tr><td>抖店</td><td><code class="inline">appid</code> + <code class="inline">appsecret</code> + <code class="inline">salt</code> + <code class="inline">sign</code>，或 <code class="inline">token</code></td><td>POST / GET 参数</td><td><code class="inline">/v2/doudian/*</code> 初始化</td></tr>
                     <tr><td>上传服务</td><td>一次性临时令牌</td><td>URL 参数 <code class="inline">token</code></td><td><code class="inline">ao_file_token</code></td></tr>
                 </tbody>
             </table>
-            <div class="note warn">令牌即身份，请勿写入前端源码或公开仓库。证书接口的 <code class="inline">appkey</code> 泄露等同于该证书项目的全部下发权限。</div>
+            <div class="note warn">令牌即身份，请勿写入前端源码或公开仓库。证书下发仅在后台按登录账号权限操作，请遵循最小权限原则分配管理员账号。</div>
 
             <h3 id="doc-auth-upload">文件上传（V3）</h3>
             <p>V1/V2 文件上传接口已全部下线，上传统一使用 V3：先按 V3 凭证信封签发一次性令牌，再用令牌直传。</p>
@@ -227,7 +225,6 @@ Route::any(':version/:module/:controller/:function',
                 <li>参数名大小写敏感，布尔值统一使用 <code class="inline">1 / 0</code>。</li>
                 <li>列表分页参数为 <code class="inline">page</code>（从 1 开始）与 <code class="inline">search</code>，每页 15 条。</li>
                 <li>时间戳统一为秒级 Unix 时间，服务端时区 <code class="inline">Asia/Shanghai</code>。</li>
-                <li>证书接口的 <code class="inline">cert</code> 同时作为业务主键，需与 <code class="inline">ao_cert_url.cert</code> 完全一致。</li>
             </ul>
         </section>
 
@@ -256,23 +253,6 @@ Route::any(':version/:module/:controller/:function',
                 </tbody>
             </table>
             <div class="note"><code class="inline">name</code> 为短信项目名，<code class="inline">sign = md5(code + ts)</code>，<code class="inline">code</code> 为该项目密钥。</div>
-
-            <h3 id="doc-api-cert">证书</h3>
-            <table>
-                <thead><tr><th style="width:150px;">能力</th><th style="width:400px;">方法与链接</th><th>关键参数</th></tr></thead>
-                <tbody>
-                    <tr><td>站点列表</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/bt/getlist?appname={appname}&amp;appkey={appkey}</code></td><td>—</td></tr>
-                    <tr><td>拉取证书</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/bt/pullssl?...&amp;cert={证书名}</code></td><td><code class="inline">cert</code></td></tr>
-                    <tr><td>单站点下发</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/bt/setssl?...&amp;cert={证书名}&amp;website={站点域名}</code></td><td><code class="inline">cert, website</code></td></tr>
-                    <tr><td>自动下发</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/bt/autossl?...&amp;cert={证书名}</code></td><td><code class="inline">cert</code>（要求 <code class="inline">auto=1</code>）</td></tr>
-                    <tr><td>下发爱快</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/bt/saveikuaisll?...&amp;cert={证书名}</code></td><td><code class="inline">cert</code></td></tr>
-                    <tr><td>下发 Proxmox VE</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/bt/savepvesll?...&amp;cert={证书名}</code></td><td><code class="inline">cert</code></td></tr>
-                    <tr><td>下发宝塔面板</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/bt/savepanelssl?...&amp;cert={证书名}</code></td><td><code class="inline">cert</code></td></tr>
-                    <tr><td>邮件证书列表</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/mail/getlist?...</code></td><td>—</td></tr>
-                    <tr><td>邮件证书下发</td><td><span class="pill blue">GET</span> <code class="inline">/v1/cert/mail/setssl?...&amp;cert={证书名}&amp;website={域名}</code></td><td><code class="inline">cert, website</code></td></tr>
-                </tbody>
-            </table>
-            <pre class="code"><span class="lang">cURL</span>curl -s "https://upload.tuuz.cc:433/v1/cert/bt/pullssl?appname=demo&amp;appkey=demo-key&amp;cert=aerofsx.com"</pre>
 
             <h3 id="doc-api-ai">AI</h3>
             <table>
@@ -479,9 +459,9 @@ $sign      = md5($projectToken . $timestamp);</pre>
             <h3 id="doc-sign-cert">证书私钥</h3>
             <ul>
                 <li>证书全文与私钥保存在 <code class="inline">ao_cert_url.publickey</code> / <code class="inline">privatekey</code>，来源为 <code class="inline">url_crt</code> / <code class="inline">url_key</code> 指向的 HTTP(S) 链接。</li>
-                <li>宝塔 API 密钥（<code class="inline">bt_key</code>）、爱快账号密码、PVE API Token 均以明文存储在对应配置表，仅通过后台管理，不下发到接口响应中。</li>
+                <li>宝塔 API 密钥（<code class="inline">bt_key</code>）、爱快账号密码、PVE API Token 均以明文存储在对应配置表，仅通过后台管理，不通过任何开放接口返回。</li>
             </ul>
-            <div class="note danger">私钥泄露等同于证书被完全接管。请限定 appkey 的发放范围，并定期轮换宝塔 API 密钥与 PVE Token。</div>
+            <div class="note danger">私钥泄露等同于证书被完全接管。请限制后台账号权限，并定期轮换宝塔 API 密钥与 PVE Token。</div>
         </section>
 
         <section class="doc-section" id="doc-response">
@@ -498,9 +478,9 @@ $sign      = md5($projectToken . $timestamp);</pre>
                     <tr><td><span class="pill green">0</span></td><td>成功</td><td>业务正常返回，数据在 <code class="inline">data</code></td></tr>
                     <tr><td><span class="pill red">-1</span></td><td>登录失效</td><td>后台令牌无效，前端跳转登录</td></tr>
                     <tr><td><span class="pill orange">400</span></td><td>参数错误</td><td>缺少必填参数、长度或格式不符</td></tr>
-                    <tr><td><span class="pill red">401</span></td><td>鉴权失败</td><td>令牌不存在、签名不正确、自动下发未启用</td></tr>
+                    <tr><td><span class="pill red">401</span></td><td>鉴权失败</td><td>令牌不存在、签名不正确</td></tr>
                     <tr><td><span class="pill red">403</span></td><td>权限不足</td><td>账号或项目被禁用、拒绝的操作</td></tr>
-                    <tr><td><span class="pill orange">404</span></td><td>未找到数据</td><td>证书项目、站点或记录不存在</td></tr>
+                    <tr><td><span class="pill orange">404</span></td><td>未找到数据</td><td>记录或站点不存在</td></tr>
                     <tr><td><span class="pill orange">406 / 407</span></td><td>数据不符合期待</td><td>上下游返回结构异常</td></tr>
                     <tr><td><span class="pill red">500</span></td><td>服务端错误</td><td>数据库异常、上游接口调用失败</td></tr>
                 </tbody>
@@ -509,8 +489,8 @@ $sign      = md5($projectToken . $timestamp);</pre>
         </section>
 
         <section class="doc-section" id="doc-cert">
-            <h2>证书接口链路</h2>
-            <p>证书相关接口围绕三张主体表串联：证书来源、站点绑定、下发节点。</p>
+            <h2>证书管理链路（仅后台）</h2>
+            <p>证书相关能力已从开放接口下线，不再对外开放，仅保留在后台：围绕证书来源、站点绑定、下发节点三组主体表串联，入口为后台的「证书」「证书URL」「证书站点」「爱快节点」「PVE节点」「下发日志」页面。</p>
 
             <h3 id="doc-cert-data">数据表</h3>
             <table>
@@ -539,18 +519,18 @@ $sign      = md5($projectToken . $timestamp);</pre>
                 <li>查询站点时同时匹配证书名与规整名两种取值，兼容历史以根域名写入的数据。</li>
             </ol>
 
-            <h3 id="doc-cert-deploy">下发接口</h3>
+            <h3 id="doc-cert-deploy">下发入口</h3>
             <table>
-                <thead><tr><th style="width:130px;">通道</th><th style="width:150px;">目标</th><th>接口</th></tr></thead>
+                <thead><tr><th style="width:130px;">通道</th><th style="width:150px;">目标</th><th>后台入口</th></tr></thead>
                 <tbody>
-                    <tr><td>宝塔网站</td><td>网站 SSL</td><td><code class="inline">/v1/cert/bt/setssl?cert={证书名}&amp;website={站点域名}</code></td></tr>
-                    <tr><td>宝塔面板</td><td>面板 SSL</td><td><code class="inline">/v1/cert/bt/savepanelssl?cert={证书名}</code></td></tr>
-                    <tr><td>宝塔邮局</td><td>邮件 SSL</td><td><code class="inline">/v1/cert/mail/setssl?cert={证书名}&amp;website={域名}</code></td></tr>
-                    <tr><td>爱快</td><td>路由器证书</td><td><code class="inline">/v1/cert/bt/saveikuaisll?cert={证书名}</code></td></tr>
-                    <tr><td>Proxmox VE</td><td>节点证书</td><td><code class="inline">/v1/cert/bt/savepvesll?cert={证书名}</code></td></tr>
+                    <tr><td>宝塔网站</td><td>网站 SSL</td><td>「证书URL」→ 自动下发（autoSSL），需 <code class="inline">auto=1</code></td></tr>
+                    <tr><td>宝塔面板</td><td>面板 SSL</td><td>「证书URL」→ 自动下发（autoSSL）</td></tr>
+                    <tr><td>宝塔邮局</td><td>邮件 SSL</td><td>「证书URL」→ 邮件自动下发（autoMailSSL）</td></tr>
+                    <tr><td>爱快</td><td>路由器证书</td><td>「爱快节点」→ 下发 / 批量下发</td></tr>
+                    <tr><td>Proxmox VE</td><td>节点证书</td><td>「PVE节点」→ 下发 / 批量下发</td></tr>
                 </tbody>
             </table>
-            <p>自动下发要求 <code class="inline">ao_cert_url.auto = 1</code>，否则返回 <code class="inline">401 本证书自动下发功能不可用</code>。单台节点失败不影响其他节点，结果统一写入 <code class="inline">ao_cert_log</code>。</p>
+            <p>自动下发要求 <code class="inline">ao_cert_url.auto = 1</code>，不满足时后台会拒绝下发并提示。单台节点失败不影响其他节点，结果统一写入 <code class="inline">ao_cert_log</code>。</p>
             <p class="doc-footer">AOSS 开放接口文档 · 与 <code class="inline">route/route.php</code> 同步维护</p>
         </section>
     </main>

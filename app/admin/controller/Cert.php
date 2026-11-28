@@ -7,7 +7,7 @@ use app\admin\model\AdminCertUrlModel;
 use app\admin\model\AdminCertWebsiteModel;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
-use app\v1\cert\action\SiteAction;
+use app\admin\action\SiteAction;
 use BaseController\CommonController;
 use Input;
 use Ret;

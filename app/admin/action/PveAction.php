@@ -1,10 +1,10 @@
 <?php
 
-namespace app\v1\cert\action;
+namespace app\admin\action;
 
-use app\v1\cert\model\CertLogModel;
-use app\v1\cert\model\CertPveModel;
-use app\v1\cert\model\CertUrlModel;
+use app\admin\model\AdminCertLogModel;
+use app\admin\model\AdminCertPveModel;
+use app\admin\model\AdminCertUrlModel;
 use Exception;
 use Proxmox\Proxmox;
 
@@ -67,7 +67,7 @@ class PveAction
      */
     public static function updatessl(string $certName, array $item): array
     {
-        $certUrl = CertUrlModel::where('cert', $certName)->find();
+        $certUrl = AdminCertUrlModel::where('cert', $certName)->find();
         if (!$certUrl) {
             throw new Exception('未找到证书项目: ' . $certName);
         }
@@ -123,7 +123,7 @@ class PveAction
             'detail' => [],
         ];
 
-        $nodes = CertPveModel::where('status', 1)
+        $nodes = AdminCertPveModel::where('status', 1)
             ->whereIn('cert_name', SiteAction::certNameCandidates($certName))
             ->select();
 
@@ -165,7 +165,7 @@ class PveAction
             return;
         }
 
-        CertPveModel::where('id', $id)->update([
+        AdminCertPveModel::where('id', $id)->update([
             'last_deploy_time' => date('Y-m-d H:i:s'),
             'last_deploy_status' => $success,
             'last_error' => mb_substr($error, 0, 250),
@@ -190,7 +190,7 @@ class PveAction
             $website .= ' (' . $node . ')';
         }
 
-        CertLogModel::create([
+        AdminCertLogModel::create([
             'appname' => $certName !== '' ? $certName : '-',
             'type' => 'pve',
             'success' => $success,

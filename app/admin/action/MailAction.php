@@ -1,9 +1,9 @@
 <?php
 
-namespace app\v1\cert\action;
+namespace app\admin\action;
 
-use app\v1\cert\model\CertUrlModel;
-use app\v1\cert\model\CertWebsiteModel;
+use app\admin\model\AdminCertUrlModel;
+use app\admin\model\AdminCertWebsiteModel;
 use think\Exception;
 use tobycroft\Bt\Base;
 
@@ -37,7 +37,7 @@ class MailAction
      */
     public static function updatessl(string $cert_name): array|null
     {
-        $cert_url = CertUrlModel::where('cert', $cert_name)->find();
+        $cert_url = AdminCertUrlModel::where('cert', $cert_name)->find();
         if (!$cert_url) {
             throw new Exception("未找到证书项目");
         }
@@ -46,7 +46,7 @@ class MailAction
         if (empty($url_key) || empty($url_cert)) {
             throw new Exception("证书获取失败");
         }
-        CertUrlModel::where('cert', $cert_name)->update(['publickey' => $url_cert, 'privatekey' => $url_key]);
+        AdminCertUrlModel::where('cert', $cert_name)->update(['publickey' => $url_cert, 'privatekey' => $url_key]);
         return [
             'csr' => $url_cert,
             'key' => $url_key,
@@ -89,7 +89,7 @@ class MailAction
         }
         $data = $ret['msg']['data'];
         $insertData = [];
-        $siteNames = CertWebsiteModel::where('type', 'mail')->column('website');
+        $siteNames = AdminCertWebsiteModel::where('type', 'mail')->column('website');
         $domains = [];
 
         foreach ($data as $site) {
@@ -113,7 +113,7 @@ class MailAction
             }
         }
         if (!empty($insertData)) {
-            CertWebsiteModel::insertAll($insertData);
+            AdminCertWebsiteModel::insertAll($insertData);
         }
         return $domains;
     }

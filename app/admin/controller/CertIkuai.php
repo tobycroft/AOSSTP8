@@ -5,7 +5,7 @@ namespace app\admin\controller;
 use app\admin\model\AdminCertIkuaiModel;
 use app\admin\utils\AdminAuth;
 use app\admin\utils\Layout;
-use app\v1\cert\action\IkuaiAction;
+use app\admin\action\IkuaiAction;
 use BaseController\CommonController;
 use Exception;
 use Input;

@@ -1,6 +1,6 @@
 <?php
 
-namespace app\v1\cert\action;
+namespace app\admin\action;
 
 use think\Exception;
 use tobycroft\Bt\Base;

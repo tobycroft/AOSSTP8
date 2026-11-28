@@ -1,10 +1,10 @@
 <?php
 
-namespace app\v1\cert\action;
+namespace app\admin\action;
 
-use app\v1\cert\model\CertIkuaiModel;
-use app\v1\cert\model\CertLogModel;
-use app\v1\cert\model\CertUrlModel;
+use app\admin\model\AdminCertIkuaiModel;
+use app\admin\model\AdminCertLogModel;
+use app\admin\model\AdminCertUrlModel;
 use Exception;
 use Ikuai\Ikuai;
 
@@ -87,7 +87,7 @@ class IkuaiAction
      */
     public static function updatessl(string $certName, array $item): array
     {
-        $certUrl = CertUrlModel::where('cert', $certName)->find();
+        $certUrl = AdminCertUrlModel::where('cert', $certName)->find();
         if (!$certUrl) {
             throw new Exception('未找到证书项目: ' . $certName);
         }
@@ -137,7 +137,7 @@ class IkuaiAction
             'detail' => [],
         ];
 
-        $routers = CertIkuaiModel::where('status', 1)
+        $routers = AdminCertIkuaiModel::where('status', 1)
             ->whereIn('cert_name', SiteAction::certNameCandidates($certName))
             ->select();
 
@@ -226,7 +226,7 @@ class IkuaiAction
             return;
         }
 
-        CertIkuaiModel::where('id', $id)->update([
+        AdminCertIkuaiModel::where('id', $id)->update([
             'sess_key' => $sessKey,
             'last_login_time' => $lastLoginTime,
             'expire_time' => $expireTime,
@@ -247,7 +247,7 @@ class IkuaiAction
      */
     private static function log(array $item, string $certName, int $success, array $payload): void
     {
-        CertLogModel::create([
+        AdminCertLogModel::create([
             'appname' => $certName !== '' ? $certName : '-',
             'type' => 'ikuai',
             'success' => $success,
