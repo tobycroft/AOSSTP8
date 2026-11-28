@@ -2,8 +2,11 @@
 
 namespace app\v1\wechat\controller;
 
-use app\v1\image\controller\qr;
 use app\v1\wechat\action\AccessTokenAction;
+use Endroid\QrCode\Color\Color;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
 use Input;
 use miniprogram_struct;
 use Ret;
@@ -64,8 +67,17 @@ class offiaccount extends info
         $redirect_uri = urlencode($redirect_uri);
         $combine = "https://open.weixin.qq.com/connect/oauth2/authorize?appid=$appid&redirect_uri=$redirect_uri&response_type=$response_type&scope=$scope&state=$state#wechat_redirect";
         if ($png == "1") {
-            $qr = new qr();
-            $qr->qr_png($combine);
+            $qrCode = new QrCode(
+                data: $combine,
+                errorCorrectionLevel: ErrorCorrectionLevel::Low,
+                size: 300,
+                margin: 10,
+                foregroundColor: new Color(0, 0, 0),
+                backgroundColor: new Color(200, 200, 200)
+            );
+            header('Content-type: image/png');
+            echo (new PngWriter())->write($qrCode)->getString();
+            exit(0);
         } else {
             Ret::Success(0, $combine);
         }

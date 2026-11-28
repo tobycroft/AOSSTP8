@@ -2,13 +2,13 @@
 
 namespace app\v1\rcon\controller;
 
-use app\v1\image\controller\create;
+use app\v1\common\controller\ProjectController;
 use app\v1\rcon\model\RconInfoModel;
 use app\v1\rcon\model\RconModel;
 use Kekalainen\GameRQ\Rcon\SourceRcon;
 use Ret;
 
-class index extends create
+class index extends ProjectController
 {
 
     public mixed $rcon;

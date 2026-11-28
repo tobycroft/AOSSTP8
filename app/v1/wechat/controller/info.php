@@ -2,14 +2,14 @@
 
 namespace app\v1\wechat\controller;
 
-use app\v1\image\controller\create;
+use app\v1\common\controller\ProjectController;
 use app\v1\wechat\model\WechatModel;
 use Ret;
 use think\Request;
 use Wechat\Miniprogram;
 use Wechat\WechatRet\GetAccessToken;
 
-class info extends create
+class info extends ProjectController
 {
 
     public string|null $appid;

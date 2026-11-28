@@ -6,12 +6,12 @@ namespace app\v1\nlp\controller;
 use AlibabaCloud\SDK\Alinlp\V20200629\Alinlp;
 use AlibabaCloud\SDK\Alinlp\V20200629\Models\GetSaChGeneralRequest;
 use AlibabaCloud\Tea\Exception\TeaUnableRetryError;
-use app\v1\image\controller\create;
+use app\v1\common\controller\ProjectController;
 use app\v1\nlp\model\NlpAliyunModel;
 use app\v1\nlp\model\NlpModel;
 use Darabonba\OpenApi\Models\Config;
 
-class index extends create
+class index extends ProjectController
 {
 
     protected $nlp_proc = [];

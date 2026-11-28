@@ -3,11 +3,11 @@
 namespace app\v1\ip\controller;
 
 use app\v1\captcha\model\CaptchaIpModel;
-use app\v1\image\controller\create;
+use app\v1\common\controller\ProjectController;
 use app\v1\ip\model\IpModel;
 use Input;
 
-class range extends create
+class range extends ProjectController
 {
 
     public function check()

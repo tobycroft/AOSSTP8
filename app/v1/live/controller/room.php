@@ -2,7 +2,7 @@
 
 namespace app\v1\live\controller;
 
-use app\v1\image\controller\create;
+use app\v1\common\controller\ProjectController;
 use app\v1\live\action\GetUrl;
 use app\v1\live\model\LiveAliyunModel;
 use app\v1\live\model\LiveModel;
@@ -10,7 +10,7 @@ use app\v1\live\model\LiveTencentModel;
 use Input;
 use Ret;
 
-class room extends create
+class room extends ProjectController
 {
 
 

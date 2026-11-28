@@ -3,14 +3,14 @@
 namespace app\v1\qwen\controller;
 
 
-use app\v1\image\controller\create;
+use app\v1\common\controller\ProjectController;
 use app\v1\nlp\model\NlpModel;
 use app\v1\qwen\model\QwenModel;
 use Qwen\Enums\Models;
 use Qwen\QwenClient;
 use think\Response;
 
-class index extends create
+class index extends ProjectController
 {
 
     protected $qwen = [];

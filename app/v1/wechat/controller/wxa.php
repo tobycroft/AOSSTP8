@@ -2,8 +2,8 @@
 
 namespace app\v1\wechat\controller;
 
+use app\v1\common\controller\ProjectController;
 use app\v1\file\action\OssSelectionAction;
-use app\v1\image\controller\create;
 use app\v1\wechat\action\AccessTokenAction;
 use app\v1\wechat\model\WechatDataModel;
 use app\v1\wechat\model\WechatModel;
@@ -13,7 +13,7 @@ use think\Request;
 use Wechat\Miniprogram;
 use Wechat\WechatRet\WxaCode\GetUnlimited;
 
-class wxa extends create
+class wxa extends ProjectController
 {
 
     public mixed $access_token;
