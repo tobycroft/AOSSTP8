@@ -20,8 +20,12 @@ class Login extends CommonController
             exit;
         }
 
-        $username = Input::Post('username');
-        $password = Input::Post('password');
+        // 强制字符串并限制长度，避免数组/超长输入进入查询与日志
+        $username = (string)Input::Post('username');
+        $password = (string)Input::Post('password');
+        if ($username === '' || strlen($username) > 64 || strlen($password) > 256) {
+            Ret::Fail(401, ['need_captcha' => true], '用户名或密码错误');
+        }
         // 验证码仅在风控要求时必需，此处不做必填校验
         $code = Input::Post('code', false);
         $ip = request()->ip();
