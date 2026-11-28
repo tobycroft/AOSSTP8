@@ -200,9 +200,7 @@
 \think\facade\Route::any('register', '\app\index\controller\Register@index');
 \think\facade\Route::any('en', '\app\index\controller\Index@indexEn');
 
-// 门户图床（具体路径需注册在通用路径之前，避免被前缀匹配抢占）
-\think\facade\Route::any('image/delete', '\app\index\controller\Image@delete');
-\think\facade\Route::any('image', '\app\index\controller\Image@index');
+// 门户图床已下线（随 v1/v2 上传功能一并移除），/image 不再注册路由。
 
 \think\facade\Route::any(':any', function () {
     header("Access-Control-Allow-Origin: *", true);

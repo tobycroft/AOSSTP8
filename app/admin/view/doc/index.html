@@ -194,13 +194,13 @@ code.inline { background: #f2f3f5; color: #c7254e; padding: 1px 5px; border-radi
             </table>
             <div class="note warn">令牌即身份，请勿写入前端源码或公开仓库。证书接口的 <code class="inline">appkey</code> 泄露等同于该证书项目的全部下发权限。</div>
 
-            <h3 id="doc-auth-upload">上传临时令牌</h3>
-            <p>上传使用独立主机与端口，先用项目令牌换取短时令牌，再用令牌上传：</p>
+            <h3 id="doc-auth-upload">文件上传（V3）</h3>
+            <p>V1/V2 文件上传接口已全部下线，上传统一使用 V3：先按 V3 凭证信封签发一次性令牌，再用令牌直传。</p>
             <ol>
-                <li>换取令牌：<code class="inline">POST https://upload.tuuz.cc:433/v2/file/index/token</code>，参数 <code class="inline">token</code>（项目令牌）、<code class="inline">timestamp</code>（秒级时间戳）、<code class="inline">sign</code>、可选 <code class="inline">ip</code>。</li>
-                <li>执行上传：<code class="inline">https://upload.tuuz.cc:433/v2/file/index/upfull?token={临时令牌}</code> 返回完整文件信息；<code class="inline">uphash</code> 仅返回 MD5，需再调 <code class="inline">POST /v2/file/token/hash_query</code> 取得文件详情。</li>
+                <li>签发令牌：<code class="inline">POST /v3/file/token/upload_url</code>（或 <code class="inline">upload_url_hash</code>），请求头携带 <code class="inline">X-Aoss-Ts</code> / <code class="inline">X-Aoss-Kid</code> / <code class="inline">X-Aoss-Auth</code>。</li>
+                <li>执行上传：<code class="inline">POST /v3/file/index/upfull?token={一次性令牌}</code> 返回完整文件信息；<code class="inline">uphash</code> 仅返回 MD5。</li>
             </ol>
-            <p>临时令牌默认 300 秒过期，写入 <code class="inline">ao_file_token</code> 并以 <code class="inline">is_used</code> 标记一次性使用；返回值中的 <code class="inline">upload_url</code> 与 <code class="inline">upload_url_hash</code> 可直接用于上传。</p>
+            <p>一次性令牌默认 300 秒过期；本地 Bucket 对外返回受控虚拟地址 <code class="inline">/attachment/{bucket_path}/{md5}.{ext}</code>，真实文件由 Nginx <code class="inline">X-Accel-Redirect</code> 内部映射。</p>
 
             <h3 id="doc-auth-cors">请求头与跨域</h3>
             <ul>
@@ -239,12 +239,12 @@ Route::any(':version/:module/:controller/:function',
             <table>
                 <thead><tr><th style="width:130px;">能力</th><th style="width:400px;">方法与链接</th><th>关键参数</th></tr></thead>
                 <tbody>
-                    <tr><td>文件上传</td><td><span class="pill blue">POST</span> <code class="inline">/v1/file/index/up?token={项目令牌}</code></td><td><code class="inline">file</code>（multipart）</td></tr>
-                    <tr><td>秒传查询</td><td><span class="pill blue">GET</span> <code class="inline">/v1/file/index/md5?token={项目令牌}&amp;md5={文件MD5}</code></td><td><code class="inline">md5</code></td></tr>
-                    <tr><td>临时令牌</td><td><span class="pill green">POST</span> <code class="inline">/v2/file/index/token</code></td><td><code class="inline">token, timestamp, sign, ip</code></td></tr>
-                    <tr><td>令牌上传</td><td><span class="pill green">POST</span> <code class="inline">/v2/file/index/upfull?token={临时令牌}</code></td><td><code class="inline">file</code></td></tr>
-                    <tr><td>令牌上传（仅 MD5）</td><td><span class="pill green">POST</span> <code class="inline">/v2/file/index/uphash?token={临时令牌}</code></td><td><code class="inline">file</code></td></tr>
-                    <tr><td>按 MD5 查详情</td><td><span class="pill green">POST</span> <code class="inline">/v2/file/token/hash_query</code></td><td><code class="inline">md5</code></td></tr>
+                    <tr><td>签发上传令牌</td><td><span class="pill green">POST</span> <code class="inline">/v3/file/token/upload_url</code></td><td>V3 信封鉴权头</td></tr>
+                    <tr><td>文件上传</td><td><span class="pill green">POST</span> <code class="inline">/v3/file/index/upfull?token={一次性令牌}</code></td><td><code class="inline">file</code>（multipart）</td></tr>
+                    <tr><td>文件上传（相对路径）</td><td><span class="pill green">POST</span> <code class="inline">/v3/file/index/up?token={一次性令牌}</code></td><td><code class="inline">file</code>（multipart）</td></tr>
+                    <tr><td>上传（仅 MD5）</td><td><span class="pill green">POST</span> <code class="inline">/v3/file/index/uphash?token={一次性令牌}</code></td><td><code class="inline">file</code></td></tr>
+                    <tr><td>秒传前置查询</td><td><span class="pill green">POST</span> <code class="inline">/v3/file/token/md5_check</code></td><td>V3 信封鉴权头 + <code class="inline">md5</code></td></tr>
+                    <tr><td>按 MD5 查详情（旧版）</td><td><span class="pill green">POST</span> <code class="inline">/v2/file/token/hash_query</code></td><td><code class="inline">token, timestamp, sign, hash</code></td></tr>
                 </tbody>
             </table>
 
