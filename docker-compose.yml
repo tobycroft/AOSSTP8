@@ -1,0 +1,21 @@
+services:
+  aosstp8:
+    image: webdevops/php-nginx:8.3
+    container_name: aosstp8
+    restart: always
+    working_dir: /app
+
+    volumes:
+      # 把整个程序目录挂载进去，代码由 deploy.sh 解压覆盖
+      - /www/wwwroot/AOSSTP8:/app
+
+    environment:
+      - TZ=Asia/Shanghai
+      - WEB_DOCUMENT_ROOT=/app/public
+      - PHP_MEMORY_LIMIT=512M
+      - PHP_MAX_EXECUTION_TIME=300
+      - PHP_POST_MAX_SIZE=200M
+      - PHP_UPLOAD_MAX_FILESIZE=200M
+
+    ports:
+      - "1003:80"

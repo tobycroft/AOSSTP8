@@ -1,0 +1,75 @@
+name: Build & Release
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: gd, mbstring, curl, zip, bcmath, xml, fileinfo
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer install --no-dev --no-interaction --prefer-dist \
+            --optimize-autoloader --ignore-platform-reqs
+
+      - name: Generate version
+        run: |
+          echo "TAG=v$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
+
+      - name: Package artifact
+        run: |
+          tar -czf AOSSTP8.tar.gz \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.idea' \
+            --exclude='.vscode' \
+            --exclude='.workbuddy' \
+            --exclude='.screenshots' \
+            --exclude='.env' \
+            --exclude='.travis.yml' \
+            --exclude='runtime' \
+            --exclude='.DS_Store' \
+            .
+
+      - name: Verify artifact
+        run: |
+          pwd
+          ls -lah
+          tar -tzf AOSSTP8.tar.gz | head -20
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          generate_release_notes: true
+          files: |
+            AOSSTP8.tar.gz
+            docker-compose.yml
+
+      - name: Trigger webhook
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{
+              "tag": "${{ env.TAG }}",
+              "repo": "${{ github.repository }}"
+            }' \
+            "https://upload.tuuz.cc:433/hook?tag=${{ github.event.repository.name }}"
