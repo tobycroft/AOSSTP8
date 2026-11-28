@@ -7,7 +7,9 @@ use app\v1\file\action\OssSelectionAction;
 use app\v1\file\model\AttachmentModel;
 use app\v1\oss\model\OssModel;
 use BaseController\CommonController;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Ret;
@@ -16,6 +18,10 @@ use think\Request;
 
 class index extends CommonController
 {
+    /** 单次解析的最大行/列，超出部分不加载，防止超大表格或 zip bomb 占满内存。 */
+    private const MAX_ROWS = 5000;
+
+    private const MAX_COLS = 200;
 
     public $token;
     public $proc;
@@ -26,6 +32,10 @@ class index extends CommonController
         $this->token = input('get.token');
         if (!$this->token) {
             \Ret::Fail(401, null, 'token');
+        }
+        // token 会拼进上传目录，拒绝路径穿越字符
+        if (str_contains((string)$this->token, '..') || strpbrk((string)$this->token, "/\\\0") !== false) {
+            \Ret::Fail(400, null, 'token 非法');
         }
         $this->proc = OssModel::api_find_token($this->token);
         if (!$this->proc) {
@@ -89,7 +99,7 @@ class index extends CommonController
         }
 
         $info = $file->move('./upload/excel/' . $this->token, $file->md5() . '.' . $file->getOriginalExtension());
-        $reader = IOFactory::load($info->getPathname());
+        $reader = $this->loadWorkbook($info->getPathname());
         unlink($info->getPathname());
         $datas = $reader->getActiveSheet()->toArray();
         if (count($datas) < 2) {
@@ -117,9 +127,36 @@ class index extends CommonController
         }
 
         $info = $file->move('./upload/excel/' . $this->token, $file->md5() . '.' . $file->getOriginalExtension());
-        $reader = IOFactory::load($info->getPathname());
+        $reader = $this->loadWorkbook($info->getPathname());
         unlink($info->getPathname());
         $this->extracted($reader);
+    }
+
+    /**
+     * 安全加载工作簿：只读数据、限制行列、不解析样式，降低 XXE 与内存耗尽风险。
+     */
+    private function loadWorkbook(string $path): Spreadsheet
+    {
+        $maxRows = self::MAX_ROWS;
+        $maxCols = self::MAX_COLS;
+
+        $reader = IOFactory::createReaderForFile($path);
+        $reader->setReadDataOnly(true);
+        $reader->setReadFilter(new class($maxRows, $maxCols) implements IReadFilter {
+            public function __construct(private int $rows, private int $cols)
+            {
+            }
+
+            public function readCell($columnAddress, $row, $worksheetName = ''): bool
+            {
+                if ($row > $this->rows) {
+                    return false;
+                }
+                return Coordinate::columnIndexFromString((string)$columnAddress) <= $this->cols;
+            }
+        });
+
+        return $reader->load($path);
     }
 
     /**
@@ -148,7 +185,7 @@ class index extends CommonController
             \Ret::Fail("404", null, "文件未被上传或不属于本系统");
             return;
         }
-        $reader = IOFactory::load('./upload/' . $file_info['path']);
+        $reader = $this->loadWorkbook('./upload/' . $file_info['path']);
         $this->extracted($reader);
     }
 
@@ -164,7 +201,7 @@ class index extends CommonController
             \Ret::Fail("404", null, "文件未被上传或不属于本系统");
             return;
         }
-        $reader = IOFactory::load('./upload/' . $file_info['path']);
+        $reader = $this->loadWorkbook('./upload/' . $file_info['path']);
         $this->extracted($reader);
     }
 
@@ -182,7 +219,7 @@ class index extends CommonController
             \Ret::Fail(406, null, "size too big");
         }
         $info = $file->move('./upload/excel/' . $this->token, $file->md5() . '.' . $file->getOriginalExtension());
-        $reader = IOFactory::load($info->getPathname());
+        $reader = $this->loadWorkbook($info->getPathname());
         unlink($info->getPathname());
         $datas = $reader->getActiveSheet()->toArray();
         if (count($datas) < 2) {

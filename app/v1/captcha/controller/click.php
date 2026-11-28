@@ -27,7 +27,10 @@ class click extends CommonController
         if (!$this->proc) {
             Ret::Fail(401, null, '项目不可用');
         }
-        $this->ident = Input::Post('ident');
+        $this->ident = (string)Input::Post('ident');
+        if ($this->ident === '' || strlen($this->ident) > 64) {
+            Ret::Fail(400, null, 'ident 非法');
+        }
     }
 
     public function create()
