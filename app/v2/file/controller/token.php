@@ -4,151 +4,18 @@ namespace app\v2\file\controller;
 
 use app\v1\file\model\AttachmentModel;
 use app\v1\oss\model\OssModel;
-use app\v2\file\model\FileTokenModel;
 use BaseController\CommonController;
 use Input;
 use Ret;
 
 class token extends CommonController
 {
-    public function create()
-    {
-        $token = Input::Post('token');
-        $timestamp = Input::Post('timestamp');
-        $sign = Input::Post('sign');
-        $ip = Input::Post('ip', false);
-
-        $now = time();
-        if (abs($now - intval($timestamp)) > 300) {
-            Ret::Fail(400, null, '请求已过期');
-        }
-
-        $oss = OssModel::api_find_token($token);
-        if (!$oss) {
-            Ret::Fail(401, null, '项目不存在');
-        }
-
-        $expected_sign = md5($token . $timestamp);
-        if ($sign !== $expected_sign) {
-            Ret::Fail(401, null, '签名验证失败');
-        }
-
-        $temp_token = md5(uniqid('ft_', true) . $token . microtime());
-        $expired_at = date('Y-m-d H:i:s', $now + 300);
-
-        $data = [
-            'token' => $temp_token,
-            'oss_token' => $token,
-            'created_at' => date('Y-m-d H:i:s', $now),
-            'expired_at' => $expired_at,
-            'is_used' => 0,
-        ];
-        if (!empty($ip)) {
-            $data['ip'] = $ip;
-        }
-
-        FileTokenModel::create($data);
-
-        Ret::Success(0, [
-            'token' => $temp_token,
-            'expired_at' => $expired_at,
-        ]);
-    }
-
-    public function upload_url()
-    {
-        $token = Input::Post('token');
-        $timestamp = Input::Post('timestamp');
-        $sign = Input::Post('sign');
-        $ip = Input::Post('ip', false);
-
-        $now = time();
-        if (abs($now - intval($timestamp)) > 300) {
-            Ret::Fail(400, null, '请求已过期');
-        }
-
-        $oss = OssModel::api_find_token($token);
-        if (!$oss) {
-            Ret::Fail(401, null, '项目不存在');
-        }
-
-        $expected_sign = md5($token . $timestamp);
-        if ($sign !== $expected_sign) {
-            Ret::Fail(401, null, '签名验证失败');
-        }
-
-        $temp_token = md5(uniqid('ft_', true) . $token . microtime());
-        $expired_at = date('Y-m-d H:i:s', $now + 300);
-
-        $data = [
-            'token' => $temp_token,
-            'oss_token' => $token,
-            'created_at' => date('Y-m-d H:i:s', $now),
-            'expired_at' => $expired_at,
-            'is_used' => 0,
-        ];
-        if (!empty($ip)) {
-            $data['ip'] = $ip;
-        }
-
-        FileTokenModel::create($data);
-
-        $base_url = 'https://upload.tuuz.cc:433/v2/file/index/upfull';
-        Ret::Success(0, [
-            'token' => $temp_token,
-            'expired_at' => $expired_at,
-            'url' => $base_url,
-            'upload_url' => $base_url . '?token=' . $temp_token,
-        ]);
-    }
-
-    public function upload_url_hash()
-    {
-        $token = Input::Post('token');
-        $timestamp = Input::Post('timestamp');
-        $sign = Input::Post('sign');
-        $ip = Input::Post('ip', false);
-
-        $now = time();
-        if (abs($now - intval($timestamp)) > 300) {
-            Ret::Fail(400, null, '请求已过期');
-        }
-
-        $oss = OssModel::api_find_token($token);
-        if (!$oss) {
-            Ret::Fail(401, null, '项目不存在-'.$token);
-        }
-
-        $expected_sign = md5($token . $timestamp);
-        if ($sign !== $expected_sign) {
-            Ret::Fail(401, null, '签名验证失败');
-        }
-
-        $temp_token = md5(uniqid('ft_', true) . $token . microtime());
-        $expired_at = date('Y-m-d H:i:s', $now + 300);
-
-        $data = [
-            'token' => $temp_token,
-            'oss_token' => $token,
-            'created_at' => date('Y-m-d H:i:s', $now),
-            'expired_at' => $expired_at,
-            'is_used' => 0,
-        ];
-        if (!empty($ip)) {
-            $data['ip'] = $ip;
-        }
-
-        FileTokenModel::create($data);
-
-        $base_url = 'https://upload.tuuz.cc:433/v2/file/index/uphash';
-        Ret::Success(0, [
-            'token' => $temp_token,
-            'expired_at' => $expired_at,
-            'url' => $base_url,
-            'upload_url' => $base_url . '?token=' . $temp_token,
-        ]);
-    }
-
+    /**
+     * 按 MD5 查询文件详情。
+     *
+     * v1/v2 上传入口已全部下线（v2 临时令牌签发与 upfull/uphash 上传一并移除），
+     * 仅保留该查询能力，上传请使用 v3 文件接口。
+     */
     public function hash_query()
     {
         $token = Input::Post('token');
