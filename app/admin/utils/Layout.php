@@ -246,7 +246,6 @@ CSS;
 
         // Sidebar
         $html .= '<div class="sidebar">';
-        $html .= '<a class="menu-item' . ($activeItem === 'console' ? ' active' : '') . '" href="/admin/console">控制台</a>';
 
         foreach (self::$menuGroups as $groupKey => $group) {
             // link 型分组：无子项，渲染为与「控制台」同级的一级菜单项

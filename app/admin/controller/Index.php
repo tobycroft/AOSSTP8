@@ -10,9 +10,9 @@ class Index extends CommonController
 {
     public function index()
     {
-        // 已登录（admin_token 有效）直接进控制台，不再重复输入密码
+        // 已登录（admin_token 有效）直接进后台首页，不再重复输入密码
         if (!empty(AdminAuth::getLoginUser())) {
-            header('Location: /admin/console');
+            header('Location: /admin/v3_project');
             exit;
         }
 
@@ -126,7 +126,7 @@ function doLogin() {
             }
             if (res.code == 0) {
                 localStorage.setItem('admin_token', res.data.token);
-                window.location.href = '/admin/console';
+                window.location.href = '/admin/v3_project';
             } else {
                 document.getElementById('errorMsg').style.display = 'block';
                 document.getElementById('errorMsg').textContent = res.echo;

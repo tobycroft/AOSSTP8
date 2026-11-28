@@ -99,7 +99,6 @@
     \think\facade\Route::any('admin/hook', '\app\admin\controller\Hook@index');
     \think\facade\Route::any('admin/hook_log', '\app\admin\controller\HookLog@index');
     \think\facade\Route::any('admin/excel', '\app\admin\controller\Excel@index');
-    \think\facade\Route::any('admin/console', '\app\admin\controller\Console@index');
     \think\facade\Route::any('admin/doc', '\app\admin\controller\Doc@index');
 
     // 实际文件管理（独立 menu：按 attachment.path 比对扫描无主文件，软删进 recycle / 硬删彻底清除）
